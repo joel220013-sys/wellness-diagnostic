@@ -423,7 +423,14 @@ export default function BookCollectionPage() {
                 <input
                   type="text"
                   value={patientName}
-                  onChange={(e) => setPatientName(e.target.value)}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setPatientName(newName);
+                    setConfirmedAddress((prev) => ({
+                      ...prev,
+                      recipient_name: newName,
+                    }));
+                  }}
                   placeholder="Full Name"
                   className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
@@ -433,7 +440,15 @@ export default function BookCollectionPage() {
                 <input
                   type="text"
                   value={patientPhone}
-                  onChange={(e) => setPatientPhone(e.target.value)}
+                  onChange={(e) => {
+                    const newPhone = e.target.value;
+                    setPatientPhone(newPhone);
+                    setConfirmedAddress((prev) => ({
+                      ...prev,
+                      recipient_phone: newPhone,
+                      phone: newPhone,
+                    }));
+                  }}
                   placeholder="+91 98765 43210"
                   className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
