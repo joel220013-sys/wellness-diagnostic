@@ -55,23 +55,23 @@ export default function BookCollectionPage() {
 
   // Patient & Address state
   const [patientName, setPatientName] = useState(user?.name || '');
-  const [patientPhone, setPatientPhone] = useState(user?.phone || '+91 98765 43210');
-  const [patientAge, setPatientAge] = useState('32');
+  const [patientPhone, setPatientPhone] = useState(user?.phone || '');
+  const [patientAge, setPatientAge] = useState('');
   const [patientGender, setPatientGender] = useState<'Male' | 'Female' | 'Other'>('Female');
   const [confirmedAddress, setConfirmedAddress] = useState<AddressInput>({
-    recipient_name: user?.name || 'Sarah Jenkins',
-    recipient_phone: user?.phone || '+91 98765 43210',
-    phone: user?.phone || '+91 98765 43210',
-    address_line_1: 'Tower B, Flat 402, Greenfield Residences',
-    address_line_2: 'Golf Course Extension Road',
-    locality: 'Sector 65',
-    city: 'Gurugram',
-    state: 'Haryana',
-    postal_code: '122018',
-    latitude: 28.4022,
-    longitude: 77.0654,
-    landmark: 'Near Club House Gate 2',
-    access_instructions: 'Ring doorbell twice. Phlebotomist kit disinfection at entrance.',
+    recipient_name: user?.name || '',
+    recipient_phone: user?.phone || '',
+    phone: user?.phone || '',
+    address_line_1: '',
+    address_line_2: '',
+    locality: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    latitude: 28.4595,
+    longitude: 77.0266,
+    landmark: '',
+    access_instructions: '',
     label: 'Home',
     is_default: true,
   });

@@ -44,20 +44,20 @@ export default function AddressMapPicker({
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [reverseGeocodedText, setReverseGeocodedText] = useState(
-    initialAddress?.address_line_1 ? `${initialAddress.address_line_1}, ${initialAddress.city || ''}` : 'Sector 65, Golf Course Extension Road, Gurugram, Haryana 122018'
+    initialAddress?.address_line_1 ? `${initialAddress.address_line_1}, ${initialAddress.city || ''}` : 'Click on map or search above to set exact door pin'
   );
 
-  // Address details form fields
-  const [recipientName, setRecipientName] = useState(initialAddress?.recipient_name || 'Patient');
-  const [recipientPhone, setRecipientPhone] = useState(initialAddress?.recipient_phone || '+91 98765 43210');
-  const [addressLine1, setAddressLine1] = useState(initialAddress?.address_line_1 || 'Tower B, Flat 402, Greenfield Residences');
-  const [addressLine2, setAddressLine2] = useState(initialAddress?.address_line_2 || 'Golf Course Extension Road');
-  const [landmark, setLandmark] = useState(initialAddress?.landmark || 'Near Clubhouse Gate 2');
-  const [city, setCity] = useState(initialAddress?.city || 'Gurugram');
-  const [state, setState] = useState(initialAddress?.state || 'Haryana');
-  const [postalCode, setPostalCode] = useState(initialAddress?.postal_code || '122018');
+  // Address details form fields - clean empty input bars
+  const [recipientName, setRecipientName] = useState(initialAddress?.recipient_name || '');
+  const [recipientPhone, setRecipientPhone] = useState(initialAddress?.recipient_phone || '');
+  const [addressLine1, setAddressLine1] = useState(initialAddress?.address_line_1 || '');
+  const [addressLine2, setAddressLine2] = useState(initialAddress?.address_line_2 || '');
+  const [landmark, setLandmark] = useState(initialAddress?.landmark || '');
+  const [city, setCity] = useState(initialAddress?.city || '');
+  const [state, setState] = useState(initialAddress?.state || '');
+  const [postalCode, setPostalCode] = useState(initialAddress?.postal_code || '');
   const [accessInstructions, setAccessInstructions] = useState(
-    initialAddress?.access_instructions || 'Ring doorbell twice. Phlebotomist kit disinfection.'
+    initialAddress?.access_instructions || ''
   );
   const [label, setLabel] = useState<'Home' | 'Work' | 'Other'>(
     (initialAddress?.label as 'Home' | 'Work' | 'Other') || 'Home'
@@ -166,18 +166,45 @@ export default function AddressMapPicker({
         const data = await res.json();
         if (data.display_name) {
           setReverseGeocodedText(data.display_name);
-          // Auto-populate city & postal code if available
+          let nextCity = city;
+          let nextPostal = postalCode;
+          let nextRoad = addressLine1;
+          let nextState = state;
+
           if (data.address) {
-            if (data.address.city || data.address.town || data.address.village) {
-              setCity(data.address.city || data.address.town || data.address.village);
+            if (data.address.city || data.address.town || data.address.village || data.address.suburb) {
+              nextCity = data.address.city || data.address.town || data.address.village || data.address.suburb || '';
+              setCity(nextCity);
             }
             if (data.address.postcode) {
-              setPostalCode(data.address.postcode);
+              nextPostal = data.address.postcode;
+              setPostalCode(nextPostal);
             }
-            if (data.address.road) {
-              setAddressLine1(data.address.road);
+            if (data.address.road || data.address.neighbourhood || data.address.residential) {
+              nextRoad = data.address.road || data.address.neighbourhood || data.address.residential || '';
+              setAddressLine1(nextRoad);
+            }
+            if (data.address.state) {
+              nextState = data.address.state;
+              setState(nextState);
             }
           }
+
+          onConfirmAddress({
+            label,
+            recipient_name: recipientName,
+            recipient_phone: recipientPhone,
+            address_line_1: nextRoad,
+            address_line_2: addressLine2 || undefined,
+            landmark: landmark || undefined,
+            city: nextCity,
+            state: nextState || undefined,
+            postal_code: nextPostal,
+            latitude: lat,
+            longitude: lng,
+            access_instructions: accessInstructions || undefined,
+            is_default: isDefault,
+          });
         }
       }
     } catch {
@@ -414,8 +441,26 @@ export default function AddressMapPicker({
                   type="text"
                   required
                   value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  placeholder="e.g. Patient Name"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRecipientName(val);
+                    onConfirmAddress({
+                      label,
+                      recipient_name: val,
+                      recipient_phone: recipientPhone,
+                      address_line_1: addressLine1,
+                      address_line_2: addressLine2 || undefined,
+                      landmark: landmark || undefined,
+                      city,
+                      state: state || undefined,
+                      postal_code: postalCode,
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      access_instructions: accessInstructions || undefined,
+                      is_default: isDefault,
+                    });
+                  }}
+                  placeholder="Patient / Recipient Name"
                   className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
@@ -427,8 +472,26 @@ export default function AddressMapPicker({
                   type="tel"
                   required
                   value={recipientPhone}
-                  onChange={(e) => setRecipientPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRecipientPhone(val);
+                    onConfirmAddress({
+                      label,
+                      recipient_name: recipientName,
+                      recipient_phone: val,
+                      address_line_1: addressLine1,
+                      address_line_2: addressLine2 || undefined,
+                      landmark: landmark || undefined,
+                      city,
+                      state: state || undefined,
+                      postal_code: postalCode,
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      access_instructions: accessInstructions || undefined,
+                      is_default: isDefault,
+                    });
+                  }}
+                  placeholder="10-digit mobile number"
                   className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
@@ -443,8 +506,26 @@ export default function AddressMapPicker({
                 type="text"
                 required
                 value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-                placeholder="e.g. Tower B, Flat 402, Greenfield Residences"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAddressLine1(val);
+                  onConfirmAddress({
+                    label,
+                    recipient_name: recipientName,
+                    recipient_phone: recipientPhone,
+                    address_line_1: val,
+                    address_line_2: addressLine2 || undefined,
+                    landmark: landmark || undefined,
+                    city,
+                    state: state || undefined,
+                    postal_code: postalCode,
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    access_instructions: accessInstructions || undefined,
+                    is_default: isDefault,
+                  });
+                }}
+                placeholder="House / Flat / Door No. or Building Name"
                 className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
               />
             </div>
@@ -457,8 +538,26 @@ export default function AddressMapPicker({
               <input
                 type="text"
                 value={addressLine2}
-                onChange={(e) => setAddressLine2(e.target.value)}
-                placeholder="e.g. Golf Course Extension Road, Sector 65"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAddressLine2(val);
+                  onConfirmAddress({
+                    label,
+                    recipient_name: recipientName,
+                    recipient_phone: recipientPhone,
+                    address_line_1: addressLine1,
+                    address_line_2: val || undefined,
+                    landmark: landmark || undefined,
+                    city,
+                    state: state || undefined,
+                    postal_code: postalCode,
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    access_instructions: accessInstructions || undefined,
+                    is_default: isDefault,
+                  });
+                }}
+                placeholder="Apartment, Street or Locality (Optional)"
                 className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
               />
             </div>
@@ -472,8 +571,26 @@ export default function AddressMapPicker({
                 <input
                   type="text"
                   value={landmark}
-                  onChange={(e) => setLandmark(e.target.value)}
-                  placeholder="Near Gate 2"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setLandmark(val);
+                    onConfirmAddress({
+                      label,
+                      recipient_name: recipientName,
+                      recipient_phone: recipientPhone,
+                      address_line_1: addressLine1,
+                      address_line_2: addressLine2 || undefined,
+                      landmark: val || undefined,
+                      city,
+                      state: state || undefined,
+                      postal_code: postalCode,
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      access_instructions: accessInstructions || undefined,
+                      is_default: isDefault,
+                    });
+                  }}
+                  placeholder="Nearby landmark (Optional)"
                   className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
@@ -485,8 +602,26 @@ export default function AddressMapPicker({
                   type="text"
                   required
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Gurugram"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCity(val);
+                    onConfirmAddress({
+                      label,
+                      recipient_name: recipientName,
+                      recipient_phone: recipientPhone,
+                      address_line_1: addressLine1,
+                      address_line_2: addressLine2 || undefined,
+                      landmark: landmark || undefined,
+                      city: val,
+                      state: state || undefined,
+                      postal_code: postalCode,
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      access_instructions: accessInstructions || undefined,
+                      is_default: isDefault,
+                    });
+                  }}
+                  placeholder="City / Town"
                   className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
@@ -498,8 +633,26 @@ export default function AddressMapPicker({
                   type="text"
                   required
                   value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="122018"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPostalCode(val);
+                    onConfirmAddress({
+                      label,
+                      recipient_name: recipientName,
+                      recipient_phone: recipientPhone,
+                      address_line_1: addressLine1,
+                      address_line_2: addressLine2 || undefined,
+                      landmark: landmark || undefined,
+                      city,
+                      state: state || undefined,
+                      postal_code: val,
+                      latitude: coords.lat,
+                      longitude: coords.lng,
+                      access_instructions: accessInstructions || undefined,
+                      is_default: isDefault,
+                    });
+                  }}
+                  placeholder="PIN Code"
                   className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
@@ -513,8 +666,26 @@ export default function AddressMapPicker({
               <input
                 type="text"
                 value={accessInstructions}
-                onChange={(e) => setAccessInstructions(e.target.value)}
-                placeholder="e.g. Ring doorbell twice, kit disinfection at entrance"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAccessInstructions(val);
+                  onConfirmAddress({
+                    label,
+                    recipient_name: recipientName,
+                    recipient_phone: recipientPhone,
+                    address_line_1: addressLine1,
+                    address_line_2: addressLine2 || undefined,
+                    landmark: landmark || undefined,
+                    city,
+                    state: state || undefined,
+                    postal_code: postalCode,
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    access_instructions: val || undefined,
+                    is_default: isDefault,
+                  });
+                }}
+                placeholder="Gate code, call before arrival, doorbell notes (Optional)"
                 className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
               />
             </div>
