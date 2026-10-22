@@ -7,6 +7,13 @@ interface BrandLogoProps {
 }
 
 export default function BrandLogo({ size = 'md', showTagline = false, className = '' }: BrandLogoProps) {
+  const pixelSizes = {
+    sm: { box: 28, svg: 16 },
+    md: { box: 36, svg: 20 },
+    lg: { box: 48, svg: 28 },
+    xl: { box: 64, svg: 38 }
+  };
+
   const iconSizes = {
     sm: 'w-7 h-7',
     md: 'w-9 h-9',
@@ -21,20 +28,43 @@ export default function BrandLogo({ size = 'md', showTagline = false, className 
     xl: 'text-3xl font-extrabold tracking-tight'
   };
 
+  const currentPixels = pixelSizes[size];
+
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       {/* Brand Icon Matching Reference Graphic */}
-      <div className={`${iconSizes[size]} rounded-2xl bg-gradient-to-br from-botanical-500 to-botanical-700 flex items-center justify-center text-white shadow-soft relative overflow-hidden flex-shrink-0`}>
+      <div 
+        style={{
+          width: `${currentPixels.box}px`,
+          height: `${currentPixels.box}px`,
+          minWidth: `${currentPixels.box}px`,
+          minHeight: `${currentPixels.box}px`,
+          maxWidth: `${currentPixels.box}px`,
+          maxHeight: `${currentPixels.box}px`,
+          display: 'flex',
+          flexShrink: 0
+        }}
+        className={`${iconSizes[size]} rounded-2xl bg-gradient-to-br from-botanical-500 to-botanical-700 flex items-center justify-center text-white shadow-soft relative overflow-hidden flex-shrink-0`}
+      >
         {/* Subtle leaf shine */}
-        <div className="absolute inset-0 bg-white/10 opacity-30 transform -rotate-45" />
+        <div className="absolute inset-0 bg-white/10 opacity-30 transform -rotate-45 pointer-events-none" />
         <svg
+          width={currentPixels.svg}
+          height={currentPixels.svg}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
+          stroke="#FFFFFF"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="w-3/5 h-3/5 text-ivory-50 transform -rotate-12"
+          style={{
+            width: `${currentPixels.svg}px`,
+            height: `${currentPixels.svg}px`,
+            maxWidth: `${currentPixels.svg}px`,
+            maxHeight: `${currentPixels.svg}px`,
+            display: 'block'
+          }}
+          className="text-ivory-50 transform -rotate-12 pointer-events-none"
         >
           {/* Stylized healthcare leaf with drop */}
           <path d="M12 2C6.5 2 2 6.5 2 12c0 4.5 3 8.3 7 9.5 0-3 1.5-6 4-7.5" />
