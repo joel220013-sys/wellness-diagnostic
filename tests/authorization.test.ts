@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+import { describe, test, expect } from 'vitest';
 import { requireRole } from '../src/lib/auth/authorization';
 import { NextRequest } from 'next/server';
 

@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+import { describe, test, expect } from 'vitest';
 import { BookingCreateSchema } from '../src/lib/validations';
 
 describe('Booking Integrity & Validation', () => {

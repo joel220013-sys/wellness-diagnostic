@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+import { describe, test, expect } from 'vitest';
 import { isValidRole, isPatient, isAdmin, isDriver } from '../src/lib/auth/roles';
 
 describe('Authentication & Role Validation', () => {

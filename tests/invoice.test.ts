@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+import { describe, test, expect } from 'vitest';
 import { calculateTotal } from '../src/lib/pricing/calculate-total';
 
 describe('Authoritative Server-Side Pricing & Invoicing (INR ₹)', () => {
