@@ -52,7 +52,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [drivers, setDrivers] = useState<DriverProfile[]>([]);
   const [selectedTests, setSelectedTests] = useState<DiagnosticTest[]>([]);
 
-  // Fetch live tests from Supabase backend API on mount
+  // Fetch live tests, packages, bookings, and invoices from Supabase backend API on mount
   useEffect(() => {
     fetch('/api/tests')
       .then((res) => (res.ok ? res.json() : null))
@@ -77,6 +77,105 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {});
+
+    // Live Bookings sync with automatic cross-device synchronization
+    const syncBookings = () => {
+      fetch('/api/bookings')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.data && Array.isArray(data.data)) {
+            const serverBookings: Booking[] = data.data;
+            setBookings((prev) => {
+              const serverRefs = new Set(serverBookings.map((b) => b.booking_reference || b.id));
+              // Detect any bookings that exist locally on this device (e.g. mobile) but not yet on server
+              const localUnsynced = prev.filter((b) => !serverRefs.has(b.booking_reference) && !serverRefs.has(b.id));
+
+              // If there are unsynced bookings, push them to the backend API so all devices see them!
+              if (localUnsynced.length > 0) {
+                localUnsynced.forEach((lb) => {
+                  fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      patient_id: lb.patient_id || 'user_patient_1',
+                      patient_name: lb.patient_name || 'Patient',
+                      patient_phone: lb.patient_phone || '',
+                      scheduled_date: lb.scheduled_date || new Date().toISOString().split('T')[0],
+                      scheduled_slot: lb.scheduled_slot || '07:30 AM – 09:00 AM',
+                      address_snapshot: {
+                        recipient_name: lb.address_snapshot?.recipient_name || lb.patient_name || 'Patient',
+                        phone: lb.address_snapshot?.phone || lb.patient_phone || '',
+                        address_line_1: lb.address_snapshot?.address_line_1 || 'Collection Address',
+                        city: lb.address_snapshot?.city || 'Davangere',
+                        postal_code: lb.address_snapshot?.postal_code || '577005',
+                        latitude: lb.address_snapshot?.latitude || 14.4644,
+                        longitude: lb.address_snapshot?.longitude || 75.9218,
+                      },
+                      items: (lb.items && lb.items.length > 0)
+                        ? lb.items.map((it) => ({
+                            test_id: it.test_id || 'test_pkg',
+                            item_name: it.item_name,
+                            unit_price: Math.round(it.unit_price || it.line_total || 0),
+                            quantity: it.quantity || 1,
+                            line_total: Math.round(it.line_total || 0),
+                          }))
+                        : (lb.tests || []).map((t) => ({
+                            test_id: t.id,
+                            item_name: t.name,
+                            unit_price: Math.round(t.price),
+                            quantity: 1,
+                            line_total: Math.round(t.price),
+                          })),
+                      subtotal: Math.round(lb.subtotal || lb.total_amount || 0),
+                      collection_fee: Math.round(lb.collection_fee || 0),
+                      tax_amount: 0,
+                      total_amount: Math.round(lb.total_amount || 0),
+                    }),
+                  }).catch(() => {});
+                });
+              }
+
+              const merged = [...serverBookings, ...localUnsynced];
+              try {
+                localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(merged));
+              } catch {}
+              return merged;
+            });
+          }
+        })
+        .catch(() => {});
+    };
+
+    syncBookings();
+
+    // Auto-refresh when switching tabs and every 8 seconds so Desktop & Mobile are always in sync
+    const interval = setInterval(syncBookings, 8000);
+    const onFocus = () => syncBookings();
+    window.addEventListener('focus', onFocus);
+
+    // Sync Invoices
+    fetch('/api/invoices')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setInvoices((prev) => {
+            const serverInvs: Invoice[] = data.data;
+            const serverNums = new Set(serverInvs.map((i) => i.invoice_number || i.id));
+            const localOnly = prev.filter((i) => !serverNums.has(i.invoice_number) && !serverNums.has(i.id));
+            const merged = [...serverInvs, ...localOnly];
+            try {
+              localStorage.setItem(STORAGE_KEY_INVOICES, JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   useEffect(() => {

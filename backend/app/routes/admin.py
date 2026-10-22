@@ -12,9 +12,9 @@ def get_admin_orders(
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None)
 ):
-    orders = DB["bookings"]
-    if status and status.upper() != "ALL":
-        orders = [o for o in orders if o.get("status") == status]
+    from app.routes.bookings import list_bookings
+    res = list_bookings(status=status)
+    orders = res.get("data", [])
         
     if search:
         s = search.lower()
@@ -33,7 +33,9 @@ def get_admin_orders(
 
 @router.get("/orders/{order_id}")
 def get_order_by_id(order_id: str):
-    for o in DB["bookings"]:
+    from app.routes.bookings import list_bookings
+    res = list_bookings()
+    for o in res.get("data", []):
         if o["id"] == order_id or o.get("booking_reference") == order_id:
             return {
                 "success": True,
@@ -43,12 +45,27 @@ def get_order_by_id(order_id: str):
 
 @router.patch("/orders/{order_id}")
 def update_order_status(order_id: str, payload: Dict[str, Any]):
+    from app.data import supabase_db
+    status_val = payload.get("status")
+    payment_val = payload.get("payment_status")
+    
+    if status_val:
+        supabase_db.execute(
+            "UPDATE public.bookings SET status = %s, updated_at = NOW() WHERE id = %s OR order_number = %s;",
+            (status_val, order_id, order_id)
+        )
+    if payment_val:
+        supabase_db.execute(
+            "UPDATE public.bookings SET payment_status = %s, updated_at = NOW() WHERE id = %s OR order_number = %s;",
+            (payment_val, order_id, order_id)
+        )
+
     for o in DB["bookings"]:
         if o["id"] == order_id or o.get("booking_reference") == order_id:
-            if "status" in payload:
-                o["status"] = payload["status"]
-            if "payment_status" in payload:
-                o["payment_status"] = payload["payment_status"]
+            if status_val:
+                o["status"] = status_val
+            if payment_val:
+                o["payment_status"] = payment_val
                 
             DB["events"].append({
                 "id": f"evt_{uuid.uuid4().hex[:6]}",
@@ -58,12 +75,9 @@ def update_order_status(order_id: str, payload: Dict[str, Any]):
                 "notes": f"Order status changed to {o.get('status')}",
                 "timestamp": datetime.utcnow().isoformat() + "Z"
             })
-            return {
-                "success": True,
-                "message": "Order updated successfully",
-                "data": o
-            }
-    raise HTTPException(status_code=404, detail="Order not found")
+            return {"success": True, "data": o}
+
+    return {"success": True, "message": "Order updated in database"}
 
 @router.post("/assignments")
 def assign_driver(payload: AssignmentCreateInput):
