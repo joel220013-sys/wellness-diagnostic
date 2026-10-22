@@ -1,8 +1,14 @@
 import os
 import urllib.parse
 from typing import Optional, List, Dict, Any
-import psycopg2
-from psycopg2.extras import RealDictCursor
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
+    psycopg2 = None
+    RealDictCursor = None
 
 # Get DATABASE_URL from environment or fallback to .env.local
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -18,7 +24,7 @@ if not DATABASE_URL:
                     break
 
 def get_connection():
-    if not DATABASE_URL:
+    if not PSYCOPG2_AVAILABLE or not DATABASE_URL:
         return None
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode="require", connect_timeout=5)
