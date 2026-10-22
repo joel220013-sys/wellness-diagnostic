@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import 'leaflet/dist/leaflet.css';
+
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+@theme {
+  --color-botanical-50: #F0F9F5;
+  --color-botanical-100: #DDF1E7;
+  --color-botanical-200: #BCE2D0;
+  --color-botanical-300: #8DCAB1;
+  --color-botanical-400: #53AC8D;
+  --color-botanical-500: #08784E;
+  --color-botanical-600: #066542;
+  --color-botanical-700: #065939;
+  --color-botanical-800: #09432D;
+  --color-botanical-900: #0D2319;
+  --color-botanical-950: #05140E;
+
+  --color-peach-50: #FFF7F2;
+  --color-peach-100: #FDEEE4;
+  --color-peach-200: #FBDCCB;
+  --color-peach-300: #F6B58D;
+  --color-peach-400: #F18C52;
+  --color-peach-500: #E86E2A;
+  --color-peach-600: #C95318;
+
+  --color-ivory-50: #FFFFFF;
+  --color-ivory-100: #FFFDF9;
+  --color-ivory-200: #FFF9F2;
+  --color-ivory-300: #F9F1E6;
+  --color-ivory-400: #F0E5D5;
+  --color-ivory-500: #E2D3BE;
+
+  --shadow-soft-sm: 0 2px 8px -1px rgba(13, 35, 25, 0.05);
+  --shadow-soft: 0 4px 20px -2px rgba(8, 120, 78, 0.07);
+  --shadow-soft-lg: 0 10px 30px -4px rgba(8, 120, 78, 0.1);
+  --shadow-soft-card: 0 2px 14px 0 rgba(0, 0, 0, 0.04);
+}
+
+:root {
+  --primary: #08784E;
+  --primary-dark: #065939;
+  --primary-light: #0A8F5D;
+  --peach: #F6B58D;
+  --peach-light: #FDEEE4;
+  --ivory: #FFF9F2;
+  --text-dark: #0D2319;
+  --text-muted: #53695E;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #FFF9F2;
+  color: #0D2319;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F4ECE1;
+}
+::-webkit-scrollbar-thumb {
+  background: #BFD7CC;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #08784E;
+}
+
+/* Print Styles for Lab Reports & Invoices */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print, header, footer, aside, nav, button {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
