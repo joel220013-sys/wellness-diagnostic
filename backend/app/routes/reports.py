@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any, Optional
-from app.data.mock_db import DB
+from app.data.store import DB
 
 router = APIRouter(prefix="/api/reports", tags=["Pathology Reports"])
 

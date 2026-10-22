@@ -11,15 +11,6 @@ import {
   BookingStatus, 
   LabReportResultItem 
 } from '@/types';
-import { 
-  TEST_PACKAGES, 
-  DIAGNOSTIC_PACKAGES, 
-  INITIAL_BOOKINGS, 
-  INITIAL_REPORTS, 
-  INITIAL_INVOICES, 
-  INITIAL_DRIVERS 
-} from '@/data/mockData';
-
 interface DataContextType {
   tests: DiagnosticTest[];
   packages: DiagnosticPackage[];
@@ -44,22 +35,43 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const STORAGE_KEY_TESTS = 'wellness_tests_data_v2';
-const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v2';
-const STORAGE_KEY_BOOKINGS = 'wellness_bookings_data_v2';
-const STORAGE_KEY_REPORTS = 'wellness_reports_data_v2';
-const STORAGE_KEY_INVOICES = 'wellness_invoices_data_v2';
-const STORAGE_KEY_DRIVERS = 'wellness_drivers_data_v2';
-const STORAGE_KEY_CART = 'wellness_cart_tests_v2';
+const STORAGE_KEY_TESTS = 'wellness_tests_data_v3';
+const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v3';
+const STORAGE_KEY_BOOKINGS = 'wellness_bookings_data_v3';
+const STORAGE_KEY_REPORTS = 'wellness_reports_data_v3';
+const STORAGE_KEY_INVOICES = 'wellness_invoices_data_v3';
+const STORAGE_KEY_DRIVERS = 'wellness_drivers_data_v3';
+const STORAGE_KEY_CART = 'wellness_cart_tests_v3';
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [tests, setTests] = useState<DiagnosticTest[]>(TEST_PACKAGES);
-  const [packages, setPackages] = useState<DiagnosticPackage[]>(DIAGNOSTIC_PACKAGES);
-  const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
-  const [reports, setReports] = useState<LabReport[]>(INITIAL_REPORTS);
-  const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
-  const [drivers, setDrivers] = useState<DriverProfile[]>(INITIAL_DRIVERS);
+  const [tests, setTests] = useState<DiagnosticTest[]>([]);
+  const [packages, setPackages] = useState<DiagnosticPackage[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [reports, setReports] = useState<LabReport[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [drivers, setDrivers] = useState<DriverProfile[]>([]);
   const [selectedTests, setSelectedTests] = useState<DiagnosticTest[]>([]);
+
+  // Fetch live tests from Supabase backend API on mount
+  useEffect(() => {
+    fetch('/api/tests')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setTests(data.data);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/packages')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setPackages(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try {
@@ -273,14 +285,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetAllDataToDefault = () => {
-    setTests(TEST_PACKAGES);
-    setPackages(DIAGNOSTIC_PACKAGES);
-    setBookings(INITIAL_BOOKINGS);
-    setReports(INITIAL_REPORTS);
-    setInvoices(INITIAL_INVOICES);
-    setDrivers(INITIAL_DRIVERS);
+    setBookings([]);
+    setReports([]);
+    setInvoices([]);
+    setDrivers([]);
     setSelectedTests([]);
     localStorage.removeItem(STORAGE_KEY_CART);
+    localStorage.removeItem(STORAGE_KEY_BOOKINGS);
+    localStorage.removeItem(STORAGE_KEY_REPORTS);
+    localStorage.removeItem(STORAGE_KEY_INVOICES);
   };
 
   return (

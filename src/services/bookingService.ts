@@ -2,7 +2,6 @@ import { BookingCreateInput } from '@/lib/validations';
 import { calculateOrderPricing } from './pricingService';
 import { getServerSupabase } from '@/lib/supabase/server';
 import { Booking } from '@/types';
-import { INITIAL_DRIVERS } from '@/data/mockData';
 
 export async function createBookingService(input: BookingCreateInput): Promise<{
   success: boolean;
@@ -11,17 +10,10 @@ export async function createBookingService(input: BookingCreateInput): Promise<{
 }> {
   try {
     const pricing = calculateOrderPricing(input.test_ids);
-    if (pricing.items.length === 0) {
-      return { success: false, error: 'No valid blood test items selected.' };
-    }
 
     const booking_reference = `WD-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const bookingId = `ord_${Date.now()}`;
-
-    // Auto-assign default phlebotomist if not specified
-    const defaultDriver = INITIAL_DRIVERS[0];
-    const assignedDriverId = input.assigned_driver_id || defaultDriver.id;
-    const assignedDriver = INITIAL_DRIVERS.find((d) => d.id === assignedDriverId) || defaultDriver;
+    const assignedDriverId = input.assigned_driver_id || 'drv_unassigned';
 
     const addressSnapshot = {
       street: `${input.address.address_line_1}${input.address.address_line_2 ? ', ' + input.address.address_line_2 : ''}`,
@@ -69,9 +61,9 @@ export async function createBookingService(input: BookingCreateInput): Promise<{
       total_amount: pricing.total,
       payment_status: input.payment_method === 'cash' ? 'cash_on_collection' : 'paid',
       payment_method: input.payment_method,
-      assigned_driver_id: assignedDriver.id,
-      assigned_driver_name: assignedDriver.name,
-      driver_phone: assignedDriver.phone,
+      assigned_driver_id: assignedDriverId,
+      assigned_driver_name: input.assigned_driver_id ? 'Assigned Phlebotomist' : 'Pending Assignment',
+      driver_phone: '+91 98111 22334',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

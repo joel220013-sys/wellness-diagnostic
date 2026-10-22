@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any, Optional
-from app.data.mock_db import DB
+from app.data.store import DB
 from app.models.schemas import AddressSchema
 
 router = APIRouter(prefix="/api/addresses", tags=["Patient Addresses"])

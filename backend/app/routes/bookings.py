@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any, Optional
-from app.data.mock_db import DB
+from app.data.store import DB
 from app.models.schemas import BookingCreateInput
 
 router = APIRouter(prefix="/api/bookings", tags=["Bookings & Home Collection"])

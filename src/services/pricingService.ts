@@ -1,5 +1,3 @@
-import { TEST_PACKAGES } from '@/data/mockData';
-
 export interface PricingCalculation {
   subtotal: number;
   collectionFee: number;
@@ -13,9 +11,13 @@ export interface PricingCalculation {
   }>;
 }
 
-export function calculateOrderPricing(testIds: string[]): PricingCalculation {
+export function calculateOrderPricing(
+  testIds: string[], 
+  availableItems?: Array<{ id: string; name: string; price: number }>
+): PricingCalculation {
+  const catalog = availableItems || [];
   const items = testIds
-    .map((id) => TEST_PACKAGES.find((pkg) => pkg.id === id))
+    .map((id) => catalog.find((pkg) => pkg.id === id))
     .filter((pkg): pkg is NonNullable<typeof pkg> => Boolean(pkg))
     .map((pkg) => ({
       id: pkg.id,

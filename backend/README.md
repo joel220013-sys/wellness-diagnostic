@@ -23,7 +23,8 @@ backend/
 │   │   ├── invoices.py     # /api/invoices billing & invoices
 │   │   └── geocode.py      # /api/geocode map coordinates proxy
 │   └── data/
-│       └── mock_db.py      # In-memory clinical seed & state storage
+│       ├── store.py        # Production clinical store
+│       └── supabase_db.py  # Supabase live PostgreSQL client connection
 ├── venv/                   # Python virtual environment
 ├── requirements.txt        # Python package dependencies
 ├── run.py                  # Server runner script

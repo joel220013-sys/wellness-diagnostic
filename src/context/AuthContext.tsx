@@ -2,8 +2,42 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SessionUser, UserRole } from '@/types';
-import { INITIAL_USERS } from '@/data/mockData';
 import { useRouter } from 'next/navigation';
+
+const INITIAL_USERS: SessionUser[] = [
+  {
+    id: 'user_patient_1',
+    name: 'Patient User',
+    email: 'patient@wellness.com',
+    phone: '+91 98765 43210',
+    role: 'patient',
+    patientId: 'WD-PT-001',
+    active: true,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'user_admin_1',
+    name: 'Medical Administrator',
+    email: 'admin@wellness.com',
+    phone: '+91 98765 12345',
+    role: 'admin',
+    badgeId: 'WD-ADM-001',
+    designation: 'Laboratory Director',
+    active: true,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'user_driver_1',
+    name: 'Phlebotomist Partner',
+    email: 'driver@wellness.com',
+    phone: '+91 98111 22334',
+    role: 'driver',
+    badgeId: 'WD-PHLEB-001',
+    designation: 'Senior Phlebotomist',
+    active: true,
+    createdAt: '2026-01-01T00:00:00Z',
+  }
+];
 
 interface AuthContextType {
   user: SessionUser | null;

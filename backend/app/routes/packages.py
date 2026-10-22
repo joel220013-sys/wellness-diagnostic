@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
-from app.data.mock_db import DB
+from app.data.store import get_live_packages
 
 router = APIRouter(prefix="/api/packages", tags=["Health Packages"])
 
 @router.get("")
 def get_packages():
-    pkgs = [p for p in DB["packages"] if p.get("active", True)]
+    pkgs = get_live_packages()
     return {
         "success": True,
         "count": len(pkgs),
@@ -15,8 +15,9 @@ def get_packages():
 
 @router.get("/{package_id}")
 def get_package_by_id(package_id: str):
-    for p in DB["packages"]:
-        if p["id"] == package_id or p.get("slug") == package_id:
+    pkgs = get_live_packages()
+    for p in pkgs:
+        if p.get("id") == package_id or p.get("slug") == package_id:
             return {
                 "success": True,
                 "data": p

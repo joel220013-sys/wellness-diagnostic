@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, 
   Plus, 
@@ -16,55 +16,32 @@ import { useAuth } from '@/context/AuthContext';
 import AddressMapPickerWrapper from '@/components/map/AddressMapPickerWrapper';
 import { AddressInput } from '@/lib/validations';
 
-const INITIAL_SAVED_ADDRESSES: AddressInput[] = [
-  {
-    id: 'addr_1',
-    recipient_name: 'Sarah Jenkins',
-    recipient_phone: '+91 98765 43210',
-    phone: '+91 98765 43210',
-    label: 'Home',
-    address_line_1: 'Tower B, Flat 402, Greenfield Residences',
-    address_line_2: 'Golf Course Extension Road',
-    locality: 'Sector 65',
-    city: 'Gurugram',
-    state: 'Haryana',
-    postal_code: '122018',
-    latitude: 28.4022,
-    longitude: 77.0654,
-    landmark: 'Near Club House Gate 2',
-    access_instructions: 'Ring doorbell twice. Phlebotomist kit disinfection at entrance.',
-    is_default: true
-  },
-  {
-    id: 'addr_2',
-    recipient_name: 'Sarah Jenkins',
-    recipient_phone: '+91 98765 43210',
-    phone: '+91 98765 43210',
-    label: 'Work',
-    address_line_1: 'Cyber Hub Building 10, 6th Floor',
-    address_line_2: 'DLF Phase 2',
-    locality: 'DLF Cyber City',
-    city: 'Gurugram',
-    state: 'Haryana',
-    postal_code: '122002',
-    latitude: 28.4952,
-    longitude: 77.0892,
-    landmark: 'Opposite Cyber Hub Amphitheatre',
-    access_instructions: 'Inform reception for guest pass.',
-    is_default: false
-  }
-];
+const STORAGE_KEY_PATIENT_ADDR = 'wellness_patient_addresses_v3';
 
 export default function PatientAddressesPage() {
   const { user } = useAuth();
-  const [addresses, setAddresses] = useState<AddressInput[]>(INITIAL_SAVED_ADDRESSES);
+  const [addresses, setAddresses] = useState<AddressInput[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_PATIENT_ADDR);
+      if (saved) setAddresses(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const updateAddressesState = (newAddrs: AddressInput[]) => {
+    setAddresses(newAddrs);
+    try {
+      localStorage.setItem(STORAGE_KEY_PATIENT_ADDR, JSON.stringify(newAddrs));
+    } catch {}
+  };
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<AddressInput | null>(null);
 
   const handleSetDefault = (id?: string) => {
     if (!id) return;
-    setAddresses((prev) =>
-      prev.map((addr) => ({
+    updateAddressesState(
+      addresses.map((addr) => ({
         ...addr,
         is_default: addr.id === id
       }))
@@ -74,15 +51,15 @@ export default function PatientAddressesPage() {
   const handleDeleteAddress = (id?: string) => {
     if (!id) return;
     if (confirm('Are you sure you want to delete this saved collection address?')) {
-      setAddresses((prev) => prev.filter((a) => a.id !== id));
+      updateAddressesState(addresses.filter((a) => a.id !== id));
     }
   };
 
   const handleSaveAddress = (address: AddressInput) => {
     if (editingAddress?.id) {
       // Edit
-      setAddresses((prev) =>
-        prev.map((a) => (a.id === editingAddress.id ? { ...address, id: editingAddress.id } : a))
+      updateAddressesState(
+        addresses.map((a) => (a.id === editingAddress.id ? { ...address, id: editingAddress.id } : a))
       );
     } else {
       // Add new
@@ -91,7 +68,7 @@ export default function PatientAddressesPage() {
         id: `addr_${Date.now()}`,
         is_default: addresses.length === 0
       };
-      setAddresses((prev) => [...prev, newAddress]);
+      updateAddressesState([...addresses, newAddress]);
     }
     setShowAddModal(false);
     setEditingAddress(null);
@@ -131,8 +108,29 @@ export default function PatientAddressesPage() {
         </button>
       </div>
 
-      {/* Address Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Address Grid or Clean Empty State */}
+      {addresses.length === 0 ? (
+        <div className="bg-white rounded-3xl p-10 text-center border border-dashed border-ivory-300 shadow-soft-sm">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-botanical-50 flex items-center justify-center text-botanical-600">
+            <MapPin className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-botanical-950 mb-1">No Saved Addresses Yet</h3>
+          <p className="text-xs sm:text-sm text-botanical-700/80 max-w-md mx-auto mb-5">
+            Add and pinpoint your home or work address for effortless doorstep phlebotomy sample collections.
+          </p>
+          <button
+            onClick={() => {
+              setEditingAddress(null);
+              setShowAddModal(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Your First Address</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {addresses.map((addr) => (
           <div
             key={addr.id}
@@ -212,6 +210,7 @@ export default function PatientAddressesPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Add / Edit Address Modal with Interactive Map */}
       {showAddModal && (
