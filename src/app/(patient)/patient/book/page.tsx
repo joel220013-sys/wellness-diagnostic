@@ -196,7 +196,7 @@ export default function BookCollectionPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
+    <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Stepper Header */}
       <div className="space-y-4">
         <div>
@@ -406,42 +406,53 @@ export default function BookCollectionPage() {
       {/* STEP 3: PATIENT & INTERACTIVE MAP ADDRESS */}
       {currentStep === 3 && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-6">
-            <h2 className="text-lg font-bold text-botanical-950">Patient Details</h2>
+          {/* Patient Details */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-ivory-300 shadow-soft-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-botanical-950">Patient Details</h2>
+                <p className="text-xs text-botanical-700/80">Information for diagnostic lab test record and sample vial barcode</p>
+              </div>
+              <span className="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-ivory-100 text-botanical-800 border border-ivory-200">
+                Step 3 of 4
+              </span>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-bold text-botanical-900 mb-1">Patient Full Name</label>
+                <label className="block text-xs font-bold text-botanical-900 mb-1">Patient Full Name *</label>
                 <input
                   type="text"
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold"
+                  placeholder="Full Name"
+                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-botanical-900 mb-1">Contact Phone</label>
+                <label className="block text-xs font-bold text-botanical-900 mb-1">Contact Phone *</label>
                 <input
                   type="text"
                   value={patientPhone}
                   onChange={(e) => setPatientPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold"
+                  placeholder="+91 98765 43210"
+                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-botanical-900 mb-1">Age</label>
+                <label className="block text-xs font-bold text-botanical-900 mb-1">Age *</label>
                 <input
                   type="number"
                   value={patientAge}
                   onChange={(e) => setPatientAge(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold"
+                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-botanical-500 bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-botanical-900 mb-1">Gender</label>
+                <label className="block text-xs font-bold text-botanical-900 mb-1">Gender *</label>
                 <select
                   value={patientGender}
                   onChange={(e) => setPatientGender(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
                 >
                   <option value="Female">Female</option>
                   <option value="Male">Male</option>
@@ -451,40 +462,20 @@ export default function BookCollectionPage() {
             </div>
           </div>
 
-          {/* Interactive Leaflet Map Address Picker */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-botanical-950">Sample Collection Address & Map Location</h2>
-                <p className="text-xs text-botanical-700/80">
-                  Search address or drag the pin to your exact building entrance for effortless phlebotomist navigation.
-                </p>
-              </div>
-            </div>
-
-            <AddressMapPickerWrapper
-              initialAddress={confirmedAddress}
-              onConfirmAddress={handleConfirmAddressFromMap}
-            />
-
-            <div className="pt-4">
-              <label className="block text-xs font-bold text-botanical-900 mb-1">
-                Special Phlebotomy Instructions / Landmark Notes (Optional)
-              </label>
-              <textarea
-                rows={2}
-                value={patientNotes}
-                onChange={(e) => setPatientNotes(e.target.value)}
-                placeholder="e.g. Elderly patient, please call before arriving, building lift is on left side."
-                className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs font-normal"
-              />
-            </div>
-          </div>
+          {/* Interactive Leaflet Map Address Picker (Standalone 2-Column Component) */}
+          <AddressMapPickerWrapper
+            initialAddress={{
+              ...confirmedAddress,
+              recipient_name: patientName || confirmedAddress.recipient_name,
+              recipient_phone: patientPhone || confirmedAddress.recipient_phone,
+            }}
+            onConfirmAddress={handleConfirmAddressFromMap}
+          />
 
           <div className="flex items-center justify-between pt-2">
             <button
               onClick={() => setCurrentStep(2)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-botanical-800 bg-ivory-100 hover:bg-ivory-200"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-botanical-800 bg-ivory-100 hover:bg-ivory-200 border border-ivory-300 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Slot</span>
@@ -493,7 +484,7 @@ export default function BookCollectionPage() {
             <button
               disabled={!canProceedStep3}
               onClick={() => setCurrentStep(4)}
-              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white font-bold text-sm shadow-soft"
+              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white font-bold text-sm shadow-soft transition-all"
             >
               <span>Review Order Breakdown</span>
               <ArrowRight className="w-4 h-4" />

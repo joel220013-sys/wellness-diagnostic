@@ -86,14 +86,16 @@ export default function PatientLayout({
   return (
     <div className="min-h-screen bg-[#FFF9F2] flex flex-col">
       <BrandHeader portalRole="patient" />
-      <div className="flex-1 flex max-w-7xl mx-auto w-full">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
+      <div className="flex-1 flex w-full">
+        {/* Desktop Sidebar - Docked to left edge */}
+        <div className="hidden lg:block w-64 flex-shrink-0">
           <PatientSidebar />
         </div>
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
-          {children}
+          <div className="max-w-[1400px] w-full mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

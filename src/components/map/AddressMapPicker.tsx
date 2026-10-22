@@ -22,8 +22,8 @@ interface AddressMapPickerProps {
   savedAddresses?: AddressInput[];
 }
 
-// Default initial location: Springfield / Portland Oregon area (44.0521, -123.0868)
-const DEFAULT_COORDS = { lat: 44.0521, lng: -123.0868 };
+// Default initial location: Gurugram / Delhi NCR (28.4595, 77.0266)
+const DEFAULT_COORDS = { lat: 28.4595, lng: 77.0266 };
 
 export default function AddressMapPicker({
   initialAddress,
@@ -44,20 +44,20 @@ export default function AddressMapPicker({
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [reverseGeocodedText, setReverseGeocodedText] = useState(
-    initialAddress?.address_line_1 ? `${initialAddress.address_line_1}, ${initialAddress.city || ''}` : 'Springfield Center, OR 97477'
+    initialAddress?.address_line_1 ? `${initialAddress.address_line_1}, ${initialAddress.city || ''}` : 'Sector 65, Golf Course Extension Road, Gurugram, Haryana 122018'
   );
 
   // Address details form fields
-  const [recipientName, setRecipientName] = useState(initialAddress?.recipient_name || 'Sarah Jenkins');
-  const [recipientPhone, setRecipientPhone] = useState(initialAddress?.recipient_phone || '+1 (555) 234-5678');
-  const [addressLine1, setAddressLine1] = useState(initialAddress?.address_line_1 || '742 Evergreen Terrace');
-  const [addressLine2, setAddressLine2] = useState(initialAddress?.address_line_2 || 'Apt 4B');
-  const [landmark, setLandmark] = useState(initialAddress?.landmark || 'Near Springfield Elementary');
-  const [city, setCity] = useState(initialAddress?.city || 'Springfield');
-  const [state, setState] = useState(initialAddress?.state || 'OR');
-  const [postalCode, setPostalCode] = useState(initialAddress?.postal_code || '97477');
+  const [recipientName, setRecipientName] = useState(initialAddress?.recipient_name || 'Patient');
+  const [recipientPhone, setRecipientPhone] = useState(initialAddress?.recipient_phone || '+91 98765 43210');
+  const [addressLine1, setAddressLine1] = useState(initialAddress?.address_line_1 || 'Tower B, Flat 402, Greenfield Residences');
+  const [addressLine2, setAddressLine2] = useState(initialAddress?.address_line_2 || 'Golf Course Extension Road');
+  const [landmark, setLandmark] = useState(initialAddress?.landmark || 'Near Clubhouse Gate 2');
+  const [city, setCity] = useState(initialAddress?.city || 'Gurugram');
+  const [state, setState] = useState(initialAddress?.state || 'Haryana');
+  const [postalCode, setPostalCode] = useState(initialAddress?.postal_code || '122018');
   const [accessInstructions, setAccessInstructions] = useState(
-    initialAddress?.access_instructions || 'Ring intercom 04. Elevator available.'
+    initialAddress?.access_instructions || 'Ring doorbell twice. Phlebotomist kit disinfection.'
   );
   const [label, setLabel] = useState<'Home' | 'Work' | 'Other'>(
     (initialAddress?.label as 'Home' | 'Work' | 'Other') || 'Home'
@@ -277,14 +277,14 @@ export default function AddressMapPicker({
   return (
     <div className="bg-white rounded-3xl border border-ivory-300 shadow-soft overflow-hidden">
       {/* Header Bar */}
-      <div className="p-4 sm:p-6 border-b border-ivory-200 bg-ivory-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 sm:p-5 border-b border-ivory-200 bg-ivory-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-botanical-600">
-            Step 3 of 4 — Collection Location
+          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-botanical-600">
+            Sample Collection Location
           </span>
-          <h3 className="text-xl font-extrabold text-botanical-950 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-extrabold text-botanical-950 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-botanical-500" />
-            <span>Select Home Collection Address</span>
+            <span>Select Home Collection Address & Pin Location</span>
           </h3>
         </div>
 
@@ -293,7 +293,7 @@ export default function AddressMapPicker({
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={isGeolocating}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-botanical-50 text-botanical-700 hover:bg-botanical-100 border border-botanical-200 text-xs sm:text-sm font-bold transition-all shadow-soft-sm disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-botanical-50 text-botanical-700 hover:bg-botanical-100 border border-botanical-200 text-xs font-bold transition-all shadow-soft-sm disabled:opacity-50"
         >
           {isGeolocating ? (
             <Loader2 className="w-4 h-4 animate-spin text-botanical-600" />
@@ -304,239 +304,248 @@ export default function AddressMapPicker({
         </button>
       </div>
 
-      {/* Search Input Bar */}
-      <div className="p-4 sm:px-6 bg-white border-b border-ivory-200">
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-botanical-500">
-              <Search className="w-4 h-4" />
+      {/* Responsive Desktop 2-Column Split: Map on Left (7 cols), Form on Right (5 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:divide-x divide-ivory-200">
+        {/* Left Column: Search & Interactive Leaflet Map Canvas */}
+        <div className="lg:col-span-7 flex flex-col bg-ivory-50/30">
+          {/* Search Input Bar */}
+          <div className="p-3.5 sm:p-4 bg-white border-b border-ivory-200">
+            <form onSubmit={handleSearchSubmit} className="flex gap-2">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-botanical-500">
+                  <Search className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search apartment, locality, street or postal code..."
+                  className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-ivory-50/30"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSearching}
+                className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm transition-colors flex items-center gap-1.5 flex-shrink-0"
+              >
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search Area'}
+              </button>
+            </form>
+
+            {geoError && (
+              <div className="mt-2.5 p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{geoError}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Leaflet Interactive Map Canvas */}
+          <div className="relative w-full h-[320px] lg:h-[440px] bg-ivory-100 z-10 flex-1 min-h-[300px]">
+            <div ref={mapContainerRef} className="w-full h-full" />
+            
+            {/* Floating coordinates badge */}
+            <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-ivory-300 shadow-soft-sm text-[10px] sm:text-[11px] text-botanical-900 font-mono">
+              <span className="font-bold text-botanical-600">GPS:</span> {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
             </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search apartment, locality, street or postal code..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-ivory-50/30"
-            />
+
+            {/* Floating instructions badge */}
+            <div className="absolute top-3 left-3 z-[1000] bg-botanical-900/90 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-soft text-[11px] flex items-center gap-1.5">
+              <Info className="w-3 h-3 text-peach-300" />
+              <span>Click or drag marker to pinpoint doorway</span>
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="px-4 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm transition-colors flex items-center gap-1.5 flex-shrink-0"
-          >
-            {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search Area'}
-          </button>
+
+          {/* Selected Location Banner */}
+          <div className="p-3 bg-botanical-50/70 border-t border-botanical-100 flex items-start gap-2.5">
+            <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <span className="text-[10px] font-bold text-botanical-700 uppercase tracking-wider block">
+                Selected Map Location
+              </span>
+              <p className="text-xs font-semibold text-botanical-950 truncate">
+                {reverseGeocodedText}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Address Details Form */}
+        <form onSubmit={handleSubmitConfirmation} className="lg:col-span-5 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-white">
+          <div className="space-y-3">
+            {/* Address Label Selection */}
+            <div>
+              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                Address Tag
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { id: 'Home', label: 'Home', icon: Home },
+                  { id: 'Work', label: 'Work', icon: Briefcase },
+                  { id: 'Other', label: 'Other', icon: Building },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setLabel(item.id as any)}
+                      className={`flex-1 py-1.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                        label === item.id
+                          ? 'bg-botanical-500 border-botanical-500 text-white shadow-soft-sm'
+                          : 'bg-white border-ivory-300 text-botanical-800 hover:bg-ivory-50'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recipient Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                  Recipient Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="e.g. Patient Name"
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                  Mobile (For Phlebotomist) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={recipientPhone}
+                  onChange={(e) => setRecipientPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Address Line 1 */}
+            <div>
+              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                House / Flat / Building No. *
+              </label>
+              <input
+                type="text"
+                required
+                value={addressLine1}
+                onChange={(e) => setAddressLine1(e.target.value)}
+                placeholder="e.g. Tower B, Flat 402, Greenfield Residences"
+                className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+              />
+            </div>
+
+            {/* Address Line 2 */}
+            <div>
+              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                Floor, Locality or Society (Optional)
+              </label>
+              <input
+                type="text"
+                value={addressLine2}
+                onChange={(e) => setAddressLine2(e.target.value)}
+                placeholder="e.g. Golf Course Extension Road, Sector 65"
+                className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+              />
+            </div>
+
+            {/* Landmark, City & Postal Code */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                  Landmark
+                </label>
+                <input
+                  type="text"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  placeholder="Near Gate 2"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                  City *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Gurugram"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                  PIN Code *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="122018"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Access Instructions for Phlebotomist */}
+            <div>
+              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+                Phlebotomist Gate Instructions (Optional)
+              </label>
+              <input
+                type="text"
+                value={accessInstructions}
+                onChange={(e) => setAccessInstructions(e.target.value)}
+                placeholder="e.g. Ring doorbell twice, kit disinfection at entrance"
+                className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+              />
+            </div>
+
+            {/* Save as default checkbox */}
+            <div className="flex items-center gap-2 pt-0.5">
+              <input
+                type="checkbox"
+                id="isDefaultAddress"
+                checked={isDefault}
+                onChange={(e) => setIsDefault(e.target.checked)}
+                className="rounded text-botanical-500 focus:ring-botanical-500 h-3.5 w-3.5"
+              />
+              <label htmlFor="isDefaultAddress" className="text-[11px] text-botanical-800 font-medium">
+                Save as default collection address
+              </label>
+            </div>
+          </div>
+
+          {/* Confirmation Button */}
+          <div className="pt-3 border-t border-ivory-200">
+            <button
+              type="submit"
+              className="w-full py-2.5 px-4 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-bold text-xs sm:text-sm shadow-soft flex items-center justify-center gap-2 transition-all"
+            >
+              <Check className="w-4 h-4" />
+              <span>Confirm & Use This Collection Address</span>
+            </button>
+          </div>
         </form>
-
-        {geoError && (
-          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            <span>{geoError}</span>
-          </div>
-        )}
       </div>
-
-      {/* Leaflet Interactive Map Canvas */}
-      <div className="relative w-full h-[320px] sm:h-[380px] bg-ivory-100 z-10">
-        <div ref={mapContainerRef} className="w-full h-full" />
-        
-        {/* Floating coordinates badge */}
-        <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-ivory-300 shadow-soft-sm text-[11px] text-botanical-900 font-mono">
-          <span className="font-bold text-botanical-600">GPS:</span> {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-        </div>
-
-        {/* Floating instructions badge */}
-        <div className="absolute top-3 left-3 z-[1000] bg-botanical-900/90 text-white backdrop-blur-md px-3 py-1.5 rounded-xl shadow-soft text-xs flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 text-peach-300" />
-          <span>Click anywhere or drag marker to set exact home door</span>
-        </div>
-      </div>
-
-      {/* Selected Location Banner */}
-      <div className="p-4 bg-botanical-50/60 border-y border-botanical-100 flex items-start gap-3">
-        <MapPin className="w-5 h-5 text-botanical-600 flex-shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <span className="text-[11px] font-bold text-botanical-700 uppercase tracking-wider block">
-            Selected Pin Location
-          </span>
-          <p className="text-xs sm:text-sm font-semibold text-botanical-950 line-clamp-2">
-            {reverseGeocodedText}
-          </p>
-        </div>
-      </div>
-
-      {/* Additional Details Form */}
-      <form onSubmit={handleSubmitConfirmation} className="p-4 sm:p-6 space-y-4">
-        {/* Address Label Selection */}
-        <div>
-          <label className="block text-xs font-bold text-botanical-900 mb-1.5">
-            Address Label
-          </label>
-          <div className="flex gap-2">
-            {[
-              { id: 'Home', label: 'Home', icon: Home },
-              { id: 'Work', label: 'Work', icon: Briefcase },
-              { id: 'Other', label: 'Other', icon: Building },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setLabel(item.id as any)}
-                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    label === item.id
-                      ? 'bg-botanical-500 border-botanical-500 text-white shadow-soft-sm'
-                      : 'bg-white border-ivory-300 text-botanical-800 hover:bg-ivory-50'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Recipient Details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              Patient / Contact Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-              placeholder="e.g. Sarah Jenkins"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              Mobile Number (for Phlebotomist) *
-            </label>
-            <input
-              type="tel"
-              required
-              value={recipientPhone}
-              onChange={(e) => setRecipientPhone(e.target.value)}
-              placeholder="+1 (555) 234-5678"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-        </div>
-
-        {/* Address Lines */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              House / Flat / Building No. *
-            </label>
-            <input
-              type="text"
-              required
-              value={addressLine1}
-              onChange={(e) => setAddressLine1(e.target.value)}
-              placeholder="e.g. 742 Evergreen Terrace"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              Floor, Apartment or Suite (Optional)
-            </label>
-            <input
-              type="text"
-              value={addressLine2}
-              onChange={(e) => setAddressLine2(e.target.value)}
-              placeholder="e.g. Apt 4B, 2nd Floor"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              Landmark
-            </label>
-            <input
-              type="text"
-              value={landmark}
-              onChange={(e) => setLandmark(e.target.value)}
-              placeholder="e.g. Near Elementary School"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              City *
-            </label>
-            <input
-              type="text"
-              required
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Springfield"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-botanical-900 mb-1">
-              Postal Code *
-            </label>
-            <input
-              type="text"
-              required
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              placeholder="97477"
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-            />
-          </div>
-        </div>
-
-        {/* Access Instructions for Phlebotomist */}
-        <div>
-          <label className="block text-xs font-bold text-botanical-900 mb-1">
-            Access Instructions for Sample Collector (Optional)
-          </label>
-          <input
-            type="text"
-            value={accessInstructions}
-            onChange={(e) => setAccessInstructions(e.target.value)}
-            placeholder="e.g. Gate code #1294, call on arrival, elevator located on right"
-            className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-          />
-        </div>
-
-        {/* Save as default checkbox */}
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            type="checkbox"
-            id="isDefaultAddress"
-            checked={isDefault}
-            onChange={(e) => setIsDefault(e.target.checked)}
-            className="rounded text-botanical-500 focus:ring-botanical-500"
-          />
-          <label htmlFor="isDefaultAddress" className="text-xs text-botanical-800 font-medium">
-            Save as default collection address for future bookings
-          </label>
-        </div>
-
-        {/* Confirmation Button */}
-        <div className="pt-4 border-t border-ivory-200 flex justify-end">
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-bold text-sm shadow-soft flex items-center justify-center gap-2 transition-all"
-          >
-            <Check className="w-4 h-4" />
-            <span>Confirm Collection Address & Continue</span>
-          </button>
-        </div>
-      </form>
     </div>
   );
 }
