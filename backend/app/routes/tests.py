@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List, Dict, Any
 from app.data.mock_db import DB
+from app.data import supabase_db
 
 router = APIRouter(prefix="/api/tests", tags=["Diagnostic Tests"])
 
@@ -9,7 +10,12 @@ def get_tests(
     category: Optional[str] = Query(None, description="Filter tests by category"),
     search: Optional[str] = Query(None, description="Search term in test name or description")
 ):
-    tests = [t for t in DB["tests"] if t.get("active", True)]
+    # Try fetching directly from live Supabase
+    supabase_tests = supabase_db.fetch_all("SELECT * FROM public.tests WHERE is_active = true ORDER BY name ASC;")
+    if supabase_tests:
+        tests = supabase_tests
+    else:
+        tests = [t for t in DB["tests"] if t.get("active", True)]
     
     if category and category.upper() != "ALL":
         tests = [t for t in tests if t.get("category", "").lower() == category.lower()]
@@ -24,6 +30,7 @@ def get_tests(
     return {
         "success": True,
         "count": len(tests),
+        "source": "supabase" if supabase_tests else "local",
         "data": tests
     }
 

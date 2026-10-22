@@ -39,10 +39,17 @@ def root():
 
 @app.get("/api/health")
 def health_check():
+    from app.data import supabase_db
+    conn = supabase_db.get_connection()
+    is_supabase = conn is not None
+    if conn:
+        conn.close()
     return {
         "status": "healthy",
-        "database": "connected",
-        "timestamp": "2026-10-21T23:55:00Z"
+        "database": "supabase_postgresql" if is_supabase else "local_in_memory",
+        "supabase_connected": is_supabase,
+        "region": "ap-northeast-2 (Seoul)",
+        "timestamp": "2026-10-22T10:50:00Z"
     }
 
 if __name__ == "__main__":
