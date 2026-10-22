@@ -13,7 +13,41 @@ export default function TestDetailPage() {
   const { tests, toggleSelectTest, isTestSelected } = useData();
 
   const testId = params?.id as string;
-  const test = tests.find((t) => t.id === testId || t.slug === testId) || tests[0];
+  const test = tests.find((t) => t.id === testId || t.slug === testId);
+
+  if (!test) {
+    return (
+      <div className="min-h-screen bg-ivory-200 text-botanical-900 flex flex-col justify-between">
+        <header className="bg-white/80 backdrop-blur-md border-b border-ivory-300 sticky top-0 z-40 px-4 sm:px-6 py-3.5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <BrandLogo size="md" />
+            <Link
+              href="/tests"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-botanical-800 hover:text-botanical-600"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to All Tests</span>
+            </Link>
+          </div>
+        </header>
+        <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-12 flex-1 text-center">
+          <div className="bg-white rounded-3xl p-8 border border-ivory-300 shadow-soft max-w-md mx-auto">
+            <h2 className="text-lg font-bold text-botanical-950 mb-2">Loading Diagnostic Test...</h2>
+            <p className="text-xs text-botanical-700/80 mb-6">
+              Fetching clinical test details and preparation requirements.
+            </p>
+            <Link
+              href="/tests"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>View All Tests</span>
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const isSelected = isTestSelected(test.id);
 

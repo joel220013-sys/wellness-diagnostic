@@ -22,6 +22,5 @@ def get_live_tests() -> List[Dict[str, Any]]:
 
 def get_live_packages() -> List[Dict[str, Any]]:
     """Fetch live diagnostic health packages from Supabase PostgreSQL database."""
-    # Packages can be fetched from tests categorized as package or packages table
-    packages = supabase_db.fetch_all("SELECT * FROM public.tests WHERE category ILIKE '%package%' OR category ILIKE '%checkup%' AND is_active = true;")
+    packages = supabase_db.fetch_all("SELECT * FROM public.tests WHERE category ILIKE '%%package%%' OR category ILIKE '%%checkup%%' OR category = 'Full Body' AND is_active = true;")
     return packages or []
