@@ -15,7 +15,8 @@ import {
   Plus, 
   Info,
   CalendarCheck,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -23,6 +24,19 @@ import { calculateOrderPricing } from '@/services/pricingService';
 import AddressMapPickerWrapper from '@/components/map/AddressMapPickerWrapper';
 import { AddressInput } from '@/lib/validations';
 import { DiagnosticTest } from '@/types';
+
+const BOOK_CATEGORIES = [
+  'All',
+  'Full Body Checkups',
+  'Health Packages',
+  'Aarogyam',
+  'Blood Test',
+  'Diabetes',
+  'Thyroid',
+  'Lipid',
+  'Jaanch Packages',
+  'Vitamins',
+];
 
 const COLLECTION_SLOTS = [
   '06:00 AM – 07:30 AM (Early Fasting)',
@@ -52,6 +66,26 @@ export default function BookCollectionPage() {
     return tomorrow.toISOString().split('T')[0];
   });
   const [selectedSlot, setSelectedSlot] = useState<string>(COLLECTION_SLOTS[1]);
+  const [testSearch, setTestSearch] = useState('');
+  const [testCategory, setTestCategory] = useState('All');
+
+  const filteredTests = tests.filter((t) => {
+    const q = testSearch.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      t.name.toLowerCase().includes(q) ||
+      t.category.toLowerCase().includes(q) ||
+      (t.description && t.description.toLowerCase().includes(q));
+
+    const matchesCategory =
+      testCategory === 'All' ||
+      (testCategory === 'Aarogyam' && (t.name.toLowerCase().includes('aarogyam') || t.category.toLowerCase().includes('aarogyam'))) ||
+      (testCategory === 'Full Body Checkups' && (t.category.toLowerCase().includes('package') || t.category.toLowerCase().includes('checkup') || t.name.toLowerCase().includes('aarogyam'))) ||
+      (testCategory === 'Health Packages' && (t.category.toLowerCase().includes('package') || t.category.toLowerCase().includes('checkup'))) ||
+      t.category.toLowerCase().includes(testCategory.toLowerCase());
+
+    return matchesSearch && matchesCategory;
+  });
 
   // Patient & Address state
   const [patientName, setPatientName] = useState(user?.name || '');
@@ -236,77 +270,142 @@ export default function BookCollectionPage() {
       {/* STEP 1: SELECT TESTS */}
       {currentStep === 1 && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-botanical-950">
-              Select Tests & Diagnostic Profiles ({selectedTests.length} Selected)
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-botanical-950">
+                Select Tests & Diagnostic Profiles ({selectedTests.length} Selected)
+              </h2>
+              <p className="text-xs text-botanical-700/80">
+                Certified Thyrocare Davangere catalog with 190+ blood tests, health packages & Aarogyam profiles.
+              </p>
+            </div>
             {selectedTests.length > 0 && (
               <button
                 onClick={clearSelectedTests}
-                className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700 self-start sm:self-auto"
               >
-                Clear Selections
+                Clear Selections ({selectedTests.length})
               </button>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tests.map((test) => {
-              const isSelected = selectedTests.some((t) => t.id === test.id);
-              return (
-                <div
-                  key={test.id}
-                  onClick={() => toggleSelectTest(test)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-botanical-50/60 border-botanical-500 shadow-soft-sm ring-1 ring-botanical-500'
-                      : 'bg-white border-ivory-300 hover:border-botanical-300'
+          {/* Search Bar & Category Filters */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-botanical-600/60 pointer-events-none" />
+              <input
+                type="text"
+                value={testSearch}
+                onChange={(e) => setTestSearch(e.target.value)}
+                placeholder="Search tests or packages (e.g. Aarogyam, Thyroid, Sugar, CBC, Lipid)..."
+                className="w-full pl-10 pr-16 py-2.5 rounded-xl border border-ivory-300 bg-white text-xs sm:text-sm text-botanical-950 placeholder:text-botanical-700/40 focus:outline-none focus:border-botanical-500 shadow-soft-sm"
+              />
+              {testSearch && (
+                <button
+                  type="button"
+                  onClick={() => setTestSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-botanical-600 hover:text-botanical-800"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Category horizontal scrolling pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {BOOK_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setTestCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                    testCategory === cat
+                      ? 'bg-botanical-500 text-white shadow-soft'
+                      : 'bg-white text-botanical-800 border border-ivory-300 hover:bg-ivory-100'
                   }`}
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-ivory-200 text-botanical-800">
-                          {test.category}
-                        </span>
-                        <h3 className="text-base font-bold text-botanical-950 mt-1">{test.name}</h3>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-base font-extrabold text-botanical-600">₹{test.price}</p>
-                        {test.original_price && (
-                          <p className="text-xs text-botanical-700/60 line-through">₹{test.original_price}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-botanical-700/80 line-clamp-2">{test.description}</p>
-
-                    <div className="flex items-center gap-4 text-[11px] text-botanical-800/70 pt-1">
-                      <span>Turnaround: <strong>{test.turnaround_description}</strong></span>
-                      <span>•</span>
-                      <span>Sample: <strong>{test.sample_type}</strong></span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 mt-3 border-t border-ivory-200/80 flex items-center justify-between">
-                    <span className="text-[11px] text-botanical-700/70 italic">
-                      {test.preparation_instructions || 'No special fasting needed'}
-                    </span>
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        isSelected
-                          ? 'bg-botanical-600 text-white'
-                          : 'bg-ivory-100 text-botanical-900 hover:bg-botanical-50'
-                      }`}
-                    >
-                      {isSelected ? 'Selected ✓' : '+ Select Test'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Results count info */}
+          <div className="text-xs text-botanical-700/70">
+            Showing <strong>{filteredTests.length}</strong> available diagnostic item{filteredTests.length === 1 ? '' : 's'}
+          </div>
+
+          {filteredTests.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-ivory-300 p-8 text-center space-y-3">
+              <p className="text-sm font-semibold text-botanical-950">No tests or packages match &quot;{testSearch}&quot;</p>
+              <p className="text-xs text-botanical-700/70">Try searching for generic terms like &quot;Lipid&quot;, &quot;Aarogyam&quot;, or &quot;Fasting&quot;</p>
+              <button
+                type="button"
+                onClick={() => { setTestSearch(''); setTestCategory('All'); }}
+                className="px-4 py-2 rounded-xl bg-botanical-50 text-botanical-800 border border-botanical-200 text-xs font-bold hover:bg-botanical-100"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[580px] overflow-y-auto pr-1">
+              {filteredTests.map((test) => {
+                const isSelected = selectedTests.some((t) => t.id === test.id);
+                return (
+                  <div
+                    key={test.id}
+                    onClick={() => toggleSelectTest(test)}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-botanical-50/60 border-botanical-500 shadow-soft-sm ring-1 ring-botanical-500'
+                        : 'bg-white border-ivory-300 hover:border-botanical-300'
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-ivory-200 text-botanical-800">
+                            {test.category}
+                          </span>
+                          <h3 className="text-base font-bold text-botanical-950 mt-1">{test.name}</h3>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-base font-extrabold text-botanical-600">₹{test.price}</p>
+                          {test.original_price && (
+                            <p className="text-xs text-botanical-700/60 line-through">₹{test.original_price}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-botanical-700/80 line-clamp-2">{test.description}</p>
+
+                      <div className="flex items-center gap-4 text-[11px] text-botanical-800/70 pt-1">
+                        <span>Turnaround: <strong>{test.turnaround_description}</strong></span>
+                        <span>•</span>
+                        <span>Sample: <strong>{test.sample_type}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-3 border-t border-ivory-200/80 flex items-center justify-between">
+                      <span className="text-[11px] text-botanical-700/70 italic">
+                        {test.preparation_instructions || 'No special fasting needed'}
+                      </span>
+                      <button
+                        type="button"
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          isSelected
+                            ? 'bg-botanical-600 text-white'
+                            : 'bg-ivory-100 text-botanical-900 hover:bg-botanical-50'
+                        }`}
+                      >
+                        {isSelected ? 'Selected ✓' : '+ Select Test'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Running Estimate Footer Bar */}
           <div className="sticky bottom-4 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-ivory-300 shadow-soft-lg flex flex-col sm:flex-row items-center justify-between gap-4">

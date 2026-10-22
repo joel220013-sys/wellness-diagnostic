@@ -12,29 +12,33 @@ export default function TestsCatalogPage() {
   const router = useRouter();
   const { tests, toggleSelectTest, isTestSelected } = useData();
 
-  const [selectedCategory, setSelectedCategory] = useState<TestCategory>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const categories: TestCategory[] = [
+  const categories: string[] = [
     'All',
     'Popular',
     'Full Body',
+    'Blood Test',
     'Diabetes',
     'Thyroid',
     'Lipid',
+    'Jaanch',
+    'Vitamins',
     'Liver',
     'Kidney',
-    'Vitamin',
-    'Hormone',
+    'Hematology',
   ];
 
   const filteredTests = tests.filter((t) => {
+    const catLower = (t.category || '').toLowerCase();
+    const selLower = selectedCategory.toLowerCase();
     const matchesCat =
       selectedCategory === 'All' ||
-      (selectedCategory === 'Popular' ? t.popular : t.category === selectedCategory);
+      (selectedCategory === 'Popular' ? t.popular : catLower.includes(selLower));
     const matchesSearch =
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (t.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
 

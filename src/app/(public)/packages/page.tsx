@@ -89,8 +89,7 @@ export default function PackagesPage() {
 
                 <button
                   onClick={() => {
-                    const firstTest = tests[0];
-                    if (firstTest) toggleSelectTest(firstTest);
+                    toggleSelectTest(pkg as any);
                     router.push('/patient/book');
                   }}
                   className="px-4 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
