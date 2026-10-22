@@ -42,7 +42,7 @@ def get_live_packages() -> List[Dict[str, Any]]:
     SELECT * FROM public.tests 
     WHERE is_active = true 
       AND (id LIKE 'pkg_%%' OR category ILIKE '%%package%%' OR category ILIKE '%%checkup%%' OR category ILIKE '%%full body%%')
-    ORDER BY price ASC;
+    ORDER BY is_popular DESC, price ASC;
     """
     packages = supabase_db.fetch_all(query)
     if not packages:
