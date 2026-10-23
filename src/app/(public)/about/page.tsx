@@ -4,18 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { Award, ShieldCheck, Heart, Building, CheckCircle2 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
+import PublicHeader from '@/components/layout/public-header';
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-ivory-200 text-botanical-900 selection:bg-botanical-200 flex flex-col justify-between">
-      <header className="bg-white/80 backdrop-blur-md border-b border-ivory-300 sticky top-0 z-40 px-4 sm:px-6 py-3.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <BrandLogo size="md" />
-          <Link href="/home" className="text-xs font-semibold text-botanical-800 hover:text-botanical-600">
-            Home
-          </Link>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-10 flex-1 space-y-8">
         <div>

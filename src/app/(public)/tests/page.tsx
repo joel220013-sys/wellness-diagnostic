@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, ArrowLeft, Heart, Droplet, Activity, CircleDot, Shield, Cpu, Sun, Sparkles } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
+import PublicHeader from '@/components/layout/public-header';
 import { useData } from '@/context/DataContext';
 import { TestCategory } from '@/types';
 
@@ -44,22 +45,7 @@ export default function TestsCatalogPage() {
 
   return (
     <div className="min-h-screen bg-ivory-200 text-botanical-900 selection:bg-botanical-200 flex flex-col justify-between">
-      <header className="bg-white/80 backdrop-blur-md border-b border-ivory-300 sticky top-0 z-40 px-4 sm:px-6 py-3.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <BrandLogo size="md" />
-          <div className="flex items-center gap-3">
-            <Link href="/home" className="text-xs font-semibold text-botanical-800 hover:text-botanical-600">
-              Home
-            </Link>
-            <Link
-              href="/patient/book"
-              className="px-4 py-2 rounded-full bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft"
-            >
-              Book Tests
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex-1">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

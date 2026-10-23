@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, ShieldCheck, CheckCircle2, Heart, Award } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
+import PublicHeader from '@/components/layout/public-header';
 import { useData } from '@/context/DataContext';
 
 export default function TestDetailPage() {
@@ -53,18 +54,7 @@ export default function TestDetailPage() {
 
   return (
     <div className="min-h-screen bg-ivory-200 text-botanical-900 selection:bg-botanical-200 flex flex-col justify-between">
-      <header className="bg-white/80 backdrop-blur-md border-b border-ivory-300 sticky top-0 z-40 px-4 sm:px-6 py-3.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <BrandLogo size="md" />
-          <Link
-            href="/tests"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-botanical-800 hover:text-botanical-600"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to All Tests</span>
-          </Link>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 flex-1">
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft space-y-6">

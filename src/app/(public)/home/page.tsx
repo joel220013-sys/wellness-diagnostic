@@ -26,6 +26,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
+import PublicHeader from '@/components/layout/public-header';
 import { useData } from '@/context/DataContext';
 import { TestCategory, DiagnosticTest } from '@/types';
 
@@ -83,39 +84,8 @@ export default function PublicLandingPage() {
   return (
     <div className="min-h-screen bg-ivory-200 text-botanical-900 selection:bg-botanical-200">
       
-      {/* 1. TOP HEADER */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-ivory-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <BrandLogo size="md" />
-
-          {/* Navigation links matching Master Prompt Section 5A */}
-          <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm font-semibold text-botanical-800">
-            <Link href="/home" className="text-botanical-600 font-bold">Home</Link>
-            <Link href="/tests" className="hover:text-botanical-600 transition-colors">Tests</Link>
-            <Link href="/packages" className="hover:text-botanical-600 transition-colors">Health Packages</Link>
-            <Link href="/home-collection" className="hover:text-botanical-600 transition-colors">Home Collection</Link>
-            <Link href="/about" className="hover:text-botanical-600 transition-colors">About</Link>
-            <Link href="/contact" className="hover:text-botanical-600 transition-colors">Contact</Link>
-          </nav>
-
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <Link
-              href="/"
-              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-ivory-300 bg-ivory-50 text-botanical-800 hover:bg-ivory-100 transition-colors hidden sm:inline-flex items-center gap-1.5"
-            >
-              <Lock className="w-3.5 h-3.5 text-botanical-600" />
-              <span>Choose Portal</span>
-            </Link>
-
-            <Link
-              href="/patient/book"
-              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-bold text-xs sm:text-sm shadow-soft transition-all"
-            >
-              Book a Test
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* 1. TOP HEADER WITH FULL MOBILE MENU */}
+      <PublicHeader />
 
       {/* 2. HERO SECTION */}
       <section className="relative overflow-hidden pt-8 pb-12 sm:pt-14 sm:pb-20">
