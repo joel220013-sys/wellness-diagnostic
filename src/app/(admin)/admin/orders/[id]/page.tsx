@@ -30,14 +30,14 @@ import LabReportModal from '@/components/reports/LabReportModal';
 export default function AdminOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { bookings, drivers, reports, invoices, updateBookingStatus, assignDriverToBooking, addReportForBooking } = useData();
+  const { bookings, drivers, reports, invoices, syncDrivers, updateBookingStatus, assignDriverToBooking, addReportForBooking } = useData();
 
   const bookingId = params.id as string;
   const booking = bookings.find((b) => b.id === bookingId || b.booking_reference === bookingId);
 
   const linkedReport = reports.find((r) => r.booking_id === booking?.id || r.order_id === booking?.id || (booking?.report_id && r.id === booking.report_id));
 
-  const [selectedDriver, setSelectedDriver] = useState<string>(drivers[0]?.id || '');
+  const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [showReportForm, setShowReportForm] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
@@ -212,25 +212,44 @@ export default function AdminOrderDetailPage() {
 
             <div className="space-y-1.5 pt-2">
               <label className="block text-xs font-bold text-botanical-900">Reassign / Assign Staff</label>
-              <div className="flex gap-2">
-                <select
-                  value={selectedDriver}
-                  onChange={(e) => setSelectedDriver(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-ivory-300 text-xs font-semibold bg-white"
-                >
-                  {drivers.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name} ({d.badge_id})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleAssign}
-                  className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft"
-                >
-                  Assign
-                </button>
-              </div>
+              {drivers.length === 0 ? (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-amber-800">No phlebotomists in local fleet.</p>
+                  <button
+                    type="button"
+                    onClick={() => syncDrivers()}
+                    className="px-3 py-1.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs"
+                  >
+                    ⚡ Load Phlebotomists
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <select
+                    value={selectedDriver || booking.assigned_driver_id || booking.driver_id || drivers[0]?.id || ''}
+                    onChange={(e) => setSelectedDriver(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-ivory-300 text-xs font-semibold bg-white text-botanical-950"
+                  >
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.badge_id || 'PHLEB'}) • 📞 {d.phone}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      const target = selectedDriver || booking.assigned_driver_id || booking.driver_id || drivers[0]?.id;
+                      if (target) {
+                        assignDriverToBooking(booking.id, target);
+                        alert('Phlebotomist assigned successfully!');
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft"
+                  >
+                    Assign
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

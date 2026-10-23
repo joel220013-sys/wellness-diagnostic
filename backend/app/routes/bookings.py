@@ -42,6 +42,11 @@ def _format_db_booking(r: Dict[str, Any]) -> Dict[str, Any]:
         else:
             created_str = str(r.get("created_at"))
 
+    d_id = str(r.get("assigned_driver_id")) if r.get("assigned_driver_id") else None
+    d_name = r.get("driver_name") or r.get("assigned_driver_name")
+    d_phone = r.get("driver_phone")
+    d_badge = r.get("driver_badge_id")
+
     return {
         "id": str(r.get("id")),
         "booking_reference": ref,
@@ -58,7 +63,12 @@ def _format_db_booking(r: Dict[str, Any]) -> Dict[str, Any]:
         "payment_method": r.get("payment_method") or "Cash on Collection",
         "address_snapshot": addr,
         "items": items,
-        "assigned_driver_id": str(r.get("assigned_driver_id")) if r.get("assigned_driver_id") else None,
+        "driver_id": d_id,
+        "assigned_driver_id": d_id,
+        "driver_name": d_name,
+        "assigned_driver_name": d_name,
+        "driver_phone": d_phone,
+        "driver_badge_id": d_badge,
         "patient_notes": r.get("patient_notes") or "",
         "created_at": created_str,
         "updated_at": created_str
@@ -75,7 +85,13 @@ def list_bookings(
     # 1. Fetch live records from Supabase PostgreSQL (Source of Truth)
     supabase_success = False
     try:
-        rows = supabase_db.fetch_all("SELECT * FROM public.bookings ORDER BY created_at DESC;")
+        query = """
+        SELECT b.*, p.name as driver_name, p.phone as driver_phone, p.badge_id as driver_badge_id
+        FROM public.bookings b
+        LEFT JOIN public.profiles p ON b.assigned_driver_id = p.id
+        ORDER BY b.created_at DESC;
+        """
+        rows = supabase_db.fetch_all(query)
         if rows is not None:
             supabase_success = True
             for r in rows:

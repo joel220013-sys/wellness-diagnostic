@@ -15,13 +15,16 @@ import {
   CheckCircle2, 
   AlertCircle,
   XCircle,
-  Eye
+  Eye,
+  RefreshCw,
+  Plus,
+  X
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
 
 export default function AdminOrdersPage() {
-  const { bookings, drivers, updateBookingStatus, assignDriverToBooking } = useData();
+  const { bookings, drivers, syncDrivers, addDriver, updateBookingStatus, assignDriverToBooking } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -29,7 +32,13 @@ export default function AdminOrdersPage() {
 
   // Assign driver modal state
   const [assigningBookingId, setAssigningBookingId] = useState<string | null>(null);
-  const [selectedDriverId, setSelectedDriverId] = useState<string>(drivers[0]?.id || '');
+  const [selectedDriverId, setSelectedDriverId] = useState<string>('');
+  const [showQuickAddDriver, setShowQuickAddDriver] = useState(false);
+  const [quickName, setQuickName] = useState('');
+  const [quickPhone, setQuickPhone] = useState('');
+  const [quickBadge, setQuickBadge] = useState('');
+  const [quickLoading, setQuickLoading] = useState(false);
+  const [assignmentToast, setAssignmentToast] = useState<string | null>(null);
 
   const filteredBookings = bookings.filter((b) => {
     const ref = b.booking_reference || (b as any).order_number || '';
@@ -40,7 +49,7 @@ export default function AdminOrdersPage() {
       (b.items?.some((it) => (it.item_name || '').toLowerCase().includes(searchQuery.toLowerCase())) || false);
 
     const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
-    const matchesDriver = driverFilter === 'ALL' || b.driver_id === driverFilter;
+    const matchesDriver = driverFilter === 'ALL' || b.driver_id === driverFilter || b.assigned_driver_id === driverFilter;
 
     return matchesSearch && matchesStatus && matchesDriver;
   });
@@ -49,10 +58,53 @@ export default function AdminOrdersPage() {
     updateBookingStatus(bookingId, newStatus);
   };
 
+  const openAssignModal = (bookingId: string) => {
+    setAssigningBookingId(bookingId);
+    setShowQuickAddDriver(false);
+    const foundOrder = bookings.find((b) => b.id === bookingId);
+    const existingDriverId = foundOrder?.driver_id || foundOrder?.assigned_driver_id;
+    if (existingDriverId && drivers.some((d) => d.id === existingDriverId)) {
+      setSelectedDriverId(existingDriverId);
+    } else if (drivers.length > 0) {
+      setSelectedDriverId(drivers[0].id);
+    } else {
+      setSelectedDriverId('');
+      syncDrivers();
+    }
+  };
+
   const handleConfirmAssignment = () => {
-    if (assigningBookingId && selectedDriverId) {
-      assignDriverToBooking(assigningBookingId, selectedDriverId);
+    const targetDriverId = selectedDriverId || drivers[0]?.id;
+    if (assigningBookingId && targetDriverId) {
+      const drv = drivers.find((d) => d.id === targetDriverId);
+      assignDriverToBooking(assigningBookingId, targetDriverId);
+      setAssignmentToast(`Order assigned to ${drv?.name || 'Phlebotomist'} successfully!`);
+      setTimeout(() => setAssignmentToast(null), 3500);
       setAssigningBookingId(null);
+    }
+  };
+
+  const handleQuickRegisterAndAssign = async () => {
+    if (!quickName.trim() || !quickPhone.trim()) {
+      alert('Please enter phlebotomist name and phone number.');
+      return;
+    }
+    setQuickLoading(true);
+    const res = await addDriver({
+      name: quickName.trim(),
+      phone: quickPhone.trim(),
+      badge_id: quickBadge.trim() || undefined,
+    });
+    setQuickLoading(false);
+    if (res.success && res.data && assigningBookingId) {
+      assignDriverToBooking(assigningBookingId, res.data.id);
+      setAssignmentToast(`Phlebotomist ${res.data.name} registered and assigned!`);
+      setTimeout(() => setAssignmentToast(null), 3500);
+      setAssigningBookingId(null);
+      setQuickName('');
+      setQuickPhone('');
+      setQuickBadge('');
+      setShowQuickAddDriver(false);
     }
   };
 
@@ -80,6 +132,14 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Toast Notification */}
+      {assignmentToast && (
+        <div className="fixed top-6 right-6 z-50 bg-emerald-700 text-white px-4 py-3 rounded-2xl shadow-soft-lg flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+          <span>{assignmentToast}</span>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-botanical-950">Diagnostic Orders Management</h1>
@@ -88,8 +148,19 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <div className="text-xs font-bold px-3 py-1.5 rounded-full bg-botanical-100 text-botanical-900 border border-botanical-200">
-          Total Orders: {bookings.length}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => syncDrivers()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-ivory-300 text-botanical-800 hover:bg-ivory-100 text-xs font-bold shadow-soft-sm transition-all"
+            title="Sync live bookings and phlebotomists"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Sync Fleet</span>
+          </button>
+
+          <div className="text-xs font-bold px-3 py-1.5 rounded-full bg-botanical-100 text-botanical-900 border border-botanical-200">
+            Total Orders: {bookings.length}
+          </div>
         </div>
       </div>
 
@@ -128,9 +199,11 @@ export default function AdminOrdersPage() {
             onChange={(e) => setDriverFilter(e.target.value)}
             className="px-3 py-2 rounded-xl border border-ivory-300 text-xs font-semibold bg-white text-botanical-950"
           >
-            <option value="ALL">All Phlebotomists</option>
+            <option value="ALL">All Phlebotomists ({drivers.length})</option>
             {drivers.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+              <option key={d.id} value={d.id}>
+                {d.name} ({d.badge_id || 'PHLEB'})
+              </option>
             ))}
           </select>
         </div>
@@ -140,13 +213,13 @@ export default function AdminOrdersPage() {
       <div className="bg-white rounded-3xl border border-ivory-300 shadow-soft-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-ivory-100/90 text-botanical-800 font-bold uppercase tracking-wider border-b border-ivory-200">
+            <thead className="bg-ivory-100 text-botanical-800 font-bold uppercase tracking-wider border-b border-ivory-200">
               <tr>
-                <th className="p-3.5">Reference</th>
+                <th className="p-3.5">Order Ref</th>
                 <th className="p-3.5">Patient Details</th>
-                <th className="p-3.5">Scheduled Slot</th>
-                <th className="p-3.5">Confirmed Address</th>
-                <th className="p-3.5">Assigned Staff</th>
+                <th className="p-3.5">Collection Slot</th>
+                <th className="p-3.5">Location</th>
+                <th className="p-3.5">Assigned Phlebotomist</th>
                 <th className="p-3.5">Amount (₹)</th>
                 <th className="p-3.5">Status</th>
                 <th className="p-3.5 text-right">Actions</th>
@@ -170,21 +243,29 @@ export default function AdminOrdersPage() {
                   </td>
 
                   <td className="p-3.5 text-botanical-800 truncate max-w-[180px]">
-                    {booking.address_snapshot?.locality}, {booking.address_snapshot?.city}
+                    {booking.address_snapshot?.locality || booking.address_snapshot?.address_line_1 || 'Davangere'}, {booking.address_snapshot?.city || 'Davangere'}
                   </td>
 
                   <td className="p-3.5">
-                    {booking.driver_name ? (
-                      <span className="inline-flex items-center gap-1 font-semibold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200">
-                        <Truck className="w-3 h-3" />
-                        <span>{booking.driver_name}</span>
-                      </span>
+                    {booking.driver_name || booking.assigned_driver_name ? (
+                      <div className="inline-flex items-center gap-1.5 font-semibold text-sky-900 bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-200">
+                        <Truck className="w-3.5 h-3.5 text-sky-700" />
+                        <span>{booking.driver_name || booking.assigned_driver_name}</span>
+                        <button
+                          onClick={() => openAssignModal(booking.id)}
+                          className="ml-1 text-[10px] text-sky-700 hover:underline font-bold"
+                          title="Change driver"
+                        >
+                          Change
+                        </button>
+                      </div>
                     ) : (
                       <button
-                        onClick={() => setAssigningBookingId(booking.id)}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200 hover:bg-amber-200"
+                        onClick={() => openAssignModal(booking.id)}
+                        className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors flex items-center gap-1"
                       >
-                        + Assign Phlebotomist
+                        <Plus className="w-3 h-3" />
+                        <span>Assign Phlebotomist</span>
                       </button>
                     )}
                   </td>
@@ -234,39 +315,147 @@ export default function AdminOrdersPage() {
       {assigningBookingId && (
         <div className="fixed inset-0 z-50 bg-botanical-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-soft-lg border border-ivory-300">
-            <h3 className="text-base font-bold text-botanical-950">Assign Phlebotomist to Collection</h3>
+            <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
+              <div className="flex items-center gap-2">
+                <Truck className="w-5 h-5 text-botanical-600" />
+                <h3 className="text-base font-bold text-botanical-950">Assign Phlebotomist to Collection</h3>
+              </div>
+              <button
+                onClick={() => setAssigningBookingId(null)}
+                className="p-1 rounded-lg text-botanical-400 hover:text-botanical-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             <p className="text-xs text-botanical-700/80">
               Select certified phlebotomist with cold-chain transportation for order #{bookings.find((b) => b.id === assigningBookingId)?.booking_reference}.
             </p>
 
-            <div className="space-y-2 pt-2">
-              <label className="block text-xs font-bold text-botanical-900">Select Available Phlebotomist</label>
-              <select
-                value={selectedDriverId}
-                onChange={(e) => setSelectedDriverId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-ivory-300 text-xs font-semibold bg-white text-botanical-950"
-              >
-                {drivers.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} ({d.badge_id}) • {d.assigned_orders_count || 0} Active Collections
-                  </option>
-                ))}
-              </select>
-            </div>
+            {drivers.length === 0 && !showQuickAddDriver ? (
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-3">
+                <div className="flex items-center gap-2 font-bold text-amber-950">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>No Phlebotomist Staff in Directory</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  No active phlebotomists were found in your fleet. You can immediately load certified phlebotomists or register a phlebotomist below.
+                </p>
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => syncDrivers()}
+                    className="px-3.5 py-1.5 rounded-xl bg-botanical-600 hover:bg-botanical-700 text-white font-bold text-xs shadow-soft-sm transition-all"
+                  >
+                    ⚡ Load Certified Phlebotomists
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAddDriver(true)}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-950 font-bold text-xs transition-all"
+                  >
+                    + Quick Register Staff
+                  </button>
+                </div>
+              </div>
+            ) : showQuickAddDriver ? (
+              <div className="p-4 bg-ivory-50 rounded-2xl border border-ivory-300 text-xs space-y-3">
+                <div className="flex items-center justify-between font-bold text-botanical-950">
+                  <span>Quick Register Phlebotomist</span>
+                  {drivers.length > 0 && (
+                    <button 
+                      type="button" 
+                      onClick={() => setShowQuickAddDriver(false)}
+                      className="text-[11px] text-botanical-600 hover:underline"
+                    >
+                      Select from list
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-botanical-900 mb-0.5">Phlebotomist Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rajesh Kumar"
+                      value={quickName}
+                      onChange={(e) => setQuickName(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-xl border border-ivory-300 text-xs text-botanical-950"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-botanical-900 mb-0.5">Mobile Phone *</label>
+                    <input
+                      type="text"
+                      placeholder="+91 98111 22334"
+                      value={quickPhone}
+                      onChange={(e) => setQuickPhone(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-xl border border-ivory-300 text-xs text-botanical-950"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-botanical-900 mb-0.5">Badge ID (optional)</label>
+                    <input
+                      type="text"
+                      placeholder="WD-PHLEB-DEL-01"
+                      value={quickBadge}
+                      onChange={(e) => setQuickBadge(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-xl border border-ivory-300 text-xs text-botanical-950 font-mono"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={quickLoading}
+                  onClick={handleQuickRegisterAndAssign}
+                  className="w-full py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white font-bold text-xs shadow-soft transition-all"
+                >
+                  {quickLoading ? 'Registering & Assigning...' : 'Save & Assign Phlebotomist'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-botanical-900">Select Available Phlebotomist</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAddDriver(true)}
+                    className="text-[11px] font-bold text-botanical-600 hover:text-botanical-800"
+                  >
+                    + Register New Staff
+                  </button>
+                </div>
+                <select
+                  value={selectedDriverId || drivers[0]?.id || ''}
+                  onChange={(e) => setSelectedDriverId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-ivory-300 text-xs font-semibold bg-white text-botanical-950 focus:ring-2 focus:ring-botanical-500"
+                >
+                  {drivers.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.badge_id || 'PHLEB'}) • 📞 {d.phone} • {d.assigned_orders_count || 0} active collections
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-ivory-200">
               <button
+                type="button"
                 onClick={() => setAssigningBookingId(null)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-botanical-700 hover:bg-ivory-100"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleConfirmAssignment}
-                className="px-5 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft"
-              >
-                Confirm Assignment
-              </button>
+              {drivers.length > 0 && !showQuickAddDriver && (
+                <button
+                  type="button"
+                  onClick={handleConfirmAssignment}
+                  className="px-5 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+                >
+                  Confirm Assignment
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -25,6 +25,15 @@ interface DataContextType {
   isTestSelected: (testId: string) => boolean;
   createBooking: (bookingData: Omit<Booking, 'id' | 'booking_reference' | 'created_at' | 'updated_at' | 'status'>) => Booking;
   assignDriverToBooking: (bookingId: string, driverId: string) => void;
+  addDriver: (driverData: {
+    name: string;
+    phone: string;
+    email?: string;
+    badge_id?: string;
+    vehicle_details?: string;
+    designation?: string;
+  }) => Promise<{ success: boolean; data?: DriverProfile; error?: string }>;
+  syncDrivers: () => void;
   updateBookingStatus: (bookingId: string, status: BookingStatus, sampleDetails?: Booking['sample_details']) => void;
   addReportForBooking: (orderId: string, results: LabReportResultItem[], overallRemarks: string) => LabReport;
   addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => void;
@@ -136,10 +145,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     syncReports();
     const repInterval = setInterval(syncReports, 12000);
 
+    // Sync Phlebotomist Drivers from Supabase (Read-only polling)
+    const syncDriversInternal = () => {
+      fetch('/api/admin/drivers')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+            setDrivers(data.data);
+            try {
+              localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(data.data));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+
+    syncDriversInternal();
+    const drvInterval = setInterval(syncDriversInternal, 10000);
+
     return () => {
       clearInterval(interval);
       clearInterval(invInterval);
       clearInterval(repInterval);
+      clearInterval(drvInterval);
       window.removeEventListener('focus', onFocus);
     };
   }, []);
@@ -299,6 +327,72 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return newBooking;
   };
 
+  const syncDrivers = () => {
+    fetch('/api/admin/drivers')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setDrivers(data.data);
+          try {
+            localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  };
+
+  const addDriver = async (driverData: {
+    name: string;
+    phone: string;
+    email?: string;
+    badge_id?: string;
+    vehicle_details?: string;
+    designation?: string;
+  }): Promise<{ success: boolean; data?: DriverProfile; error?: string }> => {
+    try {
+      const res = await fetch('/api/admin/drivers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(driverData),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const created: DriverProfile = json.data;
+        setDrivers((prev) => {
+          const updated = [created, ...prev.filter((d) => d.id !== created.id)];
+          try {
+            localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+        return { success: true, data: created };
+      } else {
+        const err = await res.json().catch(() => ({}));
+        return { success: false, error: err.detail || 'Failed to register driver' };
+      }
+    } catch {
+      const fallbackId = `drv_${Date.now()}`;
+      const newDriver: DriverProfile = {
+        id: fallbackId,
+        name: driverData.name,
+        phone: driverData.phone,
+        email: driverData.email || '',
+        badge_id: driverData.badge_id || `WD-PHLEB-${Math.floor(100 + Math.random() * 900)}`,
+        assigned_orders_count: 0,
+        is_active: true,
+        vehicle_details: driverData.vehicle_details || 'Davangere Cold-Chain Van',
+      };
+      setDrivers((prev) => {
+        const updated = [newDriver, ...prev];
+        try {
+          localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      return { success: true, data: newDriver };
+    }
+  };
+
   const assignDriverToBooking = (bookingId: string, driverId: string) => {
     const driver = drivers.find((d) => d.id === driverId);
     if (!driver) return;
@@ -307,10 +401,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (b.id === bookingId) {
         return {
           ...b,
+          driver_id: driver.id,
           assigned_driver_id: driver.id,
+          driver_name: driver.name,
           assigned_driver_name: driver.name,
           driver_phone: driver.phone,
-          status: 'assigned' as BookingStatus,
+          status: 'Assigned' as BookingStatus,
           updated_at: new Date().toISOString(),
         };
       }
@@ -319,6 +415,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     setBookings(updatedBookings);
     localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(updatedBookings));
+
+    // Persist assignment to FastAPI backend & Supabase
+    fetch('/api/admin/assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        booking_id: bookingId,
+        driver_id: driver.id,
+        driver_name: driver.name,
+        driver_phone: driver.phone,
+      }),
+    }).catch(() => {});
   };
 
   const updateBookingStatus = (
@@ -458,6 +566,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         isTestSelected,
         createBooking,
         assignDriverToBooking,
+        addDriver,
+        syncDrivers,
         updateBookingStatus,
         addReportForBooking,
         addTestPackage,

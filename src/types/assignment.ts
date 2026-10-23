@@ -28,12 +28,14 @@ export interface DriverProfile {
   phone: string;
   email: string;
   badge_id: string;
-  vehicle_number: string;
+  vehicle_number?: string;
   vehicle_details?: string;
   assigned_orders_count?: number;
-  active_status: 'on_duty' | 'off_duty' | 'on_route';
-  current_zone: string;
-  completed_today: number;
-  pending_today: number;
-  rating: number;
+  active_status?: 'on_duty' | 'off_duty' | 'on_route';
+  current_zone?: string;
+  completed_today?: number;
+  pending_today?: number;
+  rating?: number;
+  designation?: string;
+  is_active?: boolean;
 }
