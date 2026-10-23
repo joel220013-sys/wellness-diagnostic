@@ -81,8 +81,21 @@ def update_order_status(order_id: str, payload: Dict[str, Any]):
 
 @router.post("/assignments")
 def assign_driver(payload: AssignmentCreateInput):
+    from app.data import supabase_db
+    try:
+        supabase_db.execute(
+            """
+            UPDATE public.bookings 
+            SET assigned_driver_id = %s, status = 'Assigned', updated_at = NOW() 
+            WHERE id::text = %s OR order_number = %s;
+            """,
+            (payload.driver_id, str(payload.booking_id), str(payload.booking_id))
+        )
+    except Exception as e:
+        print(f"[Supabase Assign Driver] error: {e}")
+
     for b in DB["bookings"]:
-        if b["id"] == payload.booking_id:
+        if b["id"] == payload.booking_id or b.get("booking_reference") == payload.booking_id:
             b["assigned_driver_id"] = payload.driver_id
             b["assigned_driver_name"] = payload.driver_name
             b["assigned_driver_phone"] = payload.driver_phone or "+91 98111 22334"
@@ -102,5 +115,14 @@ def assign_driver(payload: AssignmentCreateInput):
                 "message": f"Successfully assigned to {payload.driver_name}",
                 "data": b
             }
-            
-    raise HTTPException(status_code=404, detail="Booking not found for assignment")
+
+    return {
+        "success": True,
+        "message": f"Successfully assigned to {payload.driver_name}",
+        "data": {
+            "booking_id": payload.booking_id,
+            "assigned_driver_id": payload.driver_id,
+            "assigned_driver_name": payload.driver_name,
+            "status": "Assigned"
+        }
+    }

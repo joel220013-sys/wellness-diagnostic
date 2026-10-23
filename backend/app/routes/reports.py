@@ -32,9 +32,20 @@ def upload_report(payload: Dict[str, Any]):
     }
     DB["reports"].append(new_rep)
     
-    # Update booking status to Report Ready
+    # Update booking status to Report Ready in Supabase
+    b_id = new_rep["booking_id"]
+    if b_id:
+        from app.data import supabase_db
+        try:
+            supabase_db.execute(
+                "UPDATE public.bookings SET status = 'Report Ready', updated_at = NOW() WHERE id::text = %s OR order_number = %s;",
+                (str(b_id), str(b_id))
+            )
+        except Exception as e:
+            print(f"[Supabase Report Ready] error: {e}")
+
     for b in DB["bookings"]:
-        if b["id"] == new_rep["booking_id"]:
+        if b["id"] == b_id or b.get("booking_reference") == b_id:
             b["status"] = "Report Ready"
             
     return {
