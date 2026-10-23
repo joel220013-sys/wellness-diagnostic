@@ -9,34 +9,39 @@ import {
   Mail, 
   Lock, 
   Phone, 
+  User,
   AlertCircle, 
   CheckCircle2, 
-  Sparkles, 
-  KeyRound, 
   Eye, 
-  EyeOff 
+  EyeOff,
+  UserPlus,
+  LogIn
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
 
 export default function DriverLoginPage() {
   const router = useRouter();
-  const { login, loginAsDemo } = useAuth();
+  const { login, registerAccount } = useAuth();
 
-  const [authMethod, setAuthMethod] = useState<'password' | 'otp'>('password');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const [identifier, setIdentifier] = useState('driver@wellness.com');
-  const [password, setPassword] = useState('driver123');
+  // Login form state
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
 
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [simulatedOtp, setSimulatedOtp] = useState('7492');
+  // Registration form state
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [badgeId, setBadgeId] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -59,38 +64,38 @@ export default function DriverLoginPage() {
     }
   };
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!identifier) {
-      setErrorMessage('Please enter registered mobile number or email.');
-      return;
-    }
-    const generated = Math.floor(1000 + Math.random() * 9000).toString();
-    setSimulatedOtp(generated);
-    setOtpSent(true);
-    setSuccessMessage(`OTP sent! Simulator code: ${generated}`);
-  };
+    setSuccessMessage('');
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    if (otpCode !== simulatedOtp && otpCode !== '1234') {
-      setErrorMessage(`Invalid OTP code entered. Please enter ${simulatedOtp}`);
+    if (!name || !phone || !email || !newPassword) {
+      setErrorMessage('Please fill in all phlebotomist details.');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await login('driver@wellness.com', 'driver123', 'driver');
-      if (result.success) {
-        setSuccessMessage('OTP confirmed! Navigating to collection dashboard...');
+      const res = await registerAccount({
+        name,
+        email,
+        phone,
+        password: newPassword,
+        role: 'driver',
+        badgeId: badgeId || `WD-PHLEB-${Math.floor(100 + Math.random() * 900)}`,
+        designation: 'Senior Phlebotomist'
+      });
+
+      if (res.success) {
+        setSuccessMessage('Phlebotomist account registered! Loading active route...');
         setTimeout(() => {
           router.push('/driver/dashboard');
         }, 400);
       } else {
-        setErrorMessage(result.error || 'Login failed.');
+        setErrorMessage(res.error || 'Failed to register phlebotomist account.');
       }
+    } catch {
+      setErrorMessage('Unexpected error during registration.');
     } finally {
       setLoading(false);
     }
@@ -121,56 +126,32 @@ export default function DriverLoginPage() {
                 Phlebotomy Field Gateway
               </span>
               <h1 className="text-xl font-extrabold text-botanical-950">
-                Phlebotomist Sign In
+                {isRegisterMode ? 'Register Phlebotomist' : 'Phlebotomist Sign In'}
               </h1>
             </div>
           </div>
 
-          <div className="mb-5 p-3 rounded-2xl bg-botanical-50/70 border border-botanical-200 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-botanical-600 flex-shrink-0" />
-              <div className="text-xs">
-                <span className="font-semibold text-botanical-950">Active Phleb:</span>
-                <span className="text-botanical-700/80 ml-1">Marcus Cole (VAN-04)</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => loginAsDemo('driver')}
-              className="text-xs font-bold px-2.5 py-1 rounded-lg bg-botanical-600 text-white hover:bg-botanical-700 transition-colors flex-shrink-0"
-            >
-              1-Click Sign In
-            </button>
-          </div>
-
+          {/* Toggle between Login and Registration */}
           <div className="grid grid-cols-2 p-1 bg-ivory-100 rounded-xl mb-5 border border-ivory-300/80">
             <button
               type="button"
-              onClick={() => {
-                setAuthMethod('password');
-                setErrorMessage('');
-              }}
-              className={`py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
-                authMethod === 'password'
-                  ? 'bg-white text-botanical-950 shadow-soft-sm'
-                  : 'text-botanical-700/70 hover:text-botanical-900'
+              onClick={() => { setIsRegisterMode(false); setErrorMessage(''); }}
+              className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                !isRegisterMode ? 'bg-white text-botanical-950 shadow-soft-sm' : 'text-botanical-700 hover:text-botanical-950'
               }`}
             >
-              Password Login
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
             </button>
             <button
               type="button"
-              onClick={() => {
-                setAuthMethod('otp');
-                setErrorMessage('');
-              }}
-              className={`py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
-                authMethod === 'otp'
-                  ? 'bg-white text-botanical-950 shadow-soft-sm'
-                  : 'text-botanical-700/70 hover:text-botanical-900'
+              onClick={() => { setIsRegisterMode(true); setErrorMessage(''); }}
+              className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                isRegisterMode ? 'bg-white text-botanical-950 shadow-soft-sm' : 'text-botanical-700 hover:text-botanical-950'
               }`}
             >
-              Mobile OTP Code
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Register Staff</span>
             </button>
           </div>
 
@@ -188,8 +169,8 @@ export default function DriverLoginPage() {
             </div>
           )}
 
-          {authMethod === 'password' && (
-            <form onSubmit={handlePasswordLogin} className="space-y-4">
+          {!isRegisterMode ? (
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-botanical-900 mb-1.5">
                   Phlebotomist Email or Mobile Phone
@@ -201,8 +182,8 @@ export default function DriverLoginPage() {
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="driver@wellness.com or mobile"
-                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-white"
+                    placeholder="e.g. phleb@wellness.com or 9876543210"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
                   />
                 </div>
               </div>
@@ -217,7 +198,7 @@ export default function DriverLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter security password"
-                    className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-white"
+                    className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
                   />
                   <button
                     type="button"
@@ -232,82 +213,105 @@ export default function DriverLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 rounded-xl bg-botanical-600 hover:bg-botanical-700 active:bg-botanical-800 text-white font-bold text-sm shadow-soft transition-all disabled:opacity-60 mt-2"
+                className="w-full py-3 px-4 rounded-xl bg-botanical-600 hover:bg-botanical-700 text-white font-bold text-sm shadow-soft transition-all disabled:opacity-60 mt-2"
               >
-                {loading ? 'Authenticating...' : 'Sign In as Driver'}
+                {loading ? 'Authenticating...' : 'Sign In as Phlebotomist'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-botanical-900 mb-1.5">Full Name</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Ramesh Kumar"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-botanical-900 mb-1.5">Mobile Phone (Calling & GPS)</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 11223"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-botanical-900 mb-1.5">Staff Email</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. ramesh@wellness.com"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-botanical-900 mb-1.5">Vehicle / Badge ID (Optional)</label>
+                <input
+                  type="text"
+                  value={badgeId}
+                  onChange={(e) => setBadgeId(e.target.value)}
+                  placeholder="e.g. VAN-01 or KA-17-HB-1234"
+                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-botanical-900 mb-1.5">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter security password"
+                    className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-botanical-400 hover:text-botanical-700"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-botanical-600 hover:bg-botanical-700 text-white font-bold text-sm shadow-soft transition-all disabled:opacity-60 mt-2"
+              >
+                {loading ? 'Registering...' : 'Register Phlebotomist'}
               </button>
             </form>
           )}
-
-          {authMethod === 'otp' && (
-            <div className="space-y-4">
-              {!otpSent ? (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-botanical-900 mb-1.5">
-                      Phlebotomist Mobile Phone (+91)
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        required
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="+91 98111 22334"
-                        className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-3 px-4 rounded-xl bg-botanical-600 hover:bg-botanical-700 text-white font-bold text-sm shadow-soft"
-                  >
-                    Send 4-Digit OTP Code
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-botanical-900 mb-1.5">
-                      Enter 4-Digit OTP Code
-                    </label>
-                    <div className="relative">
-                      <KeyRound className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        maxLength={4}
-                        required
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                        placeholder="7492"
-                        className="w-full pl-9 pr-3 py-2.5 text-lg font-bold tracking-widest text-center rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 px-4 rounded-xl bg-botanical-600 hover:bg-botanical-700 text-white font-bold text-sm shadow-soft disabled:opacity-60"
-                  >
-                    {loading ? 'Verifying...' : 'Verify OTP & Start Shift'}
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
-
-          <div className="mt-6 p-3 rounded-2xl bg-ivory-100 border border-ivory-300/80 text-xs text-botanical-800/80">
-            <span className="font-bold text-botanical-950 block">Assigned Routes Only</span>
-            <p className="mt-0.5 leading-relaxed">
-              Phlebotomists have role-scoped access to assigned patient addresses, contact info, and collection checklists only.
-            </p>
-          </div>
         </div>
       </main>
 
       <footer className="py-4 text-center text-xs text-botanical-700/60">
-        Wellness Diagnostic Field Operations Gateway
+        Wellness Diagnostic Phlebotomy Field Gateway
       </footer>
     </div>
   );

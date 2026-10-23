@@ -35,13 +35,13 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const STORAGE_KEY_TESTS = 'wellness_tests_data_v4';
-const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v4';
-const STORAGE_KEY_BOOKINGS = 'wellness_bookings_data_v4';
-const STORAGE_KEY_REPORTS = 'wellness_reports_data_v4';
-const STORAGE_KEY_INVOICES = 'wellness_invoices_data_v4';
-const STORAGE_KEY_DRIVERS = 'wellness_drivers_data_v4';
-const STORAGE_KEY_CART = 'wellness_cart_tests_v4';
+const STORAGE_KEY_TESTS = 'wellness_tests_data_v5';
+const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v5';
+const STORAGE_KEY_BOOKINGS = 'wellness_bookings_data_v5';
+const STORAGE_KEY_REPORTS = 'wellness_reports_data_v5';
+const STORAGE_KEY_INVOICES = 'wellness_invoices_data_v5';
+const STORAGE_KEY_DRIVERS = 'wellness_drivers_data_v5';
+const STORAGE_KEY_CART = 'wellness_cart_tests_v5';
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [tests, setTests] = useState<DiagnosticTest[]>([]);

@@ -4,41 +4,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SessionUser, UserRole } from '@/types';
 import { useRouter } from 'next/navigation';
 
-const INITIAL_USERS: SessionUser[] = [
-  {
-    id: 'user_patient_1',
-    name: 'Patient User',
-    email: 'patient@wellness.com',
-    phone: '+91 98765 43210',
-    role: 'patient',
-    patientId: 'WD-PT-001',
-    active: true,
-    createdAt: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'user_admin_1',
-    name: 'Medical Administrator',
-    email: 'admin@wellness.com',
-    phone: '+91 98765 12345',
-    role: 'admin',
-    badgeId: 'WD-ADM-001',
-    designation: 'Laboratory Director',
-    active: true,
-    createdAt: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'user_driver_1',
-    name: 'Phlebotomist Partner',
-    email: 'driver@wellness.com',
-    phone: '+91 98111 22334',
-    role: 'driver',
-    badgeId: 'WD-PHLEB-001',
-    designation: 'Senior Phlebotomist',
-    active: true,
-    createdAt: '2026-01-01T00:00:00Z',
-  }
-];
-
 interface AuthContextType {
   user: SessionUser | null;
   isLoading: boolean;
@@ -46,6 +11,7 @@ interface AuthContextType {
   setSelectedPortal: (role: UserRole | null) => void;
   login: (emailOrPhone: string, password: string, requiredRole: UserRole) => Promise<{ success: boolean; error?: string }>;
   registerPatient: (data: { name: string; email: string; phone: string; password: string; address?: string }) => Promise<{ success: boolean; error?: string }>;
+  registerAccount: (data: { name: string; email: string; phone: string; password: string; role: UserRole; badgeId?: string; designation?: string }) => Promise<{ success: boolean; error?: string }>;
   loginAsDemo: (role: UserRole) => void;
   logout: () => void;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -54,14 +20,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY_USER = 'wellness_auth_user_v2';
-const STORAGE_KEY_PORTAL = 'wellness_selected_portal_v2';
-const STORAGE_KEY_USERS_DB = 'wellness_users_database_v2';
+const STORAGE_KEY_USER = 'wellness_auth_user_v5';
+const STORAGE_KEY_PORTAL = 'wellness_selected_portal_v5';
+const STORAGE_KEY_USERS_DB = 'wellness_users_database_v5';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [selectedPortal, setSelectedPortalState] = useState<UserRole | null>(null);
-  const [usersList, setUsersList] = useState<SessionUser[]>(INITIAL_USERS);
+  const [usersList, setUsersList] = useState<SessionUser[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
 
@@ -71,7 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedUsers) {
         setUsersList(JSON.parse(storedUsers));
       } else {
-        localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify(INITIAL_USERS));
+        setUsersList([]);
+        localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify([]));
       }
 
       const storedUser = localStorage.getItem(STORAGE_KEY_USER);
@@ -88,6 +55,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+
+    // Also sync profiles from Supabase backend if available
+    fetch('/api/auth/users')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          const mapped: SessionUser[] = data.data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            email: p.email,
+            phone: p.phone,
+            role: p.role,
+            badgeId: p.badge_id,
+            designation: p.designation,
+            avatar: p.avatar_url,
+            active: true,
+            createdAt: p.created_at,
+          }));
+          if (mapped.length > 0) {
+            setUsersList((prev) => {
+              const combined = [...mapped];
+              for (const u of prev) {
+                if (!combined.some((c) => c.id === u.id || c.email === u.email)) {
+                  combined.push(u);
+                }
+              }
+              try {
+                localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify(combined));
+              } catch {}
+              return combined;
+            });
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const setSelectedPortal = (role: UserRole | null) => {
@@ -100,10 +102,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (emailOrPhone: string, password: string, requiredRole: UserRole): Promise<{ success: boolean; error?: string }> => {
-    await new Promise((res) => setTimeout(res, 350));
-
     const cleanInput = emailOrPhone.trim().toLowerCase();
-    
+
+    // 1. First try authenticating via Supabase backend API
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: cleanInput,
+          password,
+          required_role: requiredRole
+        })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const p = json.data;
+        const loggedInUser: SessionUser = {
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          phone: p.phone,
+          role: p.role,
+          badgeId: p.badge_id,
+          designation: p.designation,
+          avatar: p.avatar_url,
+          active: true,
+          createdAt: p.created_at
+        };
+        setUser(loggedInUser);
+        localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(loggedInUser));
+        return { success: true };
+      }
+    } catch {}
+
+    // 2. Fallback to local users list
     const foundUser = usersList.find(
       (u) => u.email.toLowerCase() === cleanInput || u.phone.replace(/\D/g, '') === cleanInput.replace(/\D/g, '')
     );
@@ -111,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!foundUser) {
       return {
         success: false,
-        error: `No account found with identifier "${emailOrPhone}". Please check credentials or register.`
+        error: `No account found with identifier "${emailOrPhone}". Please register or initialize your account first.`
       };
     }
 
@@ -140,6 +173,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
+  const registerAccount = async (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    role: UserRole;
+    badgeId?: string;
+    designation?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const cleanPhone = data.phone.trim();
+
+    // 1. Persist to Supabase PostgreSQL Database
+    let createdUser: SessionUser | null = null;
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name.trim(),
+          email: cleanEmail,
+          phone: cleanPhone,
+          password: data.password,
+          role: data.role,
+          badge_id: data.badgeId,
+          designation: data.designation
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const p = json.data;
+        createdUser = {
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          phone: p.phone,
+          role: p.role,
+          badgeId: p.badge_id,
+          designation: p.designation,
+          avatar: p.avatar_url,
+          active: true,
+          createdAt: p.created_at || new Date().toISOString()
+        };
+      } else {
+        const err = await res.json().catch(() => ({}));
+        if (err.detail) {
+          return { success: false, error: err.detail };
+        }
+      }
+    } catch {}
+
+    if (!createdUser) {
+      createdUser = {
+        id: `user_${data.role}_${Date.now()}`,
+        name: data.name.trim(),
+        email: cleanEmail,
+        phone: cleanPhone,
+        role: data.role,
+        badgeId: data.badgeId || `WD-${data.role.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        designation: data.designation || (data.role === 'admin' ? 'Laboratory Administrator' : (data.role === 'driver' ? 'Phlebotomist' : 'Patient')),
+        active: true,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    const updated = [createdUser, ...usersList.filter((u) => u.email !== cleanEmail)];
+    setUsersList(updated);
+    localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify(updated));
+
+    setUser(createdUser);
+    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(createdUser));
+
+    return { success: true };
+  };
+
   const registerPatient = async (data: {
     name: string;
     email: string;
@@ -147,38 +256,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string;
     address?: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    await new Promise((res) => setTimeout(res, 400));
-
-    const cleanEmail = data.email.trim().toLowerCase();
-
-    const existing = usersList.find((u) => u.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      return {
-        success: false,
-        error: 'An account with this email address already exists. Please log in.'
-      };
-    }
-
-    const newPatient: SessionUser = {
-      id: `user_patient_${Date.now()}`,
-      name: data.name.trim(),
-      email: cleanEmail,
-      phone: data.phone.trim(),
+    return registerAccount({
+      ...data,
       role: 'patient',
-      patientId: `WD-PT-${Math.floor(1000 + Math.random() * 9000)}`,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-      active: true,
-      createdAt: new Date().toISOString()
-    };
-
-    const updated = [newPatient, ...usersList];
-    setUsersList(updated);
-    localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify(updated));
-
-    setUser(newPatient);
-    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(newPatient));
-
-    return { success: true };
+      designation: 'Patient'
+    });
   };
 
   const loginAsDemo = (role: UserRole) => {
@@ -206,7 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await new Promise((res) => setTimeout(res, 300));
     return {
       success: true,
-      message: `Password reset instructions and verification link dispatched to ${email}.`
+      message: `Password reset instructions dispatched to ${email}.`
     };
   };
 
@@ -219,6 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSelectedPortal,
         login,
         registerPatient,
+        registerAccount,
         loginAsDemo,
         logout,
         requestPasswordReset,

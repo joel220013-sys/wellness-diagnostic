@@ -10,42 +10,76 @@ import {
   Lock, 
   AlertCircle, 
   CheckCircle2, 
-  Sparkles,
-  ShieldAlert,
+  User,
+  Phone,
   Eye,
   EyeOff,
-  Building
+  UserPlus,
+  LogIn
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { login, loginAsDemo } = useAuth();
+  const { login, registerAccount, usersList } = useAuth();
+
+  const hasExistingAdmin = usersList.some((u) => u.role === 'admin');
+  const [isSetupMode, setIsSetupMode] = useState(!hasExistingAdmin);
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const [adminEmail, setAdminEmail] = useState('admin@wellness.com');
-  const [adminPassword, setAdminPassword] = useState('admin123');
+  // Form states
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [designation, setDesignation] = useState('Laboratory Director');
+  const [password, setPassword] = useState('');
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
     setLoading(true);
 
     try {
-      const result = await login(adminEmail, adminPassword, 'admin');
-      if (result.success) {
-        setSuccessMessage('Admin credentials verified. Launching Clinical Laboratory Management...');
-        setTimeout(() => {
-          router.push('/admin/dashboard');
-        }, 400);
+      if (isSetupMode) {
+        if (!name || !email || !phone || !password) {
+          setErrorMessage('Please fill in all administrator details.');
+          setLoading(false);
+          return;
+        }
+
+        const res = await registerAccount({
+          name,
+          email,
+          phone,
+          password,
+          role: 'admin',
+          designation
+        });
+
+        if (res.success) {
+          setSuccessMessage('Administrator account initialized successfully! Loading console...');
+          setTimeout(() => {
+            router.push('/admin/dashboard');
+          }, 400);
+        } else {
+          setErrorMessage(res.error || 'Failed to initialize admin account.');
+        }
       } else {
-        setErrorMessage(result.error || 'Admin authentication failed.');
+        const result = await login(email, password, 'admin');
+        if (result.success) {
+          setSuccessMessage('Admin credentials verified. Launching Clinical Laboratory Management...');
+          setTimeout(() => {
+            router.push('/admin/dashboard');
+          }, 400);
+        } else {
+          setErrorMessage(result.error || 'Admin authentication failed.');
+        }
       }
     } catch {
       setErrorMessage('Unexpected server error during admin authentication.');
@@ -79,25 +113,32 @@ export default function AdminLoginPage() {
                 Staff & Laboratory Administration
               </span>
               <h1 className="text-xl font-extrabold text-botanical-950">
-                Admin Console Login
+                {isSetupMode ? 'Create Admin Account' : 'Admin Console Login'}
               </h1>
             </div>
           </div>
 
-          <div className="mb-5 p-3 rounded-2xl bg-peach-50/70 border border-peach-200 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-peach-500 flex-shrink-0" />
-              <div className="text-xs">
-                <span className="font-semibold text-botanical-950">Medical Director:</span>
-                <span className="text-botanical-700/80 ml-1">admin@wellness.com</span>
-              </div>
-            </div>
+          {/* Toggle between Login and Setup */}
+          <div className="grid grid-cols-2 p-1 bg-ivory-100 rounded-xl mb-5 border border-ivory-300/80">
             <button
               type="button"
-              onClick={() => loginAsDemo('admin')}
-              className="text-xs font-bold px-2.5 py-1 rounded-lg bg-botanical-900 text-white hover:bg-black transition-colors flex-shrink-0"
+              onClick={() => { setIsSetupMode(false); setErrorMessage(''); }}
+              className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                !isSetupMode ? 'bg-white text-botanical-950 shadow-soft-sm' : 'text-botanical-700 hover:text-botanical-950'
+              }`}
             >
-              1-Click Sign In
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Admin Login</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsSetupMode(true); setErrorMessage(''); }}
+              className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                isSetupMode ? 'bg-white text-botanical-950 shadow-soft-sm' : 'text-botanical-700 hover:text-botanical-950'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Create New Admin</span>
             </button>
           </div>
 
@@ -115,7 +156,52 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSetupMode && (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-botanical-900 mb-1.5">Full Name</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-peach-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Joel Joyson"
+                      className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-peach-400 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-botanical-900 mb-1.5">Designation</label>
+                  <input
+                    type="text"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    placeholder="e.g. Managing Director / Chief Administrator"
+                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-peach-400 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-botanical-900 mb-1.5">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-peach-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-peach-400 bg-white"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             <div>
               <label className="block text-xs font-bold text-botanical-900 mb-1.5">Admin Email</label>
               <div className="relative">
@@ -123,9 +209,9 @@ export default function AdminLoginPage() {
                 <input
                   type="email"
                   required
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@wellness.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                   className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-peach-400 bg-white"
                 />
               </div>
@@ -138,9 +224,9 @@ export default function AdminLoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Enter administrator password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password (minimum 4 characters)"
                   className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-peach-400 bg-white"
                 />
                 <button
@@ -158,24 +244,16 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full py-3 px-4 rounded-xl bg-botanical-900 hover:bg-black active:bg-black text-white font-bold text-sm shadow-soft transition-all disabled:opacity-60 mt-2"
             >
-              {loading ? 'Authenticating...' : 'Sign In to Admin Console'}
+              {loading 
+                ? (isSetupMode ? 'Creating Account...' : 'Authenticating...') 
+                : (isSetupMode ? 'Create Administrator Account' : 'Sign In to Admin Console')}
             </button>
           </form>
-
-          <div className="mt-6 p-3 rounded-2xl bg-ivory-100 border border-ivory-300/80 text-xs text-botanical-800/80 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-botanical-950">
-              <ShieldAlert className="w-4 h-4 text-peach-600 flex-shrink-0" />
-              <span>Public Admin Registration Disabled</span>
-            </div>
-            <p className="leading-relaxed">
-              Administrative credentials are provisioned by laboratory IT. Unauthorized access is audited.
-            </p>
-          </div>
         </div>
       </main>
 
       <footer className="py-4 text-center text-xs text-botanical-700/60">
-        Wellness Diagnostic Admin Gateway
+        Wellness Diagnostic Admin Gateway • Davangere Clinical Hub
       </footer>
     </div>
   );

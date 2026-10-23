@@ -10,26 +10,24 @@ import {
   Lock, 
   AlertCircle, 
   CheckCircle2, 
-  Sparkles,
-  ShieldCheck,
-  Eye,
-  EyeOff
+  Eye, 
+  EyeOff 
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
 
 export default function PatientLoginPage() {
   const router = useRouter();
-  const { login, loginAsDemo } = useAuth();
+  const { login } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Default demo patient credentials
-  const [identifier, setIdentifier] = useState('patient@wellness.com');
-  const [password, setPassword] = useState('patient123');
+  // Patient login credentials
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +54,6 @@ export default function PatientLoginPage() {
 
   return (
     <div className="min-h-screen bg-ivory-200 flex flex-col justify-between selection:bg-botanical-200">
-      {/* Top Header */}
       <header className="px-4 sm:px-6 py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
         <BrandLogo size="md" />
 
@@ -69,11 +66,8 @@ export default function PatientLoginPage() {
         </Link>
       </header>
 
-      {/* Main Container */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
         <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-lg relative">
-          
-          {/* Header */}
           <div className="flex items-center gap-3 pb-5 mb-5 border-b border-ivory-200">
             <div className="w-12 h-12 rounded-2xl bg-botanical-50 border border-botanical-100 flex items-center justify-center text-botanical-600 flex-shrink-0">
               <UserCheck className="w-6 h-6" />
@@ -86,24 +80,6 @@ export default function PatientLoginPage() {
                 Sign In to Your Account
               </h1>
             </div>
-          </div>
-
-          {/* Quick Demo Sign-in */}
-          <div className="mb-5 p-3 rounded-2xl bg-botanical-50/70 border border-botanical-100 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-botanical-600 flex-shrink-0" />
-              <div className="text-xs">
-                <span className="font-semibold text-botanical-900">Demo Patient:</span>
-                <span className="text-botanical-700/80 ml-1">patient@wellness.com</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => loginAsDemo('patient')}
-              className="text-xs font-bold px-2.5 py-1 rounded-lg bg-botanical-500 text-white hover:bg-botanical-600 transition-colors flex-shrink-0"
-            >
-              1-Click Sign In
-            </button>
           </div>
 
           {/* Tab Switch to Register */}
@@ -143,41 +119,31 @@ export default function PatientLoginPage() {
                 Email Address or Mobile Number
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-botanical-500">
-                  <Mail className="w-4 h-4" />
-                </div>
+                <Mail className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="e.g. patient@wellness.com or mobile"
-                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-white"
+                  placeholder="name@example.com or 9876543210"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
                 />
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-botanical-900">Password</label>
-                <Link
-                  href="/patient/forgot-password"
-                  className="text-xs font-semibold text-botanical-600 hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <label className="block text-xs font-bold text-botanical-900 mb-1.5">
+                Account Password
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-botanical-500">
-                  <Lock className="w-4 h-4" />
-                </div>
+                <Lock className="w-4 h-4 text-botanical-600 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-white"
+                  className="w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-400 bg-white"
                 />
                 <button
                   type="button"
@@ -192,21 +158,16 @@ export default function PatientLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-bold text-sm shadow-soft transition-all disabled:opacity-60 mt-2"
+              className="w-full py-3 px-4 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-bold text-sm shadow-soft transition-all disabled:opacity-60"
             >
-              {loading ? 'Authenticating...' : 'Sign In as Patient'}
+              {loading ? 'Signing in...' : 'Sign In as Patient'}
             </button>
           </form>
-
-          <div className="mt-6 pt-4 border-t border-ivory-200 text-center text-xs text-botanical-700/70 flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-botanical-500" />
-            <span>End-to-end encrypted clinical health records</span>
-          </div>
         </div>
       </main>
 
       <footer className="py-4 text-center text-xs text-botanical-700/60">
-        Wellness Diagnostic Patient Security Gateway
+        Wellness Diagnostic Patient Portal
       </footer>
     </div>
   );

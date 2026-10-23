@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import tests, packages, addresses, bookings, admin, driver, reports, invoices, geocode
+from app.routes import tests, packages, addresses, bookings, admin, driver, reports, invoices, geocode, auth
 
 app = FastAPI(
     title="Wellness Diagnostic Pathology & Clinical API",
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 # Mount all domain routers
+app.include_router(auth.router)
 app.include_router(tests.router)
 app.include_router(packages.router)
 app.include_router(addresses.router)
