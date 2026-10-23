@@ -18,10 +18,14 @@ import {
   Plus,
   Send,
   UploadCloud,
-  ChevronRight
+  ChevronRight,
+  Download,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { BookingStatus, LabReportResultItem } from '@/types';
+import LabReportModal from '@/components/reports/LabReportModal';
 
 export default function AdminOrderDetailPage() {
   const params = useParams();
@@ -31,8 +35,13 @@ export default function AdminOrderDetailPage() {
   const bookingId = params.id as string;
   const booking = bookings.find((b) => b.id === bookingId || b.booking_reference === bookingId);
 
+  const linkedReport = reports.find((r) => r.booking_id === booking?.id || r.order_id === booking?.id || (booking?.report_id && r.id === booking.report_id));
+
   const [selectedDriver, setSelectedDriver] = useState<string>(drivers[0]?.id || '');
   const [showReportForm, setShowReportForm] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
   const [pathologyRemarks, setPathologyRemarks] = useState('All biological analyte values verified within clinical limits. Cold chain maintained during transit.');
   
   // Analyte values for report generation
@@ -70,6 +79,42 @@ export default function AdminOrderDetailPage() {
     updateBookingStatus(booking.id, 'Report Ready');
     setShowReportForm(false);
     alert('Laboratory report signed and released to patient portal.');
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !booking) return;
+
+    setSelectedPdfName(file.name);
+    setIsUploadingPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('booking_id', booking.id);
+      formData.append('patient_id', booking.patient_id || 'user_patient_1');
+      formData.append('doctor_name', 'Dr. Eleanor Vance, MD (Chief Pathologist)');
+      formData.append('lab_technician', 'Robert Thorne, B.Sc MLT');
+      formData.append('overall_remarks', pathologyRemarks || 'NABL Signed Diagnostic Lab Report');
+
+      const res = await fetch('/api/reports/upload-file', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        updateBookingStatus(booking.id, 'Report Ready');
+        alert(`Successfully uploaded "${file.name}" to Cloudflare R2! The verified report is now instantly accessible.`);
+        setShowReportForm(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || 'Failed to upload report to Cloudflare R2');
+      }
+    } catch (err: any) {
+      alert(`Upload error: ${err.message}`);
+    } finally {
+      setIsUploadingPdf(false);
+    }
   };
 
   return (
@@ -235,28 +280,114 @@ export default function AdminOrderDetailPage() {
 
       {/* Pathology Report Upload / Sign-off Section */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-botanical-950">Pathology Laboratory Report</h2>
-            <p className="text-xs text-botanical-700/80">Authorize analyte values, enter doctor remarks, and release to patient</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-botanical-950">Pathology Laboratory Report</h2>
+              {linkedReport && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>Report Active (Cloudflare R2)</span>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-botanical-700/80">Authorize analyte values or upload signed PDF report stored permanently on Cloudflare R2</p>
           </div>
 
-          <button
-            onClick={() => setShowReportForm(!showReportForm)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-50 hover:bg-botanical-100 text-botanical-800 font-bold text-xs border border-botanical-200"
-          >
-            <UploadCloud className="w-4 h-4 text-botanical-600" />
-            <span>{showReportForm ? 'Close Form' : 'Upload / Authorize Report'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {linkedReport && (
+              <button
+                onClick={() => setShowPreviewModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-botanical-100 hover:bg-botanical-200 text-botanical-900 font-bold text-xs"
+              >
+                <FileText className="w-4 h-4 text-botanical-600" />
+                <span>View Online</span>
+              </button>
+            )}
+            <button
+              onClick={() => setShowReportForm(!showReportForm)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-50 hover:bg-botanical-100 text-botanical-800 font-bold text-xs border border-botanical-200"
+            >
+              <UploadCloud className="w-4 h-4 text-botanical-600" />
+              <span>{showReportForm ? 'Close Form' : 'Upload / Authorize Report'}</span>
+            </button>
+          </div>
         </div>
 
+        {/* If linkedReport exists with R2 download link */}
+        {linkedReport && (
+          <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="space-y-0.5">
+              <p className="font-bold text-emerald-950">
+                Report #{linkedReport.report_number} • Verified by {linkedReport.doctor_name || 'Chief Pathologist'}
+              </p>
+              <p className="text-emerald-800/80 text-[11px]">
+                Released: {linkedReport.released_at} • Storage: Cloudflare R2 Object Store (10 GB Free Tier)
+              </p>
+            </div>
+            {linkedReport.download_url && (
+              <a
+                href={linkedReport.download_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-colors shadow-soft-sm"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download R2 PDF</span>
+              </a>
+            )}
+          </div>
+        )}
+
         {showReportForm && (
-          <div className="p-5 bg-ivory-50 rounded-2xl border border-ivory-200 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-botanical-900">
-              Analyte Test Results Input
-            </h3>
+          <div className="p-5 bg-ivory-50 rounded-2xl border border-ivory-200 space-y-5">
+            {/* Direct PDF Upload to Cloudflare R2 */}
+            <div className="p-4 rounded-2xl bg-white border border-ivory-300 space-y-2">
+              <div>
+                <h4 className="text-xs font-bold text-botanical-950 flex items-center gap-1.5">
+                  <UploadCloud className="w-4 h-4 text-botanical-600" />
+                  <span>Option 1: Upload Lab Report PDF Directly to Cloudflare R2</span>
+                </h4>
+                <p className="text-[11px] text-botanical-700/80">
+                  Upload official signed PDF report. Uploads instantly to Cloudflare R2 bucket with secure 24h presigned download links.
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-botanical-700 hover:bg-botanical-800 text-white font-bold text-xs shadow-soft transition-all">
+                  {isUploadingPdf ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UploadCloud className="w-4 h-4" />
+                  )}
+                  <span>{isUploadingPdf ? 'Uploading to R2...' : 'Select PDF File'}</span>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    disabled={isUploadingPdf}
+                    onChange={handlePdfUpload}
+                    className="hidden"
+                  />
+                </label>
+                {selectedPdfName && (
+                  <span className="text-xs text-botanical-800 font-mono">
+                    {selectedPdfName}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-ivory-300"></div>
+              <span className="flex-shrink mx-4 text-xs font-bold uppercase tracking-wider text-botanical-500">OR Enter Analyte Values</span>
+              <div className="flex-grow border-t border-ivory-300"></div>
+            </div>
 
             <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-botanical-900">
+                Option 2: Analyte Test Results Input
+              </h3>
+
               {analyteValues.map((item, idx) => (
                 <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
                   <input
@@ -327,6 +458,14 @@ export default function AdminOrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Lab Report Modal Preview */}
+      {showPreviewModal && linkedReport && (
+        <LabReportModal
+          report={linkedReport}
+          onClose={() => setShowPreviewModal(false)}
+        />
+      )}
     </div>
   );
 }

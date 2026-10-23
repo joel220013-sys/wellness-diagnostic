@@ -19,9 +19,11 @@ backend/
 │   │   ├── bookings.py     # /api/bookings creation & cancellation
 │   │   ├── admin.py        # /api/admin orders & driver assignment
 │   │   ├── driver.py       # /api/driver phlebotomist collection workflow
-│   │   ├── reports.py      # /api/reports laboratory report release
+│   │   ├── reports.py      # /api/reports laboratory report release & R2 upload
 │   │   ├── invoices.py     # /api/invoices billing & invoices
 │   │   └── geocode.py      # /api/geocode map coordinates proxy
+│   ├── services/
+│   │   └── r2_storage.py   # Cloudflare R2 S3-compatible storage service
 │   └── data/
 │       ├── store.py        # Production clinical store
 │       └── supabase_db.py  # Supabase live PostgreSQL client connection

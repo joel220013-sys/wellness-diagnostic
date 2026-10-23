@@ -41,12 +41,23 @@ export default function LabReportModal({ report, onClose }: LabReportModalProps)
           </div>
 
           <div className="flex items-center gap-2">
+            {report.download_url && !report.download_url.includes('mock-report') && (
+              <a
+                href={report.download_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-soft-sm"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download R2 PDF</span>
+              </a>
+            )}
             <button
               onClick={handlePrint}
               className="px-3.5 py-1.5 rounded-xl bg-botanical-600 hover:bg-botanical-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-soft-sm"
             >
               <Printer className="w-4 h-4" />
-              <span>Print / Download PDF</span>
+              <span>Print / Save PDF</span>
             </button>
             <button
               onClick={onClose}

@@ -118,9 +118,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     syncInvoices();
     const invInterval = setInterval(syncInvoices, 12000);
 
+    // Sync Reports from Supabase & Cloudflare R2 (Read-only polling)
+    const syncReports = () => {
+      fetch('/api/reports')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+            setReports(data.data);
+            try {
+              localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(data.data));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+
+    syncReports();
+    const repInterval = setInterval(syncReports, 12000);
+
     return () => {
       clearInterval(interval);
       clearInterval(invInterval);
+      clearInterval(repInterval);
       window.removeEventListener('focus', onFocus);
     };
   }, []);
@@ -370,6 +389,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     setBookings(updatedBookings);
     localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(updatedBookings));
+
+    // Persist to Python FastAPI backend & Supabase
+    fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        booking_id: booking.id,
+        patient_id: booking.patient_id,
+        report_number,
+        results,
+        overall_remarks: overallRemarks,
+        doctor_name: newReport.doctor_name,
+        lab_technician: newReport.lab_technician
+      })
+    }).catch(() => {});
 
     return newReport;
   };

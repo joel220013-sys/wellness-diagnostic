@@ -40,6 +40,7 @@ def root():
 @app.get("/api/health")
 def health_check():
     from app.data import supabase_db
+    from app.services import r2_storage
     conn = supabase_db.get_connection()
     is_supabase = conn is not None
     if conn:
@@ -48,8 +49,10 @@ def health_check():
         "status": "healthy",
         "database": "supabase_postgresql" if is_supabase else "local_in_memory",
         "supabase_connected": is_supabase,
+        "r2_storage_connected": r2_storage.is_configured(),
+        "storage_bucket": r2_storage.R2_BUCKET_NAME,
         "region": "ap-northeast-2 (Seoul)",
-        "timestamp": "2026-10-22T10:50:00Z"
+        "timestamp": "2026-10-23T14:35:00Z"
     }
 
 if __name__ == "__main__":

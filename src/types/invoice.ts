@@ -47,6 +47,9 @@ export interface LabReport {
   patient_gender?: 'Male' | 'Female' | 'Other';
   test_name?: string;
   storage_path?: string;
+  file_path?: string;
+  download_url?: string;
+  file_size?: string;
   original_filename?: string;
   status?: 'ready' | 'pending' | 'draft' | string;
   released_at: string;
