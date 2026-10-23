@@ -32,10 +32,12 @@ export default function AdminOrdersPage() {
   const [selectedDriverId, setSelectedDriverId] = useState<string>(drivers[0]?.id || '');
 
   const filteredBookings = bookings.filter((b) => {
+    const ref = b.booking_reference || (b as any).order_number || '';
+    const pat = b.patient_name || '';
     const matchesSearch =
-      b.booking_reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (b.items?.some((it) => it.item_name.toLowerCase().includes(searchQuery.toLowerCase())) || false);
+      ref.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pat.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (b.items?.some((it) => (it.item_name || '').toLowerCase().includes(searchQuery.toLowerCase())) || false);
 
     const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
     const matchesDriver = driverFilter === 'ALL' || b.driver_id === driverFilter;
