@@ -72,23 +72,27 @@ def list_bookings(
     all_bookings: List[Dict[str, Any]] = []
     seen_refs = set()
 
-    # 1. Fetch live records from Supabase PostgreSQL
+    # 1. Fetch live records from Supabase PostgreSQL (Source of Truth)
+    supabase_success = False
     try:
         rows = supabase_db.fetch_all("SELECT * FROM public.bookings ORDER BY created_at DESC;")
-        for r in rows:
-            formatted = _format_db_booking(r)
-            seen_refs.add(formatted["booking_reference"])
-            seen_refs.add(formatted["id"])
-            all_bookings.append(formatted)
+        if rows is not None:
+            supabase_success = True
+            for r in rows:
+                formatted = _format_db_booking(r)
+                seen_refs.add(formatted["booking_reference"])
+                seen_refs.add(formatted["id"])
+                all_bookings.append(formatted)
     except Exception as e:
         print(f"[Supabase DB Bookings] fetch error: {e}")
 
-    # 2. Add any in-memory bookings that aren't yet in Supabase
-    for b in DB.get("bookings", []):
-        ref = b.get("booking_reference") or b.get("id")
-        if ref not in seen_refs and b.get("id") not in seen_refs:
-            seen_refs.add(ref)
-            all_bookings.append(b)
+    # 2. Only fall back to in-memory store if Supabase database is unreachable
+    if not supabase_success:
+        for b in DB.get("bookings", []):
+            ref = b.get("booking_reference") or b.get("id")
+            if ref not in seen_refs and b.get("id") not in seen_refs:
+                seen_refs.add(ref)
+                all_bookings.append(b)
 
     # 3. Apply filters if requested
     if patient_id:
