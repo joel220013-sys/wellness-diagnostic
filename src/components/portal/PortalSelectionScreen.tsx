@@ -37,11 +37,13 @@ export default function PortalSelectionScreen() {
       {/* Top Header */}
       <header className="w-full border-b border-ivory-300/80 bg-white/70 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <BrandLogo size="md" showTagline={true} />
+          <Link href="/" className="hover:opacity-95 transition-opacity">
+            <BrandLogo size="md" showTagline={true} />
+          </Link>
 
           <div className="flex items-center gap-3">
             <Link
-              href="/home"
+              href="/"
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-botanical-700 bg-botanical-50 hover:bg-botanical-100/80 border border-botanical-200 transition-colors"
             >
               <Globe className="w-3.5 h-3.5 text-botanical-600" />
@@ -258,7 +260,7 @@ export default function PortalSelectionScreen() {
           </div>
 
           <Link
-            href="/home"
+            href="/"
             className="flex-shrink-0 text-xs sm:text-sm font-semibold text-botanical-700 hover:text-botanical-900 underline underline-offset-4"
           >
             Explore Public Website & Catalog →

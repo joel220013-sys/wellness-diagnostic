@@ -9,10 +9,10 @@ export default function MobileNavigation() {
   const pathname = usePathname();
 
   const NAV_ITEMS = [
-    { name: 'Home', href: '/home', icon: Home },
+    { name: 'Home', href: '/', icon: Home },
     { name: 'Tests', href: '/tests', icon: FlaskConical },
     { name: 'Book', href: '/patient/book', icon: CalendarPlus, highlight: true },
-    { name: 'Portal', href: '/', icon: UserCheck },
+    { name: 'Portal', href: '/portal', icon: UserCheck },
     { name: 'Contact', href: '/contact', icon: Phone },
   ];
 
@@ -20,7 +20,9 @@ export default function MobileNavigation() {
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-ivory-300 py-1.5 px-3 z-40 flex items-center justify-around shadow-soft-lg">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive = item.href === '/' 
+          ? (pathname === '/' || pathname === '/home') 
+          : pathname === item.href;
 
         if (item.highlight) {
           return (

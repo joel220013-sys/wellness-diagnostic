@@ -41,7 +41,7 @@ export default function PublicFooter() {
               Quick Navigation
             </p>
             <ul className="space-y-2 text-sm text-ivory-200/80">
-              <li><Link href="/home" className="hover:text-white transition-colors">Home</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
               <li><Link href="/tests" className="hover:text-white transition-colors">Test Directory</Link></li>
               <li><Link href="/packages" className="hover:text-white transition-colors">Health Packages</Link></li>
               <li><Link href="/home-collection" className="hover:text-white transition-colors">Home Collection Guide</Link></li>
@@ -56,7 +56,7 @@ export default function PublicFooter() {
               Access Portals
             </p>
             <ul className="space-y-2 text-sm text-ivory-200/80">
-              <li><Link href="/" className="hover:text-white transition-colors font-semibold">Portal Selection</Link></li>
+              <li><Link href="/portal" className="hover:text-white transition-colors font-semibold">Portal Selection</Link></li>
               <li><Link href="/patient/login" className="hover:text-white transition-colors">Patient Portal</Link></li>
               <li><Link href="/patient/register" className="hover:text-white transition-colors">Patient Registration</Link></li>
               <li><Link href="/admin/login" className="hover:text-white transition-colors">Admin Portal</Link></li>

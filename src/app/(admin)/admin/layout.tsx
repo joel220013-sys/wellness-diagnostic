@@ -72,7 +72,7 @@ export default function AdminLayout({
               Go to Your Portal
             </Link>
             <Link
-              href="/"
+              href="/portal"
               className="block w-full py-2.5 rounded-xl bg-ivory-100 text-botanical-900 font-semibold text-sm border border-ivory-300"
             >
               Switch Portal

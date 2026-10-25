@@ -326,7 +326,7 @@ export default function PublicLandingPage() {
             <div>
               <h4 className="font-bold text-peach-300 uppercase tracking-wider mb-3">Quick Links</h4>
               <ul className="space-y-2 text-ivory-300/80">
-                <li><Link href="/home" className="hover:text-white">Home</Link></li>
+                <li><Link href="/" className="hover:text-white">Home</Link></li>
                 <li><Link href="/tests" className="hover:text-white">Diagnostic Tests</Link></li>
                 <li><Link href="/packages" className="hover:text-white">Health Packages</Link></li>
                 <li><Link href="/home-collection" className="hover:text-white">Home Collection</Link></li>
@@ -338,7 +338,7 @@ export default function PublicLandingPage() {
             <div>
               <h4 className="font-bold text-peach-300 uppercase tracking-wider mb-3">Portals</h4>
               <ul className="space-y-2 text-ivory-300/80">
-                <li><Link href="/" className="hover:text-white">Choose Access Portal</Link></li>
+                <li><Link href="/portal" className="hover:text-white">Choose Access Portal</Link></li>
                 <li><Link href="/patient/login" className="hover:text-white">Patient Portal</Link></li>
                 <li><Link href="/admin/login" className="hover:text-white">Admin Console</Link></li>
                 <li><Link href="/driver/login" className="hover:text-white">Phlebotomist Fleet</Link></li>
@@ -358,7 +358,7 @@ export default function PublicLandingPage() {
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-ivory-300/60 gap-3">
             <span>© 2026 Wellness Diagnostic Inc. All medical rights reserved.</span>
             <div className="flex items-center gap-4">
-              <Link href="/" className="hover:underline">Choose Access Portal</Link>
+              <Link href="/portal" className="hover:underline">Choose Access Portal</Link>
               <span>•</span>
               <a href="#" className="hover:underline">Privacy Policy</a>
               <span>•</span>

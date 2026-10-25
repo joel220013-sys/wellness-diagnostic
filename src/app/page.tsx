@@ -1,5 +1,5 @@
-import PortalSelectionScreen from '@/components/portal/PortalSelectionScreen';
+import PublicLandingPage from '@/app/(public)/home/page';
 
 export default function HomePage() {
-  return <PortalSelectionScreen />;
+  return <PublicLandingPage />;
 }

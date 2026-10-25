@@ -104,10 +104,12 @@ export default function DriverLoginPage() {
   return (
     <div className="min-h-screen bg-ivory-200 flex flex-col justify-between selection:bg-botanical-200">
       <header className="px-4 sm:px-6 py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
-        <BrandLogo size="md" />
+        <Link href="/" className="hover:opacity-95 transition-opacity">
+          <BrandLogo size="md" />
+        </Link>
 
         <Link
-          href="/"
+          href="/portal"
           className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-botanical-800 hover:text-botanical-600 transition-colors bg-white/80 px-3.5 py-1.5 rounded-full border border-ivory-300 shadow-soft-sm"
         >
           <ArrowLeft className="w-4 h-4" />

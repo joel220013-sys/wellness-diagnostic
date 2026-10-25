@@ -39,7 +39,7 @@ export default function ErrorBoundary({
           </button>
 
           <Link
-            href="/"
+            href="/portal"
             className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-950 font-bold text-xs border border-ivory-300 transition-colors"
           >
             <Home className="w-3.5 h-3.5" />

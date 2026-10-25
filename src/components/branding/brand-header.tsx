@@ -79,7 +79,9 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
       <div className="w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         {/* Left: Brand Logo + Portal Pill */}
         <div className="flex items-center gap-3 sm:gap-4">
-          <BrandLogo size="sm" showTagline={false} />
+          <Link href="/" className="hover:opacity-95 transition-opacity" title="Back to Home">
+            <BrandLogo size="sm" showTagline={false} />
+          </Link>
           {portalRole && (
             <div className="flex items-center gap-2 pl-3 sm:pl-4 border-l border-ivory-300">
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold capitalize tracking-wide ${
@@ -114,7 +116,7 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
             </div>
           ) : (
             <Link
-              href="/"
+              href="/portal"
               className="text-xs font-semibold text-botanical-800 hover:text-botanical-600 transition-colors"
             >
               Change Portal
@@ -187,7 +189,7 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
           {/* Actions: Switch Portal & Logout */}
           <div className="pt-3 border-t border-ivory-200 flex flex-col gap-2">
             <Link
-              href="/"
+              href="/portal"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold text-botanical-800 bg-ivory-100 border border-ivory-300 hover:bg-ivory-200 transition-colors"
             >

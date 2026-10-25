@@ -16,7 +16,7 @@ export default function NotFound() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/"
+            href="/portal"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-medium text-sm transition-all shadow-sm"
           >
             <Home className="w-4 h-4" />
@@ -24,7 +24,7 @@ export default function NotFound() {
           </Link>
 
           <Link
-            href="/home"
+            href="/"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm transition-all"
           >
             <ArrowLeft className="w-4 h-4" />

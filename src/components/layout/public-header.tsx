@@ -26,7 +26,7 @@ export default function PublicHeader() {
   const { selectedTests } = useData();
 
   const NAV_LINKS = [
-    { name: 'Home', href: '/home', icon: Home },
+    { name: 'Home', href: '/', icon: Home },
     { name: 'Blood Tests', href: '/tests', icon: FlaskConical },
     { name: 'Health Packages', href: '/packages', icon: Boxes },
     { name: 'Home Collection', href: '/home-collection', icon: Truck },
@@ -51,7 +51,7 @@ export default function PublicHeader() {
               <span className="hidden sm:inline">1800-419-WELL (Toll Free)</span>
               <span className="sm:hidden">1800-419-WELL</span>
             </a>
-            <Link href="/" className="hover:text-peach-300 text-[11px] underline hidden sm:inline">
+            <Link href="/portal" className="hover:text-peach-300 text-[11px] underline hidden sm:inline">
               Choose Access Portal
             </Link>
           </div>
@@ -62,12 +62,16 @@ export default function PublicHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <BrandLogo size="md" showTagline={true} />
+          <Link href="/" className="hover:opacity-95 transition-opacity">
+            <BrandLogo size="md" showTagline={true} />
+          </Link>
 
           {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center gap-7">
             {NAV_LINKS.map((link) => {
-              const isActive = pathname === link.href;
+              const isActive = link.href === '/' 
+                ? (pathname === '/' || pathname === '/home') 
+                : pathname === link.href;
               return (
                 <Link
                   key={link.href}
@@ -97,7 +101,7 @@ export default function PublicHeader() {
             )}
 
             <Link
-              href="/"
+              href="/portal"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-botanical-800 bg-ivory-100 hover:bg-ivory-200 border border-ivory-300 transition-colors"
             >
               <UserCheck className="w-3.5 h-3.5 text-botanical-600" />
@@ -175,7 +179,7 @@ export default function PublicHeader() {
 
           <div className="pt-3 border-t border-ivory-200 flex flex-col gap-2">
             <Link
-              href="/"
+              href="/portal"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold text-botanical-800 bg-ivory-100 border border-ivory-300 hover:bg-ivory-200 transition-colors"
             >
