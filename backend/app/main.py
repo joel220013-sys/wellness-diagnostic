@@ -29,7 +29,12 @@ app.include_router(reports.router)
 app.include_router(invoices.router)
 app.include_router(geocode.router)
 
-@app.get("/")
+@app.api_route("/ping", methods=["GET", "HEAD"])
+@app.api_route("/api/ping", methods=["GET", "HEAD"])
+def ping():
+    return "ok"
+
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
         "service": "Wellness Diagnostic Pathology API",
@@ -38,7 +43,7 @@ def root():
         "version": "1.0.0"
     }
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health_check():
     from app.data import supabase_db
     from app.services import r2_storage
