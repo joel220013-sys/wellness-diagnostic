@@ -317,7 +317,7 @@ export default function PublicLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-botanical-900 text-xs">
             <div>
-              <BrandLogo size="md" />
+              <BrandLogo size="md" inverted={true} />
               <p className="text-ivory-300/80 mt-3 leading-relaxed">
                 Accredited clinical pathology laboratory specializing in doorstep blood collection, preventive health panels, and fast digital reports.
               </p>

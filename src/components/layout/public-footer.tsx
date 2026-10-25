@@ -19,7 +19,7 @@ export default function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-white/10">
           {/* Col 1 & 2: Brand Information */}
           <div className="lg:col-span-2 space-y-4">
-            <BrandLogo size="md" showTagline={true} />
+            <BrandLogo size="md" showTagline={true} inverted={true} />
             <p className="text-sm text-ivory-200/80 leading-relaxed max-w-sm mt-4">
               Wellness Diagnostic is an advanced clinical diagnostic laboratory offering comprehensive routine & specialized blood testing with sterile, safe doorstep home sample collection across major metropolitan areas.
             </p>

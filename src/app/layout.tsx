@@ -14,6 +14,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'Wellness Diagnostic — Quality Healthcare & Blood Diagnostics at Your Doorstep',
   description: 'Book blood tests, schedule home sample collection, and access verified NABL laboratory reports with Wellness Diagnostic.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
