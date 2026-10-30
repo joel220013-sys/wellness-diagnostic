@@ -90,7 +90,7 @@ export default function AdminLoginPage() {
             router.push('/admin/dashboard');
           }, 400);
         } else {
-          setErrorMessage(result.error || 'Admin authentication failed.');
+          setErrorMessage(result.error || 'Invalid login credentials. Please check your email and password.');
         }
       }
     } catch {

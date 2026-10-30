@@ -43,7 +43,7 @@ export default function PatientLoginPage() {
           router.push('/patient/dashboard');
         }, 400);
       } else {
-        setErrorMessage(result.error || 'Authentication failed. Please check credentials.');
+        setErrorMessage(result.error || 'Invalid login credentials. Please check your email/phone and password.');
       }
     } catch {
       setErrorMessage('An unexpected error occurred during sign-in.');

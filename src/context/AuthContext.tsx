@@ -161,27 +161,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!foundUser) {
       return {
         success: false,
-        error: `No account found with identifier "${emailOrPhone}". Please register or initialize your account first.`
+        error: 'Invalid login credentials. Please verify your email/phone and password.'
       };
     }
 
     if (foundUser.role !== requiredRole) {
-      const roleNames: Record<UserRole, string> = {
-        patient: 'Patient Portal (/patient/login)',
-        admin: 'Admin Portal (/admin/login)',
-        driver: 'Driver / Phlebotomist Portal (/driver/login)'
-      };
-
       return {
         success: false,
-        error: `Access Denied: This account is registered as "${foundUser.role.toUpperCase()}" and is not authorized for the ${roleNames[requiredRole]}.`
+        error: 'Invalid login credentials. Please verify your email/phone and password.'
       };
     }
 
     if (password.length < 4) {
       return {
         success: false,
-        error: 'Invalid password. Password must be at least 4 characters.'
+        error: 'Invalid login credentials. Please verify your email/phone and password.'
       };
     }
 

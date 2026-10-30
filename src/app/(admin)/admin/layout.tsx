@@ -18,7 +18,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user) {
+      if (!user || user.role !== 'admin') {
         router.push('/admin/login');
       }
     }
@@ -35,47 +35,27 @@ export default function AdminLayout({
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== 'admin') {
     return (
       <div className="min-h-screen bg-[#FFF9F2] flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl border border-ivory-300 max-w-md w-full text-center space-y-4 shadow-soft">
-          <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto" />
-          <h2 className="text-xl font-bold text-botanical-950">Administrative Access Required</h2>
-          <p className="text-sm text-botanical-800/80">
-            Please authenticate using authorized medical director or administrative credentials.
-          </p>
-          <Link
-            href="/admin/login"
-            className="block w-full py-2.5 rounded-xl bg-botanical-500 text-white font-bold text-sm shadow-soft"
-          >
-            Go to Admin Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (user.role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-[#FFF9F2] flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-3xl border border-rose-200 max-w-md w-full text-center space-y-4 shadow-soft">
           <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto" />
-          <h2 className="text-xl font-bold text-botanical-950">Access Forbidden</h2>
+          <h2 className="text-xl font-bold text-botanical-950">Invalid Credentials</h2>
           <p className="text-sm text-botanical-800/80">
-            Your authenticated account (<strong>{user.role.toUpperCase()}</strong>) does not have administrative permissions to view operational records.
+            The login credentials provided are incorrect or not authorized for administrative access.
           </p>
           <div className="pt-2 flex flex-col gap-2">
             <Link
-              href={user.role === 'patient' ? '/patient/dashboard' : '/driver/dashboard'}
+              href="/admin/login"
               className="block w-full py-2.5 rounded-xl bg-botanical-500 text-white font-bold text-sm shadow-soft"
             >
-              Go to Your Portal
+              Go to Admin Login
             </Link>
             <Link
               href="/portal"
               className="block w-full py-2.5 rounded-xl bg-ivory-100 text-botanical-900 font-semibold text-sm border border-ivory-300"
             >
-              Switch Portal
+              Choose Portal
             </Link>
           </div>
         </div>

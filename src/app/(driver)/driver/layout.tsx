@@ -18,7 +18,7 @@ export default function DriverLayout({
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user) {
+      if (!user || user.role !== 'driver') {
         router.push('/driver/login');
       }
     }
@@ -35,47 +35,27 @@ export default function DriverLayout({
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== 'driver') {
     return (
       <div className="min-h-screen bg-[#FFF9F2] flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl border border-ivory-300 max-w-md w-full text-center space-y-4 shadow-soft">
-          <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto" />
-          <h2 className="text-xl font-bold text-botanical-950">Phlebotomist Login Required</h2>
-          <p className="text-sm text-botanical-800/80">
-            Please sign in with your certified phlebotomist or driver credentials to view assigned collection jobs.
-          </p>
-          <Link
-            href="/driver/login"
-            className="block w-full py-2.5 rounded-xl bg-botanical-500 text-white font-bold text-sm shadow-soft"
-          >
-            Go to Driver Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (user.role !== 'driver') {
-    return (
-      <div className="min-h-screen bg-[#FFF9F2] flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-3xl border border-rose-200 max-w-md w-full text-center space-y-4 shadow-soft">
           <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto" />
-          <h2 className="text-xl font-bold text-botanical-950">Access Restricted</h2>
+          <h2 className="text-xl font-bold text-botanical-950">Invalid Credentials</h2>
           <p className="text-sm text-botanical-800/80">
-            Your authenticated account (<strong>{user.role.toUpperCase()}</strong>) is not recognized as a registered phlebotomist.
+            The login credentials provided are incorrect or not authorized for phlebotomist dispatch access.
           </p>
           <div className="pt-2 flex flex-col gap-2">
             <Link
-              href={user.role === 'patient' ? '/patient/dashboard' : '/admin/dashboard'}
+              href="/driver/login"
               className="block w-full py-2.5 rounded-xl bg-botanical-500 text-white font-bold text-sm shadow-soft"
             >
-              Go to Your Portal
+              Go to Driver Login
             </Link>
             <Link
               href="/portal"
               className="block w-full py-2.5 rounded-xl bg-ivory-100 text-botanical-900 font-semibold text-sm border border-ivory-300"
             >
-              Switch Portal
+              Choose Portal
             </Link>
           </div>
         </div>

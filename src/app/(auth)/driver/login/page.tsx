@@ -56,7 +56,7 @@ export default function DriverLoginPage() {
           router.push('/driver/dashboard');
         }, 400);
       } else {
-        setErrorMessage(result.error || 'Driver authentication failed.');
+        setErrorMessage(result.error || 'Invalid login credentials. Please check your phone/email and password.');
       }
     } catch {
       setErrorMessage('Unexpected system error during login.');

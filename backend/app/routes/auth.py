@@ -152,14 +152,14 @@ def login_user(payload: LoginInput):
     if not row:
         raise HTTPException(
             status_code=401, 
-            detail=f"No {req_role or 'user'} account found matching '{ident}'. Please verify your credentials or register first."
+            detail="Invalid login credentials. Please check your email/phone and password."
         )
 
     stored_hash = row.get("password_hash")
     if stored_hash:
         # Strict PBKDF2 hash verification
         if not verify_password(stored_hash, payload.password):
-            raise HTTPException(status_code=401, detail="Invalid email/phone or password. Please try again.")
+            raise HTTPException(status_code=401, detail="Invalid login credentials. Please check your email/phone and password.")
     else:
         # First-time login for seeded/legacy profile: upgrade password to cryptographic hash
         if len(payload.password) >= 4:
@@ -168,6 +168,8 @@ def login_user(payload: LoginInput):
                 "UPDATE public.profiles SET password_hash = %s, updated_at = NOW() WHERE id = %s;",
                 (new_hash, row["id"])
             )
+        else:
+            raise HTTPException(status_code=401, detail="Invalid login credentials. Please check your email/phone and password.")
 
     # Sanitize returned profile data (never leak password_hash)
     profile_data = {

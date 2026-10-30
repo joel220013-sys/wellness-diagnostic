@@ -54,8 +54,9 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     if (userRole !== 'admin') {
-      // User is logged in but lacks admin privileges
-      return NextResponse.redirect(new URL('/portal', request.url));
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('error', 'invalid_credentials');
+      return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
   }
@@ -68,7 +69,9 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
     if (userRole !== 'driver' && userRole !== 'admin') {
-      return NextResponse.redirect(new URL('/portal', request.url));
+      const loginUrl = new URL('/driver/login', request.url);
+      loginUrl.searchParams.set('error', 'invalid_credentials');
+      return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
   }
@@ -78,6 +81,11 @@ export function middleware(request: NextRequest) {
     if (!userRole) {
       const loginUrl = new URL('/patient/login', request.url);
       loginUrl.searchParams.set('returnUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (userRole !== 'patient') {
+      const loginUrl = new URL('/patient/login', request.url);
+      loginUrl.searchParams.set('error', 'invalid_credentials');
       return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
