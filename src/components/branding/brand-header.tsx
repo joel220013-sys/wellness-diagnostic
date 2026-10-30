@@ -77,8 +77,8 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const navLinks = getNavLinks();
 
   return (
-    <header className="bg-white border-b border-ivory-300 sticky top-0 z-50 shadow-soft-sm w-full">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+    <header className="h-16 bg-white border-b border-ivory-300 sticky top-0 z-50 shadow-soft-sm w-full flex items-center">
+      <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Left: Brand Logo + Portal Pill */}
         <div className="flex items-center gap-3 sm:gap-4">
           <Link href="/" className="hover:opacity-95 transition-opacity" title="Back to Home">

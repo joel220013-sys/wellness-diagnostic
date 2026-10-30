@@ -30,7 +30,7 @@ export default function DriverNavigation() {
   return (
     <>
       {/* Desktop/Tablet Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-ivory-300 min-h-[calc(100vh-4rem)] flex-col justify-between p-4 shadow-soft-sm">
+      <aside className="hidden md:flex w-64 bg-white border-r border-ivory-300 h-full flex-col justify-between p-4 shadow-soft-sm overflow-y-auto">
         <div className="space-y-6">
           {/* Driver profile chip */}
           <div className="p-3.5 bg-sky-50/70 rounded-2xl border border-sky-100">

@@ -67,8 +67,8 @@ export default function DriverLayout({
     <div className="min-h-screen bg-[#FFF9F2] flex flex-col pb-16 md:pb-0">
       <BrandHeader portalRole="driver" />
       <div className="flex-1 flex w-full">
-        {/* Navigation - Docked to left edge */}
-        <div className="hidden md:block w-64 flex-shrink-0">
+        {/* Navigation - Docked to left edge and sticky */}
+        <div className="hidden md:block w-64 flex-shrink-0 sticky top-16 h-[calc(100vh-4rem)] z-30">
           <DriverNavigation />
         </div>
         {/* Main Content */}

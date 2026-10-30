@@ -65,8 +65,8 @@ export default function PatientLayout({
     <div className="min-h-screen bg-[#FFF9F2] flex flex-col">
       <BrandHeader portalRole="patient" />
       <div className="flex-1 flex w-full">
-        {/* Desktop Sidebar - Docked to left edge */}
-        <div className="hidden lg:block w-64 flex-shrink-0">
+        {/* Desktop Sidebar - Docked to left edge and sticky */}
+        <div className="hidden lg:block w-64 flex-shrink-0 sticky top-16 h-[calc(100vh-4rem)] z-30">
           <PatientSidebar />
         </div>
         {/* Main Content */}

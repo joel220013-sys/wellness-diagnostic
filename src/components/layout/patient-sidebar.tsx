@@ -41,7 +41,7 @@ export default function PatientSidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 bg-white border-r border-ivory-300 min-h-[calc(100vh-4rem)] flex flex-col justify-between p-4 shadow-soft-sm">
+    <aside className="w-64 bg-white border-r border-ivory-300 h-full flex flex-col justify-between p-4 shadow-soft-sm overflow-y-auto">
       <div className="space-y-6">
         {/* User Card */}
         <div className="p-3.5 bg-botanical-50/60 rounded-2xl border border-botanical-100/80">

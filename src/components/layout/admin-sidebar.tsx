@@ -47,7 +47,7 @@ export default function AdminSidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 bg-[#18352E] text-white min-h-[calc(100vh-4rem)] flex flex-col justify-between p-4 shadow-soft">
+    <aside className="w-64 bg-[#18352E] text-white h-full flex flex-col justify-between p-4 shadow-soft overflow-y-auto">
       <div className="space-y-5">
         {/* Admin Credential Badge */}
         <div className="p-3.5 bg-white/10 rounded-2xl border border-white/15 backdrop-blur-sm">
