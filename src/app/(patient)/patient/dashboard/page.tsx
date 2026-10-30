@@ -17,7 +17,9 @@ import {
   Eye,
   ShieldCheck,
   Calendar,
-  XCircle
+  XCircle,
+  ShoppingBag,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -27,7 +29,14 @@ import { LabReport, Invoice, Booking } from '@/types';
 
 export default function PatientDashboardPage() {
   const { user } = useAuth();
-  const { bookings, reports, invoices } = useData();
+  const { 
+    bookings, 
+    reports, 
+    invoices, 
+    selectedTests, 
+    removeSelectedTest, 
+    clearSelectedTests 
+  } = useData();
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
@@ -106,6 +115,63 @@ export default function PatientDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Active Cart Notification for Patient */}
+      {selectedTests.length > 0 && (
+        <div className="bg-gradient-to-r from-peach-50 to-amber-50/70 border border-peach-200/90 rounded-3xl p-5 sm:p-6 shadow-soft flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2.5 rounded-xl bg-peach-100 text-peach-700 shadow-soft-sm">
+                <ShoppingBag className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="font-extrabold text-botanical-950 text-base sm:text-lg">
+                  You have {selectedTests.length} {selectedTests.length === 1 ? 'test' : 'tests'} saved in your Cart
+                </h3>
+                <p className="text-xs text-botanical-800/80">
+                  Ready for doorstep sample collection appointment.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {selectedTests.map((test) => (
+                <span
+                  key={test.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white border border-peach-200 text-botanical-900 shadow-soft-sm"
+                >
+                  <span>{test.name}</span>
+                  <span className="font-bold text-botanical-600">₹{test.price}</span>
+                  <button
+                    onClick={() => removeSelectedTest(test.id)}
+                    className="ml-1 text-gray-400 hover:text-red-500 text-sm font-bold leading-none"
+                    title="Remove test"
+                    aria-label={`Remove ${test.name}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+            <button
+              onClick={clearSelectedTests}
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 hover:text-red-600 bg-white/80 hover:bg-white border border-gray-200 transition-colors"
+            >
+              Clear Cart
+            </button>
+            <Link
+              href="/patient/book"
+              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all hover:-translate-y-0.5"
+            >
+              <span>Complete Booking</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Quick Stat Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

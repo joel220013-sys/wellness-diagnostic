@@ -15,15 +15,12 @@ import {
   Boxes,
   Truck,
   Info,
-  ShoppingBag,
   ArrowRight
 } from 'lucide-react';
-import { useData } from '@/context/DataContext';
 
 export default function PublicHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { selectedTests } = useData();
 
   const NAV_LINKS = [
     { name: 'Home', href: '/', icon: Home },
@@ -90,16 +87,6 @@ export default function PublicHeader() {
 
           {/* Desktop Action Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            {selectedTests.length > 0 && (
-              <Link
-                href="/patient/book"
-                className="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-botanical-800 bg-peach-100 hover:bg-peach-200/80 border border-peach-200 transition-colors"
-              >
-                <ShoppingBag className="w-3.5 h-3.5 text-peach-600" />
-                <span>Cart ({selectedTests.length})</span>
-              </Link>
-            )}
-
             <Link
               href="/portal"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-botanical-800 bg-ivory-100 hover:bg-ivory-200 border border-ivory-300 transition-colors"
@@ -119,19 +106,6 @@ export default function PublicHeader() {
 
           {/* Mobile & Tablet Action Buttons + Hamburger */}
           <div className="flex lg:hidden items-center gap-2">
-            {selectedTests.length > 0 && (
-              <Link
-                href="/patient/book"
-                className="relative p-2 rounded-xl bg-peach-100 text-peach-800 border border-peach-200"
-                aria-label="View Cart"
-              >
-                <ShoppingBag className="w-4 h-4 text-peach-600" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-botanical-500 text-white text-[10px] font-extrabold flex items-center justify-center">
-                  {selectedTests.length}
-                </span>
-              </Link>
-            )}
-
             <Link
               href="/patient/book"
               className="px-3.5 py-1.5 rounded-full bg-botanical-500 hover:bg-botanical-600 text-white text-xs font-bold shadow-soft"

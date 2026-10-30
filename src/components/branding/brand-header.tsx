@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import BrandLogo from './logo';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import { 
   LogOut, 
   Menu, 
@@ -34,6 +35,7 @@ interface BrandHeaderProps {
 
 export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const { user, logout } = useAuth();
+  const { selectedTests } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -99,6 +101,17 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
 
         {/* Right Desktop: User info + Sign Out */}
         <div className="hidden lg:flex items-center gap-3">
+          {portalRole === 'patient' && selectedTests.length > 0 && (
+            <Link
+              href="/patient/book"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-botanical-900 bg-peach-100 hover:bg-peach-200 border border-peach-200 shadow-soft-sm transition-all"
+              title="View selected tests in cart"
+            >
+              <ShoppingBag className="w-4 h-4 text-peach-600" />
+              <span>Cart ({selectedTests.length})</span>
+            </Link>
+          )}
+
           {user ? (
             <div className="flex items-center gap-3">
               <div className="text-right">
@@ -129,9 +142,18 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
           {portalRole === 'patient' && (
             <Link
               href="/patient/book"
-              className="px-3 py-1.5 rounded-full bg-botanical-500 text-white font-bold text-xs shadow-soft"
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs shadow-soft transition-all ${
+                selectedTests.length > 0
+                  ? 'bg-peach-100 text-botanical-950 border border-peach-200'
+                  : 'bg-botanical-500 text-white'
+              }`}
             >
-              Book
+              <ShoppingBag className="w-3.5 h-3.5 text-peach-600" />
+              {selectedTests.length > 0 ? (
+                <span>Cart ({selectedTests.length})</span>
+              ) : (
+                <span>Book</span>
+              )}
             </Link>
           )}
           <button
