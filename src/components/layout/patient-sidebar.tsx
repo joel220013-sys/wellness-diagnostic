@@ -53,7 +53,7 @@ export default function PatientSidebar() {
               <p className="text-sm font-bold text-botanical-950 truncate">{user?.name || 'Patient'}</p>
               <p className="text-xs text-botanical-700/80 truncate">{user?.email || 'patient@wellness.com'}</p>
               <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white text-botanical-700 border border-botanical-200">
-                Patient ID: {user?.patientId || 'WD-PT-8842'}
+                Patient ID: {user?.patientId || user?.badgeId || 'WD-PT-001'}
               </span>
             </div>
           </div>

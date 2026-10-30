@@ -35,6 +35,36 @@ def verify_password(stored_hash: Optional[str], provided_password: str) -> bool:
     except Exception:
         return False
 
+def generate_next_badge_id(role: str) -> str:
+    """Generates an order-wise sequential badge ID starting from 001 (e.g. WD-PT-001, WD-PT-002)."""
+    if role == "patient":
+        prefix = "WD-PT"
+    elif role == "driver":
+        prefix = "WD-PHLEB"
+    elif role == "admin":
+        prefix = "WD-ADM"
+    else:
+        prefix = f"WD-{role.upper()[:3]}"
+
+    rows = supabase_db.fetch_all(
+        f"SELECT badge_id FROM public.profiles WHERE role = %s::user_role AND badge_id LIKE '{prefix}-%';",
+        (role,)
+    )
+    max_num = 0
+    for r in (rows or []):
+        bid = str(r.get("badge_id") or "")
+        m = re.search(rf"{prefix}-(\d+)", bid)
+        if m:
+            try:
+                val = int(m.group(1))
+                if val > max_num:
+                    max_num = val
+            except ValueError:
+                pass
+
+    next_num = max_num + 1
+    return f"{prefix}-{next_num:03d}"
+
 class RegisterInput(BaseModel):
     name: str
     email: str
@@ -90,12 +120,7 @@ def register_user(payload: RegisterInput):
     user_id = str(uuid.uuid4())
     badge_id = sanitize_text(payload.badge_id) if payload.badge_id else None
     if not badge_id:
-        if clean_role == "admin":
-            badge_id = f"WD-ADM-{user_id[:4].upper()}"
-        elif clean_role == "driver":
-            badge_id = f"WD-PHLEB-{user_id[:4].upper()}"
-        else:
-            badge_id = f"WD-PT-{user_id[:4].upper()}"
+        badge_id = generate_next_badge_id(clean_role)
 
     designation = sanitize_text(payload.designation) if payload.designation else (
         "Medical Director" if clean_role == "admin" else ("Phlebotomist" if clean_role == "driver" else "Patient")

@@ -78,7 +78,7 @@ export default function PatientProfilePage() {
               <input
                 type="text"
                 disabled
-                value={user?.patientId || 'WD-PT-8842'}
+                value={user?.patientId || user?.badgeId || 'WD-PT-001'}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-ivory-300 bg-ivory-50 text-sm font-mono text-botanical-800 cursor-not-allowed"
               />
             </div>

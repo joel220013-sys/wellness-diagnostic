@@ -58,6 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = localStorage.getItem(STORAGE_KEY_USER);
       if (storedUser) {
         const parsed = JSON.parse(storedUser);
+        if (parsed.role === 'patient') {
+          if (!parsed.patientId || parsed.patientId === 'WD-PT-8842' || parsed.patientId.match(/WD-PT-[A-F0-9]{4}/i)) {
+            parsed.patientId = parsed.badgeId && !parsed.badgeId.match(/WD-PT-[A-F0-9]{4}/i) && parsed.badgeId.startsWith('WD-PT-') 
+              ? parsed.badgeId 
+              : 'WD-PT-001';
+            parsed.badgeId = parsed.patientId;
+            localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(parsed));
+          }
+        }
         setUser(parsed);
         setAuthCookies(parsed);
       }
@@ -84,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phone: p.phone,
             role: p.role,
             badgeId: p.badge_id,
+            patientId: p.role === 'patient' ? (p.badge_id || 'WD-PT-001') : undefined,
             designation: p.designation,
             avatar: p.avatar_url,
             active: true,
@@ -102,6 +112,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               } catch {}
               return combined;
             });
+
+            // Also synchronize active logged-in user if their sequential badge_id was updated in Supabase
+            const activeStored = localStorage.getItem(STORAGE_KEY_USER);
+            if (activeStored) {
+              try {
+                const activeParsed = JSON.parse(activeStored);
+                const serverMatch = mapped.find(
+                  (m) => m.id === activeParsed.id || m.email?.toLowerCase() === activeParsed.email?.toLowerCase()
+                );
+                if (serverMatch) {
+                  const updatedActive = {
+                    ...activeParsed,
+                    badgeId: serverMatch.badgeId,
+                    patientId: serverMatch.patientId || serverMatch.badgeId,
+                  };
+                  setUser(updatedActive);
+                  setAuthCookies(updatedActive);
+                  localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedActive));
+                }
+              } catch {}
+            }
           }
         }
       })
@@ -141,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: p.phone,
           role: p.role,
           badgeId: p.badge_id,
+          patientId: p.role === 'patient' ? (p.badge_id || 'WD-PT-001') : undefined,
           designation: p.designation,
           avatar: p.avatar_url,
           active: true,
@@ -177,6 +209,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         success: false,
         error: 'Invalid login credentials. Please verify your email/phone and password.'
       };
+    }
+
+    if (foundUser.role === 'patient' && (!foundUser.patientId || foundUser.patientId === 'WD-PT-8842')) {
+      foundUser.patientId = foundUser.badgeId || 'WD-PT-001';
     }
 
     setUser(foundUser);
@@ -224,6 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: p.phone,
           role: p.role,
           badgeId: p.badge_id,
+          patientId: p.role === 'patient' ? (p.badge_id || 'WD-PT-001') : undefined,
           designation: p.designation,
           avatar: p.avatar_url,
           active: true,
@@ -238,13 +275,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
 
     if (!createdUser) {
+      let assignedBadgeId = data.badgeId;
+      if (!assignedBadgeId) {
+        if (data.role === 'patient') {
+          let maxSeq = 0;
+          for (const u of usersList) {
+            const m = (u.patientId || u.badgeId || '').match(/WD-PT-(\d+)/);
+            if (m) {
+              const val = parseInt(m[1], 10);
+              if (val > maxSeq) maxSeq = val;
+            }
+          }
+          assignedBadgeId = `WD-PT-${String(maxSeq + 1).padStart(3, '0')}`;
+        } else if (data.role === 'admin') {
+          assignedBadgeId = `WD-ADM-${String(usersList.filter(u => u.role === 'admin').length + 1).padStart(3, '0')}`;
+        } else {
+          assignedBadgeId = `WD-PHLEB-${String(usersList.filter(u => u.role === 'driver').length + 1).padStart(3, '0')}`;
+        }
+      }
+
       createdUser = {
         id: `user_${data.role}_${Date.now()}`,
         name: data.name.trim(),
         email: cleanEmail,
         phone: cleanPhone,
         role: data.role,
-        badgeId: data.badgeId || `WD-${data.role.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        badgeId: assignedBadgeId,
+        patientId: data.role === 'patient' ? assignedBadgeId : undefined,
         designation: data.designation || (data.role === 'admin' ? 'Laboratory Administrator' : (data.role === 'driver' ? 'Phlebotomist' : 'Patient')),
         active: true,
         createdAt: new Date().toISOString()

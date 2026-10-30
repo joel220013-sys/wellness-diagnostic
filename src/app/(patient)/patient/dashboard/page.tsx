@@ -41,8 +41,7 @@ export default function PatientDashboardPage() {
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
 
-  // Filter bookings, reports, invoices for current patient
-  // For demo user, Sarah Jenkins (user_patient_1 / WD-PT-8842)
+  // Filter bookings, reports, invoices for current authenticated patient
   const patientBookings = bookings.filter(
     (b) => b.patient_id === user?.id || b.patient_name === user?.name || user?.email === 'patient@wellness.com'
   );
@@ -207,7 +206,7 @@ export default function PatientDashboardPage() {
             <span className="text-xs font-semibold">Patient ID</span>
             <ShieldCheck className="w-4 h-4 text-botanical-600" />
           </div>
-          <p className="text-lg font-extrabold text-botanical-950 truncate">{user?.patientId || 'WD-PT-8842'}</p>
+          <p className="text-lg font-extrabold text-botanical-950 truncate">{user?.patientId || user?.badgeId || 'WD-PT-001'}</p>
           <p className="text-[11px] text-botanical-700/70 mt-1">Verified Clinical File</p>
         </div>
       </div>

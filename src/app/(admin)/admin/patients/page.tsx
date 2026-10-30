@@ -81,7 +81,7 @@ export default function AdminPatientsPage() {
                 return (
                   <tr key={patient.id} className="hover:bg-ivory-50/60 transition-colors">
                     <td className="p-3.5 font-bold font-mono text-botanical-950">
-                      {patient.patientId || 'WD-PT-8842'}
+                      {patient.patientId || patient.badgeId || 'WD-PT-001'}
                     </td>
                     <td className="p-3.5 font-bold text-botanical-950">
                       {patient.name}
