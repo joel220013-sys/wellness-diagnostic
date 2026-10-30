@@ -24,6 +24,20 @@ const STORAGE_KEY_USER = 'wellness_auth_user_v5';
 const STORAGE_KEY_PORTAL = 'wellness_selected_portal_v5';
 const STORAGE_KEY_USERS_DB = 'wellness_users_database_v5';
 
+function setAuthCookies(u: SessionUser) {
+  if (typeof document === 'undefined') return;
+  const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  const secureFlag = isHttps ? '; Secure' : '';
+  document.cookie = `wellness_auth_role=${u.role}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
+  document.cookie = `wellness_auth_session=${encodeURIComponent(JSON.stringify({ role: u.role, id: u.id, email: u.email }))}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
+}
+
+function clearAuthCookies() {
+  if (typeof document === 'undefined') return;
+  document.cookie = 'wellness_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+  document.cookie = 'wellness_auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [selectedPortal, setSelectedPortalState] = useState<UserRole | null>(null);
@@ -43,7 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const storedUser = localStorage.getItem(STORAGE_KEY_USER);
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        setAuthCookies(parsed);
       }
 
       const storedPortal = localStorage.getItem(STORAGE_KEY_PORTAL);
@@ -131,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: p.created_at
         };
         setUser(loggedInUser);
+        setAuthCookies(loggedInUser);
         localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(loggedInUser));
         return { success: true };
       }
@@ -169,6 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setUser(foundUser);
+    setAuthCookies(foundUser);
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(foundUser));
     return { success: true };
   };
@@ -244,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify(updated));
 
     setUser(createdUser);
+    setAuthCookies(createdUser);
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(createdUser));
 
     return { success: true };
@@ -267,6 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const demoUser = usersList.find((u) => u.role === role);
     if (demoUser) {
       setUser(demoUser);
+      setAuthCookies(demoUser);
       setSelectedPortal(role);
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(demoUser));
 
@@ -279,6 +299,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setSelectedPortal(null);
+    clearAuthCookies();
     localStorage.removeItem(STORAGE_KEY_USER);
     localStorage.removeItem(STORAGE_KEY_PORTAL);
     router.push('/');

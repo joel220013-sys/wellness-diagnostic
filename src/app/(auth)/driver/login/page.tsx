@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
+import { sanitizeInput, sanitizeEmail, sanitizePhone } from '@/lib/security/sanitize';
 
 export default function DriverLoginPage() {
   const router = useRouter();
@@ -69,20 +70,30 @@ export default function DriverLoginPage() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!name || !phone || !email || !newPassword) {
+    const cleanName = sanitizeInput(name);
+    const cleanEmail = sanitizeEmail(email);
+    const cleanPhone = sanitizePhone(phone);
+    const cleanBadge = sanitizeInput(badgeId);
+
+    if (!cleanName || !cleanPhone || !cleanEmail || !newPassword) {
       setErrorMessage('Please fill in all phlebotomist details.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
       return;
     }
 
     setLoading(true);
     try {
       const res = await registerAccount({
-        name,
-        email,
-        phone,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
         password: newPassword,
         role: 'driver',
-        badgeId: badgeId || `WD-PHLEB-${Math.floor(100 + Math.random() * 900)}`,
+        badgeId: cleanBadge || `WD-PHLEB-${Math.floor(100 + Math.random() * 900)}`,
         designation: 'Senior Phlebotomist'
       });
 

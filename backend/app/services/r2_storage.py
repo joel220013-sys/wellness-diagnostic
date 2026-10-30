@@ -27,10 +27,10 @@ def _load_env_fallback():
 
 _load_env_fallback()
 
-R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "8bbfdf863607f033e85be55182ba64bc")
-R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "05579cc3afe9f3d4d7979e85620ccbc0")
-R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "465c8322030a32dff8bc91f9b7678df32b28a3251322253464d8194896f13679")
-R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com")
+R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL") or (f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com" if R2_ACCOUNT_ID else "")
 R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "wellness-reports")
 
 def is_configured() -> bool:

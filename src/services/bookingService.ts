@@ -2,6 +2,7 @@ import { BookingCreateInput } from '@/lib/validations';
 import { calculateOrderPricing } from './pricingService';
 import { getServerSupabase } from '@/lib/supabase/server';
 import { Booking } from '@/types';
+import { sanitizeInput, sanitizeEmail, sanitizePhone } from '@/lib/security/sanitize';
 
 export async function createBookingService(input: BookingCreateInput): Promise<{
   success: boolean;
@@ -16,23 +17,23 @@ export async function createBookingService(input: BookingCreateInput): Promise<{
     const assignedDriverId = input.assigned_driver_id || 'drv_unassigned';
 
     const addressSnapshot = {
-      street: `${input.address.address_line_1}${input.address.address_line_2 ? ', ' + input.address.address_line_2 : ''}`,
-      city: input.address.city,
-      postal_code: input.address.postal_code,
-      locality: input.address.locality || undefined,
-      landmark: input.address.landmark || undefined,
+      street: sanitizeInput(`${input.address.address_line_1}${input.address.address_line_2 ? ', ' + input.address.address_line_2 : ''}`),
+      city: sanitizeInput(input.address.city),
+      postal_code: sanitizeInput(input.address.postal_code),
+      locality: input.address.locality ? sanitizeInput(input.address.locality) : undefined,
+      landmark: input.address.landmark ? sanitizeInput(input.address.landmark) : undefined,
       latitude: input.address.latitude,
       longitude: input.address.longitude,
-      instructions: input.address.access_instructions || undefined,
+      instructions: input.address.access_instructions ? sanitizeInput(input.address.access_instructions) : undefined,
     };
 
     const newBooking: Booking = {
       id: bookingId,
       booking_reference,
-      patient_id: input.patient_id,
-      patient_name: input.patient_name,
-      patient_phone: input.patient_phone,
-      patient_email: input.patient_email,
+      patient_id: sanitizeInput(input.patient_id),
+      patient_name: sanitizeInput(input.patient_name),
+      patient_phone: sanitizePhone(input.patient_phone),
+      patient_email: sanitizeEmail(input.patient_email),
       patient_age: input.patient_age,
       patient_gender: input.patient_gender,
       status: 'assigned',

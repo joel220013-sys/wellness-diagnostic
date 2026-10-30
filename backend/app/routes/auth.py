@@ -1,4 +1,8 @@
 import uuid
+import hashlib
+import secrets
+import html
+import re
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, EmailStr
@@ -6,6 +10,30 @@ from typing import List, Dict, Any, Optional
 from app.data import supabase_db
 
 router = APIRouter(prefix="/api/auth", tags=["User Authentication & Profiles"])
+
+def sanitize_text(text: Optional[str]) -> str:
+    """Strips HTML tags and escapes dangerous entities to prevent XSS."""
+    if not text:
+        return ""
+    clean = re.sub(r'<[^>]*>', '', str(text))
+    return html.escape(clean.strip())
+
+def hash_password(password: str) -> str:
+    """Hashes password using PBKDF2-HMAC-SHA256 with a unique cryptographic 16-byte salt."""
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000)
+    return f"{salt}:{key.hex()}"
+
+def verify_password(stored_hash: Optional[str], provided_password: str) -> bool:
+    """Verifies a plaintext password against a stored PBKDF2-HMAC-SHA256 hash using constant-time comparison."""
+    if not stored_hash or ":" not in stored_hash:
+        return False
+    try:
+        salt, key_hex = stored_hash.split(":", 1)
+        expected_key = hashlib.pbkdf2_hmac("sha256", provided_password.encode("utf-8"), salt.encode("utf-8"), 100000)
+        return secrets.compare_digest(key_hex, expected_key.hex())
+    except Exception:
+        return False
 
 class RegisterInput(BaseModel):
     name: str
@@ -26,8 +54,9 @@ def get_users(role: Optional[str] = Query(None)):
     query = "SELECT id, email, phone, name, role, avatar_url, badge_id, designation, created_at FROM public.profiles"
     params = ()
     if role:
+        clean_role = sanitize_text(role).lower()
         query += " WHERE role = %s::user_role"
-        params = (role,)
+        params = (clean_role,)
     query += " ORDER BY created_at ASC;"
     
     rows = supabase_db.fetch_all(query, params)
@@ -39,12 +68,16 @@ def get_users(role: Optional[str] = Query(None)):
 
 @router.post("/register")
 def register_user(payload: RegisterInput):
-    clean_email = payload.email.strip().lower()
-    clean_phone = payload.phone.strip()
-    clean_role = payload.role.strip().lower()
+    clean_email = sanitize_text(payload.email).lower()
+    clean_phone = sanitize_text(payload.phone)
+    clean_name = sanitize_text(payload.name)
+    clean_role = sanitize_text(payload.role).lower()
 
     if clean_role not in ["patient", "admin", "driver"]:
         raise HTTPException(status_code=400, detail="Invalid role. Must be 'patient', 'admin', or 'driver'.")
+
+    if len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
 
     # Check for existing email in profiles
     existing = supabase_db.fetch_one(
@@ -55,7 +88,7 @@ def register_user(payload: RegisterInput):
         raise HTTPException(status_code=400, detail="An account with this email or phone number already exists.")
 
     user_id = str(uuid.uuid4())
-    badge_id = payload.badge_id
+    badge_id = sanitize_text(payload.badge_id) if payload.badge_id else None
     if not badge_id:
         if clean_role == "admin":
             badge_id = f"WD-ADM-{user_id[:4].upper()}"
@@ -64,30 +97,34 @@ def register_user(payload: RegisterInput):
         else:
             badge_id = f"WD-PT-{user_id[:4].upper()}"
 
-    designation = payload.designation or ("Medical Director" if clean_role == "admin" else ("Phlebotomist" if clean_role == "driver" else "Patient"))
+    designation = sanitize_text(payload.designation) if payload.designation else (
+        "Medical Director" if clean_role == "admin" else ("Phlebotomist" if clean_role == "driver" else "Patient")
+    )
+
+    pwd_hash = hash_password(payload.password)
 
     query = """
-    INSERT INTO public.profiles (id, email, phone, name, role, badge_id, designation, created_at, updated_at)
-    VALUES (%s, %s, %s, %s, %s::user_role, %s, %s, NOW(), NOW())
+    INSERT INTO public.profiles (id, email, phone, name, role, badge_id, designation, password_hash, created_at, updated_at)
+    VALUES (%s, %s, %s, %s, %s::user_role, %s, %s, %s, NOW(), NOW())
     RETURNING id, email, phone, name, role, badge_id, designation, created_at;
     """
     row = supabase_db.fetch_one(query, (
         user_id,
         clean_email,
         clean_phone,
-        payload.name.strip(),
+        clean_name,
         clean_role,
         badge_id,
-        designation
+        designation,
+        pwd_hash
     ))
 
     if not row:
-        # Fallback if returning fails
         row = {
             "id": user_id,
             "email": clean_email,
             "phone": clean_phone,
-            "name": payload.name.strip(),
+            "name": clean_name,
             "role": clean_role,
             "badge_id": badge_id,
             "designation": designation
@@ -101,11 +138,11 @@ def register_user(payload: RegisterInput):
 
 @router.post("/login")
 def login_user(payload: LoginInput):
-    ident = payload.identifier.strip().lower()
-    req_role = payload.required_role.strip().lower() if payload.required_role else None
+    ident = sanitize_text(payload.identifier).lower()
+    req_role = sanitize_text(payload.required_role).lower() if payload.required_role else None
 
     # Search in profiles by email or phone
-    query = "SELECT id, email, phone, name, role, badge_id, designation, created_at FROM public.profiles WHERE LOWER(email) = %s OR phone = %s"
+    query = "SELECT id, email, phone, name, role, badge_id, designation, created_at, password_hash FROM public.profiles WHERE LOWER(email) = %s OR phone = %s"
     params = [ident, ident]
     if req_role:
         query += " AND role = %s::user_role"
@@ -115,11 +152,37 @@ def login_user(payload: LoginInput):
     if not row:
         raise HTTPException(
             status_code=401, 
-            detail=f"No {req_role or 'user'} account found matching '{ident}'. Please register first."
+            detail=f"No {req_role or 'user'} account found matching '{ident}'. Please verify your credentials or register first."
         )
+
+    stored_hash = row.get("password_hash")
+    if stored_hash:
+        # Strict PBKDF2 hash verification
+        if not verify_password(stored_hash, payload.password):
+            raise HTTPException(status_code=401, detail="Invalid email/phone or password. Please try again.")
+    else:
+        # First-time login for seeded/legacy profile: upgrade password to cryptographic hash
+        if len(payload.password) >= 4:
+            new_hash = hash_password(payload.password)
+            supabase_db.execute(
+                "UPDATE public.profiles SET password_hash = %s, updated_at = NOW() WHERE id = %s;",
+                (new_hash, row["id"])
+            )
+
+    # Sanitize returned profile data (never leak password_hash)
+    profile_data = {
+        "id": row["id"],
+        "email": row["email"],
+        "phone": row["phone"],
+        "name": row["name"],
+        "role": row["role"],
+        "badge_id": row["badge_id"],
+        "designation": row["designation"],
+        "created_at": row.get("created_at")
+    }
 
     return {
         "success": True,
         "message": "Login successful",
-        "data": row
+        "data": profile_data
     }

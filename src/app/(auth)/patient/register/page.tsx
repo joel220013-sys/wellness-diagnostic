@@ -18,6 +18,8 @@ import {
 import BrandLogo from '@/components/common/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
 
+import { sanitizeInput, sanitizeEmail, sanitizePhone } from '@/lib/security/sanitize';
+
 export default function PatientRegisterPage() {
   const router = useRouter();
   const { registerPatient } = useAuth();
@@ -37,19 +39,29 @@ export default function PatientRegisterPage() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!name || !email || !phone || !password) {
+    const cleanName = sanitizeInput(name);
+    const cleanEmail = sanitizeEmail(email);
+    const cleanPhone = sanitizePhone(phone);
+    const cleanAddress = sanitizeInput(address);
+
+    if (!cleanName || !cleanEmail || !cleanPhone || !password) {
       setErrorMessage('Please fill in all mandatory fields.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
       return;
     }
 
     setLoading(true);
     try {
       const res = await registerPatient({
-        name,
-        email,
-        phone,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
         password,
-        address
+        address: cleanAddress
       });
 
       if (res.success) {

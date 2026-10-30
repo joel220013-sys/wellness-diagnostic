@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { useAuth } from '@/context/AuthContext';
+import { sanitizeInput, sanitizeEmail, sanitizePhone } from '@/lib/security/sanitize';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -45,21 +46,32 @@ export default function AdminLoginPage() {
     setSuccessMessage('');
     setLoading(true);
 
+    const cleanEmail = sanitizeEmail(email);
+    const cleanPhone = sanitizePhone(phone);
+    const cleanName = sanitizeInput(name);
+    const cleanDesignation = sanitizeInput(designation);
+
     try {
       if (isSetupMode) {
-        if (!name || !email || !phone || !password) {
+        if (!cleanName || !cleanEmail || !cleanPhone || !password) {
           setErrorMessage('Please fill in all administrator details.');
           setLoading(false);
           return;
         }
 
+        if (password.length < 6) {
+          setErrorMessage('Admin password must be at least 6 characters.');
+          setLoading(false);
+          return;
+        }
+
         const res = await registerAccount({
-          name,
-          email,
-          phone,
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
           password,
           role: 'admin',
-          designation
+          designation: cleanDesignation
         });
 
         if (res.success) {
