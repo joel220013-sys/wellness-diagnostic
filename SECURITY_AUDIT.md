@@ -47,3 +47,4 @@ Configured in `next.config.js` and FastAPI middleware:
 - Verified using constant-time comparison (`secrets.compare_digest`) to prevent timing side-channel attacks.
 - Column `password_hash` active in `public.profiles` in Supabase PostgreSQL.
 - API responses explicitly strip `password_hash` to avoid accidental exposure.
+

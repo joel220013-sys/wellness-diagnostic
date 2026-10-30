@@ -1,87 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
   Heart, 
-  Droplet, 
-  Activity, 
-  CircleDot, 
-  Shield, 
-  Cpu, 
-  Sun, 
   Sparkles, 
-  Check, 
-  Clock, 
   Award, 
-  ChevronRight, 
-  Search, 
   ArrowRight, 
   CheckCircle2, 
-  PhoneCall, 
-  Lock,
-  Calendar,
-  Building,
-  HelpCircle
+  PhoneCall
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import PublicHeader from '@/components/layout/public-header';
 import PromoBannerCarousel from '@/components/home/PromoBannerCarousel';
-import { useData } from '@/context/DataContext';
-import { TestCategory, DiagnosticTest } from '@/types';
 
 export default function PublicLandingPage() {
-  const router = useRouter();
-  const { tests, packages, toggleSelectTest, isTestSelected } = useData();
-
-  const [selectedCategory, setSelectedCategory] = useState<TestCategory>('All');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const categories: TestCategory[] = [
-    'All',
-    'Popular',
-    'Full Body',
-    'Diabetes',
-    'Thyroid',
-    'Lipid',
-    'Liver',
-    'Kidney',
-    'Vitamin',
-    'Hormone',
-  ];
-
-  const filteredTests = tests.filter((test) => {
-    const matchesCat =
-      selectedCategory === 'All' ||
-      (selectedCategory === 'Popular' ? test.popular : test.category === selectedCategory);
-    const matchesSearch =
-      test.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
-
-  const getCategoryIcon = (iconName?: string) => {
-    switch (iconName) {
-      case 'heart': return <Heart className="w-5 h-5 text-red-500" />;
-      case 'droplet': return <Droplet className="w-5 h-5 text-blue-500" />;
-      case 'activity': return <Activity className="w-5 h-5 text-amber-500" />;
-      case 'circle-dot': return <CircleDot className="w-5 h-5 text-orange-500" />;
-      case 'shield': return <Shield className="w-5 h-5 text-emerald-500" />;
-      case 'cpu': return <Cpu className="w-5 h-5 text-purple-500" />;
-      case 'sun': return <Sun className="w-5 h-5 text-amber-400" />;
-      case 'sparkles': return <Sparkles className="w-5 h-5 text-pink-500" />;
-      default: return <Activity className="w-5 h-5 text-botanical-500" />;
-    }
-  };
-
-  const handleBookNow = (test: DiagnosticTest) => {
-    if (!isTestSelected(test.id)) {
-      toggleSelectTest(test);
-    }
-    router.push('/patient/book');
-  };
-
   return (
     <div className="min-h-screen bg-ivory-200 text-botanical-900 selection:bg-botanical-200">
       
@@ -196,127 +129,7 @@ export default function PublicLandingPage() {
         </div>
       </section>
 
-      {/* 3. TESTS SECTION */}
-      <section className="py-12 sm:py-16 bg-white border-y border-ivory-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mb-8">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-botanical-950 tracking-tight">
-              Our Tests & Health Packages
-            </h2>
-            <p className="mt-2 text-sm text-botanical-800/80">
-              Choose from a wide range of verified health packages and individual tests. Book online and our certified phlebotomist collects your sample at home.
-            </p>
-          </div>
-
-          <div className="mb-6 max-w-xl relative">
-            <Search className="w-4 h-4 text-botanical-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tests, packages or biomarkers..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-ivory-50/40"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none mb-8">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-botanical-500 text-white shadow-soft-sm'
-                    : 'bg-ivory-100 text-botanical-800 hover:bg-ivory-200 border border-ivory-300/80'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Test Cards in INR */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredTests.map((test) => {
-              const selected = isTestSelected(test.id);
-
-              return (
-                <div
-                  key={test.id}
-                  className="bg-white rounded-2xl p-5 border border-ivory-300 shadow-soft-card hover:shadow-soft hover:border-botanical-300 transition-all flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-ivory-100 border border-ivory-200 flex items-center justify-center flex-shrink-0">
-                        {getCategoryIcon(test.icon_name)}
-                      </div>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-botanical-50 text-botanical-700 border border-botanical-100">
-                        {test.category}
-                      </span>
-                    </div>
-
-                    <Link href={`/tests/${test.id}`} className="hover:text-botanical-600 transition-colors">
-                      <h3 className="font-bold text-base text-botanical-950 leading-snug">
-                        {test.name}
-                      </h3>
-                    </Link>
-                    <p className="mt-1.5 text-xs text-botanical-800/75 line-clamp-2">
-                      {test.description}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-botanical-700">
-                      <span className="px-2 py-0.5 rounded-md bg-ivory-100 border border-ivory-200">
-                        {test.parameters_count} Parameters
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-ivory-100 border border-ivory-200">
-                        Report: {test.turnaround_description}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-ivory-200 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-lg font-extrabold text-botanical-950 font-mono">
-                          ₹{test.price.toLocaleString('en-IN')}
-                        </span>
-                        {Boolean(test.original_price && test.original_price > test.price) && (
-                          <span className="text-xs text-botanical-600/60 line-through">
-                            ₹{test.original_price?.toLocaleString('en-IN')}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-botanical-600 font-medium">Free Doorstep Pickup</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleSelectTest(test)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                          selected
-                            ? 'bg-botanical-100 text-botanical-800 border border-botanical-300'
-                            : 'bg-ivory-100 hover:bg-ivory-200 text-botanical-900 border border-ivory-300'
-                        }`}
-                      >
-                        {selected ? '✓ Added' : '+ Add'}
-                      </button>
-
-                      <button
-                        onClick={() => handleBookNow(test)}
-                        className="px-3.5 py-1.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white text-xs font-bold transition-colors shadow-soft-sm"
-                      >
-                        Book
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. FOOTER */}
+      {/* 3. FOOTER */}
       <footer className="bg-botanical-950 text-white pt-12 pb-8 border-t border-botanical-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-botanical-900 text-xs">

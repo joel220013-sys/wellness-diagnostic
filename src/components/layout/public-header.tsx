@@ -33,28 +33,6 @@ export default function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-ivory-300 w-full shadow-soft-sm">
-      {/* Top Notification Bar */}
-      <div className="bg-[#18352E] text-white px-4 py-1.5 text-xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-medium text-ivory-200 text-[11px] sm:text-xs">
-              NABL Certified Diagnostic Care • Davangere (577005)
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <a href="tel:18004199355" className="hover:text-peach-300 flex items-center gap-1 text-[11px] sm:text-xs">
-              <Phone className="w-3 h-3 text-peach-400" />
-              <span className="hidden sm:inline">1800-419-WELL (Toll Free)</span>
-              <span className="sm:hidden">1800-419-WELL</span>
-            </a>
-            <Link href="/portal" className="hover:text-peach-300 text-[11px] underline hidden sm:inline">
-              Choose Access Portal
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
