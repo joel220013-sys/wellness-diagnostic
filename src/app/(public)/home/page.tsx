@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import PublicHeader from '@/components/layout/public-header';
+import PromoBannerCarousel from '@/components/home/PromoBannerCarousel';
 import { useData } from '@/context/DataContext';
 import { TestCategory, DiagnosticTest } from '@/types';
 
@@ -146,8 +147,11 @@ export default function PublicLandingPage() {
 
           </div>
 
+          {/* Promotional Offers Banner Carousel (Thyrocare Style) */}
+          <PromoBannerCarousel />
+
           {/* 4 Feature Badges */}
-          <div className="mt-12 sm:mt-16 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
+          <div className="mt-8 sm:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
             <div className="p-4 rounded-2xl bg-white border border-ivory-300 shadow-soft-sm flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-botanical-50 text-botanical-600 flex items-center justify-center flex-shrink-0">
                 <Heart className="w-5 h-5" />
