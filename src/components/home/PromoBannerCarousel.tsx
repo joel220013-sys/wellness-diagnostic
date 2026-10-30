@@ -145,20 +145,20 @@ export default function PromoBannerCarousel() {
       {/* Outer wrapper with edge shadow/fade and arrows */}
       <div className="relative max-w-7xl mx-auto px-2 sm:px-4">
         
-        {/* Navigation Arrow: Left (Thyrocare Circular Button) */}
+        {/* Navigation Arrow: Left (Thyrocare Circular Button - Tablet & Desktop) */}
         <button
           onClick={prevSlide}
-          className="absolute left-2 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-gray-800 shadow-soft-lg hover:shadow-soft-xl flex items-center justify-center transition-all border border-gray-200/90 active:scale-90 focus:outline-none"
+          className="hidden sm:flex absolute left-2 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-gray-800 shadow-soft-lg hover:shadow-soft-xl items-center justify-center transition-all border border-gray-200/90 active:scale-90 focus:outline-none"
           title="Previous Banner"
           aria-label="Previous Banner"
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 -ml-0.5" />
         </button>
 
-        {/* Navigation Arrow: Right (Thyrocare Circular Button) */}
+        {/* Navigation Arrow: Right (Thyrocare Circular Button - Tablet & Desktop) */}
         <button
           onClick={nextSlide}
-          className="absolute right-2 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-gray-800 shadow-soft-lg hover:shadow-soft-xl flex items-center justify-center transition-all border border-gray-200/90 active:scale-90 focus:outline-none"
+          className="hidden sm:flex absolute right-2 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-gray-800 shadow-soft-lg hover:shadow-soft-xl items-center justify-center transition-all border border-gray-200/90 active:scale-90 focus:outline-none"
           title="Next Banner"
           aria-label="Next Banner"
         >

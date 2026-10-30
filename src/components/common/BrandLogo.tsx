@@ -83,7 +83,7 @@ export default function BrandLogo({
           </span>
           {showTagline && (
             <span
-              className={`font-semibold tracking-wider uppercase mt-0.5 ${current.tagline} ${
+              className={`font-semibold tracking-wider uppercase mt-0.5 hidden sm:block ${current.tagline} ${
                 inverted ? 'text-ivory-200/80' : 'text-botanical-700/80'
               }`}
             >
