@@ -127,13 +127,6 @@ export default function PatientDashboardPage() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <Link
-              href={selectedTests.length > 0 ? "/patient/book" : "/patient/tests"}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-peach-400 hover:bg-peach-300 text-botanical-950 font-bold text-sm shadow-soft transition-all hover:-translate-y-0.5"
-            >
-              <CalendarPlus className="w-4 h-4" />
-              <span>{selectedTests.length > 0 ? `Book Collection (${selectedTests.length} in Cart)` : 'Book New Collection'}</span>
-            </Link>
-            <Link
               href="/patient/settings"
               className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm backdrop-blur-sm border border-white/15 transition-all"
             >
