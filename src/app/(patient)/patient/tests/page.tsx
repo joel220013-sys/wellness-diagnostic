@@ -17,10 +17,13 @@ import {
   Sparkles, 
   ArrowRight,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  ChevronRight
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { DiagnosticTest } from '@/types';
+import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
+import { getPackageDetails } from '@/data/package-details';
 
 export default function PatientTestsPage() {
   const router = useRouter();
@@ -29,6 +32,7 @@ export default function PatientTestsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'parameters'>('featured');
+  const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
 
   // Categories list
   const categories = [
@@ -269,6 +273,18 @@ export default function PatientTestsPage() {
             const discountPct = originalPrice > test.price 
               ? Math.round(((originalPrice - test.price) / originalPrice) * 100) 
               : 0;
+            const isPackage = 
+              test.category === 'Health Packages' || 
+              (test.parameters_count || 1) >= 2 || 
+              test.id.startsWith('pkg_');
+            const pkgInfo = isPackage ? getPackageDetails(test.name, test.parameters_count, test.description) : null;
+            const isFasting = Boolean(
+              test.fasting_required || 
+              test.preparation_instructions?.toLowerCase().includes('fasting')
+            );
+            const fastingText = isFasting 
+              ? `${test.fasting_hours || 10}-12 Hrs Fasting` 
+              : 'Non-Fasting';
 
             return (
               <div
@@ -294,12 +310,46 @@ export default function PatientTestsPage() {
 
                   {/* Title & Description */}
                   <div>
-                    <h3 className="text-base font-bold text-botanical-950 tracking-tight leading-snug">
+                    <h3 
+                      onClick={() => setOverviewTest(test)}
+                      className="text-base font-bold text-botanical-950 tracking-tight leading-snug cursor-pointer hover:text-botanical-700 transition-colors"
+                    >
                       {test.name}
                     </h3>
                     <p className="text-xs text-botanical-800/75 mt-1 line-clamp-2 leading-relaxed">
                       {test.description || 'Comprehensive laboratory diagnostic analysis across verified clinical vitals.'}
                     </p>
+                  </div>
+
+                  {/* Includes Section with Show All Tests Link (Like Pic 1 & Pic 3) */}
+                  <div className="pt-2 border-t border-ivory-100">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-bold text-botanical-950">
+                        Includes {test.parameters_count || 1} Tests
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOverviewTest(test)}
+                        className="text-xs font-bold text-botanical-600 hover:text-botanical-800 inline-flex items-center gap-0.5 hover:underline"
+                      >
+                        <span>Show All Tests</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Preview bullets like Pic 1 */}
+                    {pkgInfo && pkgInfo.previewBullets && (
+                      <div className="flex flex-wrap gap-1 mt-1 text-[11px] text-botanical-700/80">
+                        {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
+                          <span
+                            key={bIdx}
+                            className="px-2 py-0.5 rounded-md bg-ivory-50 border border-ivory-200 text-[10px] font-medium text-botanical-800"
+                          >
+                            • {bullet}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Parameters & Turnaround Details */}
@@ -318,7 +368,7 @@ export default function PatientTestsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                      <span className="truncate">{test.preparation_instructions?.includes('Fasting') ? 'Fasting Required' : 'Non-Fasting'}</span>
+                      <span className="truncate font-semibold text-botanical-900">{fastingText}</span>
                     </div>
                   </div>
                 </div>
@@ -376,6 +426,14 @@ export default function PatientTestsPage() {
           })}
         </div>
       )}
+
+      {/* Package Overview Slide-over Drawer (Matching Pic 4 & Pic 5) */}
+      <PackageOverviewDrawer
+        test={overviewTest}
+        isOpen={!!overviewTest}
+        onClose={() => setOverviewTest(null)}
+        onBookNow={handleBookNow}
+      />
     </div>
   );
 }

@@ -26,6 +26,8 @@ export interface DiagnosticTest {
   price: number; // in INR
   original_price?: number;
   preparation_instructions?: string;
+  fasting_required?: boolean;
+  fasting_hours?: number;
   turnaround_description: string; // e.g. "12-24 Hours"
   sample_type: string; // e.g. "Blood (EDTA & Serum)"
   parameters_count?: number;
@@ -48,6 +50,8 @@ export interface DiagnosticPackage {
   turnaround_description?: string;
   sample_type?: string;
   preparation_instructions?: string;
+  fasting_required?: boolean;
+  fasting_hours?: number;
   parameters_count?: number;
   popular?: boolean;
 }

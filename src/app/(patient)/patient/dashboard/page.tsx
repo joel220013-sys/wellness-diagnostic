@@ -28,7 +28,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import LabReportModal from '@/components/reports/LabReportModal';
 import InvoiceModal from '@/components/invoices/InvoiceModal';
-import { LabReport, Invoice, Booking } from '@/types';
+import { LabReport, Invoice, Booking, DiagnosticTest } from '@/types';
+import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
 
 export default function PatientDashboardPage() {
   const { user } = useAuth();
@@ -46,6 +47,7 @@ export default function PatientDashboardPage() {
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
+  const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
 
   const popularTests = React.useMemo(() => {
     const uniqueMap = new Map();
@@ -382,14 +384,23 @@ export default function PatientDashboardPage() {
                         </span>
                         <span className="text-xs font-extrabold text-botanical-950">₹{t.price}</span>
                       </div>
-                      <h3 className="font-bold text-botanical-950 text-sm mt-2 line-clamp-1">{t.name}</h3>
+                      <h3 
+                        onClick={() => setOverviewTest(t)}
+                        className="font-bold text-botanical-950 text-sm mt-2 line-clamp-1 cursor-pointer hover:text-botanical-600 transition-colors"
+                      >
+                        {t.name}
+                      </h3>
                       <p className="text-[11px] text-botanical-700/80 line-clamp-2 mt-1">{t.description}</p>
                     </div>
 
                     <div className="flex items-center justify-between pt-3 mt-3 border-t border-ivory-100">
-                      <span className="text-[10px] text-botanical-600 font-semibold">
-                        {t.parameters_count || (t.parameters?.length) || 1} Tests Included
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOverviewTest(t)}
+                        className="text-[10px] text-botanical-600 hover:text-botanical-800 font-bold hover:underline"
+                      >
+                        {t.parameters_count || (t.parameters?.length) || 1} Tests Included &gt;
+                      </button>
                       <button
                         onClick={() => toggleSelectTest(t)}
                         className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
@@ -541,6 +552,13 @@ export default function PatientDashboardPage() {
           onClose={() => setActiveInvoice(null)}
         />
       )}
+
+      {/* Package Overview Drawer */}
+      <PackageOverviewDrawer
+        test={overviewTest}
+        isOpen={!!overviewTest}
+        onClose={() => setOverviewTest(null)}
+      />
     </div>
   );
 }
