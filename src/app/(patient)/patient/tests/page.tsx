@@ -64,9 +64,29 @@ export default function PatientTestsPage() {
       const cat = (t.category || '').toLowerCase();
       const selCat = selectedCategory.toLowerCase();
 
-      const matchesCat =
-        selectedCategory === 'All' ||
-        (selectedCategory === 'Popular' ? t.popular : cat.includes(selCat));
+      let matchesCat = selectedCategory === 'All';
+      if (!matchesCat) {
+        if (selectedCategory === 'Popular') {
+          matchesCat = !!t.popular;
+        } else if (selectedCategory === 'Kidney') {
+          matchesCat =
+            cat.includes('kidney') ||
+            cat.includes('renal') ||
+            (t.name || '').toLowerCase().includes('kidney') ||
+            (t.name || '').toLowerCase().includes('renal') ||
+            (t.name || '').toLowerCase().includes('kft') ||
+            (t.name || '').toLowerCase().includes('kidpro') ||
+            (t.name || '').toLowerCase().includes('creatinine') ||
+            (t.name || '').toLowerCase().includes('microalbumin');
+        } else if (selectedCategory === 'Full Body Checkups') {
+          matchesCat =
+            cat.includes('full body') ||
+            cat.includes('checkup') ||
+            cat.includes('package');
+        } else {
+          matchesCat = cat.includes(selCat);
+        }
+      }
 
       const matchesSearch =
         !q ||
