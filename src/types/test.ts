@@ -1,6 +1,8 @@
 export type TestCategory = 
   | 'All'
   | 'Popular'
+  | 'Health Packages'
+  | 'Full Body Checkups'
   | 'Full Body'
   | 'Diabetes'
   | 'Thyroid'

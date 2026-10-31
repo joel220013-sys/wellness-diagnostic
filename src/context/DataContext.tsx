@@ -45,8 +45,8 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const STORAGE_KEY_TESTS = 'wellness_tests_data_v6';
-const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v6';
+const STORAGE_KEY_TESTS = 'wellness_tests_data_v7';
+const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v7';
 const STORAGE_KEY_BOOKINGS = 'wellness_bookings_data_v5';
 const STORAGE_KEY_REPORTS = 'wellness_reports_data_v5';
 const STORAGE_KEY_INVOICES = 'wellness_invoices_data_v5';

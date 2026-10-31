@@ -34,6 +34,7 @@ export default function PatientTestsPage() {
   const categories = [
     'All',
     'Popular',
+    'Health Packages',
     'Full Body Checkups',
     'Blood Test',
     'Jaanch Packages',
@@ -78,11 +79,17 @@ export default function PatientTestsPage() {
             (t.name || '').toLowerCase().includes('kidpro') ||
             (t.name || '').toLowerCase().includes('creatinine') ||
             (t.name || '').toLowerCase().includes('microalbumin');
-        } else if (selectedCategory === 'Full Body Checkups') {
+        } else if (selectedCategory === 'Health Packages' || selectedCategory === 'Full Body Checkups') {
           matchesCat =
-            cat.includes('full body') ||
+            cat.includes('package') ||
             cat.includes('checkup') ||
-            cat.includes('package');
+            cat.includes('full body') ||
+            cat.includes('health package') ||
+            (t.id && t.id.startsWith('pkg_')) ||
+            (t.name || '').toLowerCase().includes('aarogyam') ||
+            (t.name || '').toLowerCase().includes('package') ||
+            (t.name || '').toLowerCase().includes('profile') ||
+            (t.name || '').toLowerCase().includes('checkup');
         } else {
           matchesCat = cat.includes(selCat);
         }
