@@ -153,7 +153,7 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
         <div className="flex lg:hidden items-center gap-2">
           {portalRole === 'patient' && (
             <Link
-              href="/patient/book"
+              href={selectedTests.length > 0 ? '/patient/book' : '/patient/tests'}
               className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs shadow-soft transition-all ${
                 selectedTests.length > 0
                   ? 'bg-peach-100 text-botanical-950 border border-peach-200'

@@ -21,7 +21,7 @@ import { BookingStatus } from '@/types';
 
 export default function PatientBookingsPage() {
   const { user } = useAuth();
-  const { bookings, updateBookingStatus } = useData();
+  const { bookings, updateBookingStatus, selectedTests } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -79,11 +79,11 @@ export default function PatientBookingsPage() {
         </div>
 
         <Link
-          href="/patient/book"
+          href={selectedTests.length > 0 ? '/patient/book' : '/patient/tests'}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all"
         >
           <CalendarPlus className="w-4 h-4" />
-          <span>Book New Collection</span>
+          <span>{selectedTests.length > 0 ? `Book Collection (${selectedTests.length} in Cart)` : 'Book New Collection'}</span>
         </Link>
       </div>
 

@@ -20,7 +20,7 @@ import LabReportModal from '@/components/reports/LabReportModal';
 
 export default function PatientReportsPage() {
   const { user } = useAuth();
-  const { reports } = useData();
+  const { reports, selectedTests } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
@@ -74,10 +74,10 @@ export default function PatientReportsPage() {
             Once your blood sample is collected and processed at the diagnostic hub, your digital laboratory reports will appear here.
           </p>
           <Link
-            href="/patient/book"
+            href={selectedTests.length > 0 ? '/patient/book' : '/patient/tests'}
             className="inline-block mt-2 px-4 py-2 rounded-xl bg-botanical-500 text-white font-bold text-xs"
           >
-            Book a Blood Test
+            {selectedTests.length > 0 ? `Book Collection (${selectedTests.length} in Cart)` : 'Book a Blood Test'}
           </Link>
         </div>
       ) : (

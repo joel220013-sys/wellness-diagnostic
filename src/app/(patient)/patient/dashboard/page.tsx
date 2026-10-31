@@ -127,11 +127,11 @@ export default function PatientDashboardPage() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <Link
-              href="/patient/book"
+              href={selectedTests.length > 0 ? "/patient/book" : "/patient/tests"}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-peach-400 hover:bg-peach-300 text-botanical-950 font-bold text-sm shadow-soft transition-all hover:-translate-y-0.5"
             >
               <CalendarPlus className="w-4 h-4" />
-              <span>Book New Collection</span>
+              <span>{selectedTests.length > 0 ? `Book Collection (${selectedTests.length} in Cart)` : 'Book New Collection'}</span>
             </Link>
             <Link
               href="/patient/settings"
@@ -285,11 +285,11 @@ export default function PatientDashboardPage() {
                 </p>
               </div>
               <Link
-                href="/patient/book"
+                href={selectedTests.length > 0 ? "/patient/book" : "/patient/tests"}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-botanical-500 text-white font-bold text-xs shadow-soft"
               >
                 <CalendarPlus className="w-3.5 h-3.5" />
-                <span>Book Home Collection</span>
+                <span>{selectedTests.length > 0 ? `Book Collection (${selectedTests.length} in Cart)` : 'Schedule Home Collection'}</span>
               </Link>
             </div>
           ) : (
