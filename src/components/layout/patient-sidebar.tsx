@@ -19,6 +19,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import BrandLogo from '@/components/common/BrandLogo';
 
 interface NavItem {
@@ -43,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
 export default function PatientSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { selectedTests } = useData();
 
   return (
     <aside className="w-64 bg-white border-r border-ivory-300 h-full flex flex-col justify-between p-4 shadow-soft-sm overflow-y-auto">
@@ -70,12 +72,27 @@ export default function PatientSidebar() {
           </p>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/patient/dashboard' && pathname?.startsWith(item.href));
+            
+            // Smart routing for Book Home Collection
+            let targetHref = item.href;
+            let badgeText = item.badge;
+
+            if (item.href === '/patient/book') {
+              if (selectedTests.length > 0) {
+                targetHref = '/patient/book';
+                badgeText = `${selectedTests.length} in cart`;
+              } else {
+                targetHref = '/patient/tests';
+                badgeText = 'Select Tests';
+              }
+            }
+
+            const isActive = pathname === targetHref || (targetHref !== '/patient/dashboard' && targetHref !== '/patient/tests' && pathname?.startsWith(targetHref)) || (targetHref === '/patient/tests' && pathname === '/patient/tests');
 
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={item.name}
+                href={targetHref}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   isActive
                     ? 'bg-botanical-500 text-white shadow-soft-sm font-bold'
@@ -86,9 +103,13 @@ export default function PatientSidebar() {
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-botanical-500'}`} />
                   <span>{item.name}</span>
                 </div>
-                {item.badge && !isActive && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-peach-100 text-botanical-900 border border-peach-200">
-                    {item.badge}
+                {badgeText && !isActive && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                    item.href === '/patient/book' && selectedTests.length > 0
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : 'bg-peach-100 text-botanical-900 border-peach-200'
+                  }`}>
+                    {badgeText}
                   </span>
                 )}
               </Link>

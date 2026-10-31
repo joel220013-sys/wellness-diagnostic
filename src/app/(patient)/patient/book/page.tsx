@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Calendar, 
   Clock, 
@@ -16,7 +17,8 @@ import {
   Info,
   CalendarCheck,
   AlertCircle,
-  Search
+  Search,
+  FlaskConical
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -62,7 +64,24 @@ export default function BookCollectionPage() {
     createBooking 
   } = useData();
 
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('wellness_cart_tests_v5');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return 2;
+        }
+      } catch {}
+    }
+    return 1;
+  });
+
+  useEffect(() => {
+    if (selectedTests.length > 0) {
+      setCurrentStep(2);
+    }
+  }, [selectedTests.length]);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -394,6 +413,30 @@ export default function BookCollectionPage() {
             )}
           </div>
 
+          {/* Banner linking to full catalog */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-botanical-50 border border-botanical-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-soft-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-botanical-500 text-white flex items-center justify-center flex-shrink-0 shadow-soft-xs">
+                <FlaskConical className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-botanical-950">
+                  Prefer browsing with detailed test drawers & Aarogyam breakdowns?
+                </p>
+                <p className="text-xs text-botanical-700/80">
+                  Explore all 228+ NABL diagnostic panels with sample requirements, fasting guidelines, and package overviews.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/patient/tests"
+              className="px-4 py-2 rounded-xl bg-botanical-500 text-white font-bold text-xs hover:bg-botanical-600 transition-colors shadow-soft inline-flex items-center gap-1.5 flex-shrink-0 self-start sm:self-auto"
+            >
+              <span>Browse Full 228+ Catalog</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
           {/* Search Bar & Category Filters */}
           <div className="space-y-3">
             <div className="relative">
@@ -546,6 +589,44 @@ export default function BookCollectionPage() {
             <p className="text-xs text-botanical-700/80">
               Phlebotomists operate daily from 6:00 AM to 8:00 PM with strict temperature monitoring.
             </p>
+          </div>
+
+          {/* Selected Tests Summary Card */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-botanical-50/70 border border-botanical-200 space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold text-botanical-950 flex items-center gap-2">
+                <FlaskConical className="w-4 h-4 text-botanical-600" />
+                <span>Selected Tests for Home Collection ({selectedTests.length})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className="text-xs font-bold text-botanical-700 hover:text-botanical-950 underline flex items-center gap-1"
+              >
+                <span>+ Modify / Add More Tests</span>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {selectedTests.map((t) => (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-botanical-200 text-xs font-medium text-botanical-950 shadow-soft-xs"
+                >
+                  <span>{t.name}</span>
+                  <span className="text-[11px] font-bold text-botanical-700 bg-botanical-50 px-1.5 py-0.5 rounded-md">
+                    ₹{t.price}
+                  </span>
+                </span>
+              ))}
+            </div>
+
+            <div className="text-[11px] text-botanical-700 flex items-center justify-between pt-1 border-t border-botanical-200/60">
+              <span>Estimated Collection Total: <strong className="text-botanical-950 font-bold">₹{pricing.total}</strong></span>
+              <Link href="/patient/tests" className="underline hover:text-botanical-950 font-semibold">
+                Browse Full Catalog
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-4">

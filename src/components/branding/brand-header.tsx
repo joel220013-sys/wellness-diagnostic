@@ -71,7 +71,12 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
     return [
       { name: 'Dashboard', href: '/patient/dashboard', icon: LayoutDashboard },
       { name: 'All Diagnostic Tests', href: '/patient/tests', icon: FlaskConical },
-      { name: 'Book Home Collection', href: '/patient/book', icon: CalendarPlus, highlight: true },
+      { 
+        name: selectedTests.length > 0 ? `Book Collection (${selectedTests.length})` : 'Book Home Collection', 
+        href: selectedTests.length > 0 ? '/patient/book' : '/patient/tests', 
+        icon: CalendarPlus, 
+        highlight: true 
+      },
       { name: 'My Bookings', href: '/patient/bookings', icon: CalendarCheck },
       { name: 'Laboratory Reports', href: '/patient/reports', icon: FileText },
       { name: 'Invoices & Billing', href: '/patient/invoices', icon: Receipt },

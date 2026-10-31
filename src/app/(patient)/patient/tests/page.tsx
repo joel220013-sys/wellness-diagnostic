@@ -18,7 +18,9 @@ import {
   ArrowRight,
   Info,
   CheckCircle2,
-  ChevronRight
+  ChevronRight,
+  CalendarCheck,
+  AlertCircle
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { DiagnosticTest } from '@/types';
@@ -33,6 +35,18 @@ export default function PatientTestsPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'parameters'>('featured');
   const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
+  const [showEmptyCartPrompt, setShowEmptyCartPrompt] = useState(false);
+
+  const handleScrollToCatalog = () => {
+    setShowEmptyCartPrompt(true);
+    const el = document.getElementById('tests-catalog-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const input = el.querySelector('input');
+      if (input) input.focus();
+    }
+    setTimeout(() => setShowEmptyCartPrompt(false), 6000);
+  };
 
   // Categories list
   const categories = [
@@ -221,15 +235,43 @@ export default function PatientTestsPage() {
 
         {/* Action Link */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/patient/book"
-            className="px-5 py-2.5 rounded-full bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all flex items-center gap-2"
-          >
-            <CalendarPlus className="w-4 h-4" />
-            <span>Book Home Collection</span>
-          </Link>
+          {selectedTests.length > 0 ? (
+            <button
+              onClick={() => router.push('/patient/book')}
+              className="px-5 py-2.5 rounded-full bg-peach-400 hover:bg-peach-300 text-botanical-950 font-extrabold text-xs sm:text-sm shadow-soft transition-all flex items-center gap-2 hover:-translate-y-0.5 animate-pulse"
+            >
+              <CalendarCheck className="w-4 h-4 text-botanical-950" />
+              <span>Proceed to Book ({selectedTests.length} {selectedTests.length === 1 ? 'Test' : 'Tests'} • ₹{totalCartAmount.toLocaleString('en-IN')})</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={handleScrollToCatalog}
+              className="px-5 py-2.5 rounded-full bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all flex items-center gap-2"
+              title="Select tests below to schedule home collection"
+            >
+              <CalendarPlus className="w-4 h-4" />
+              <span>Book Home Collection ↓</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Empty cart warning prompt when user clicks Book Home Collection before selecting tests */}
+      {showEmptyCartPrompt && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 shadow-soft animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <span>Please select at least 1 diagnostic test or health package below by clicking <strong>&quot;+ Add&quot;</strong> or <strong>&quot;Book&quot;</strong> before scheduling home collection.</span>
+          </div>
+          <button 
+            onClick={() => setShowEmptyCartPrompt(false)} 
+            className="text-amber-800 hover:text-amber-950 text-xs underline font-bold flex-shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Floating Cart Indicator (if tests selected) */}
       {selectedTests.length > 0 && (
@@ -267,7 +309,7 @@ export default function PatientTestsPage() {
       )}
 
       {/* Search & Filter Controls */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-ivory-300 shadow-soft-sm space-y-4">
+      <div id="tests-catalog-section" className="bg-white rounded-2xl p-4 sm:p-5 border border-ivory-300 shadow-soft-sm space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Search bar */}
           <div className="relative w-full sm:w-96">
