@@ -26,10 +26,11 @@ import { useData } from '@/context/DataContext';
 import { DiagnosticTest } from '@/types';
 import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
 import { getPackageDetails } from '@/data/package-details';
+import MobileBottomCartBar from '@/components/cart/MobileBottomCartBar';
 
 export default function PatientTestsPage() {
   const router = useRouter();
-  const { tests, selectedTests, toggleSelectTest, addSelectedTest, isTestSelected, clearSelectedTests } = useData();
+  const { tests, selectedTests, toggleSelectTest, addSelectedTest, isTestSelected, clearSelectedTests, setIsCartOpen } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -290,16 +291,23 @@ export default function PatientTestsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-wrap">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-xs font-bold text-ivory-100 transition-colors flex items-center gap-1.5"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-peach-300" />
+              <span>View Cart</span>
+            </button>
             <button
               onClick={clearSelectedTests}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-ivory-200 transition-colors"
+              className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-xs text-ivory-300 transition-colors"
             >
               Clear Cart
             </button>
             <Link
               href="/patient/book"
-              className="px-5 py-2 rounded-xl bg-peach-400 hover:bg-peach-500 text-botanical-950 font-bold text-xs shadow-soft transition-all flex items-center gap-2"
+              className="px-5 py-2 rounded-xl bg-peach-400 hover:bg-peach-300 text-botanical-950 font-bold text-xs shadow-soft transition-all flex items-center gap-2 hover:-translate-y-0.5"
             >
               <span>Schedule Phlebotomist</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -551,6 +559,9 @@ export default function PatientTestsPage() {
         onClose={() => setOverviewTest(null)}
         onBookNow={handleBookNow}
       />
+
+      {/* Mobile Sticky Bottom Cart Bar */}
+      <MobileBottomCartBar />
     </div>
   );
 }

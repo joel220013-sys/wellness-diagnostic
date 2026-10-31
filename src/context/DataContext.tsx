@@ -19,6 +19,8 @@ interface DataContextType {
   invoices: Invoice[];
   drivers: DriverProfile[];
   selectedTests: DiagnosticTest[];
+  isCartOpen: boolean;
+  setIsCartOpen: (open: boolean) => void;
   toggleSelectTest: (test: DiagnosticTest) => void;
   addSelectedTest: (test: DiagnosticTest) => void;
   removeSelectedTest: (testId: string) => void;
@@ -61,6 +63,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [drivers, setDrivers] = useState<DriverProfile[]>([]);
   const [selectedTests, setSelectedTests] = useState<DiagnosticTest[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
   // Fetch live tests, packages, bookings, and invoices from Supabase backend API on mount
   useEffect(() => {
@@ -588,6 +591,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         invoices,
         drivers,
         selectedTests,
+        isCartOpen,
+        setIsCartOpen,
         toggleSelectTest,
         addSelectedTest,
         removeSelectedTest,

@@ -31,6 +31,7 @@ import LabReportModal from '@/components/reports/LabReportModal';
 import InvoiceModal from '@/components/invoices/InvoiceModal';
 import { LabReport, Invoice, Booking, DiagnosticTest } from '@/types';
 import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
+import MobileBottomCartBar from '@/components/cart/MobileBottomCartBar';
 
 export default function PatientDashboardPage() {
   const { user } = useAuth();
@@ -43,7 +44,8 @@ export default function PatientDashboardPage() {
     toggleSelectTest,
     isTestSelected,
     removeSelectedTest, 
-    clearSelectedTests 
+    clearSelectedTests,
+    setIsCartOpen 
   } = useData();
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
@@ -177,6 +179,13 @@ export default function PatientDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-botanical-900 hover:text-botanical-950 bg-white hover:bg-ivory-50 border border-peach-200 transition-colors shadow-soft-xs flex items-center gap-1.5"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-peach-600" />
+              <span>Review Cart</span>
+            </button>
             <button
               onClick={clearSelectedTests}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-600 hover:text-red-600 bg-white/80 hover:bg-white border border-gray-200 transition-colors"
@@ -560,6 +569,9 @@ export default function PatientDashboardPage() {
         isOpen={!!overviewTest}
         onClose={() => setOverviewTest(null)}
       />
+
+      {/* Mobile Sticky Bottom Cart Bar */}
+      <MobileBottomCartBar />
     </div>
   );
 }

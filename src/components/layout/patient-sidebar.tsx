@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   PhoneCall,
   FlaskConical,
-  Settings
+  Settings,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -44,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
 export default function PatientSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { selectedTests } = useData();
+  const { selectedTests, setIsCartOpen } = useData();
 
   return (
     <aside className="w-64 bg-white border-r border-ivory-300 h-full flex flex-col justify-between p-4 shadow-soft-sm overflow-y-auto">
@@ -120,6 +121,26 @@ export default function PatientSidebar() {
 
       {/* Footer Info & Logout */}
       <div className="space-y-3 pt-4 border-t border-ivory-200">
+        {selectedTests.length > 0 && (
+          <div className="p-3 bg-peach-50 border border-peach-200 rounded-2xl space-y-1.5 shadow-soft-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-botanical-950 flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5 text-peach-600" />
+                <span>Diagnostic Cart</span>
+              </span>
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="text-[11px] font-bold text-peach-700 hover:text-peach-900 underline"
+              >
+                Review ({selectedTests.length})
+              </button>
+            </div>
+            <p className="text-[10px] text-botanical-700/80">
+              {selectedTests.length} tests ready for doorstep appointment.
+            </p>
+          </div>
+        )}
+
         <div className="p-3 rounded-xl bg-ivory-100/70 border border-ivory-200 text-xs text-botanical-900/80">
           <div className="flex items-center gap-1.5 font-bold text-botanical-950 mb-1">
             <PhoneCall className="w-3.5 h-3.5 text-botanical-600" />

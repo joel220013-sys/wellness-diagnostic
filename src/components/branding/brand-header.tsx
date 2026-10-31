@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import BrandLogo from './logo';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import CartDrawer from '@/components/cart/CartDrawer';
 import { 
   LogOut, 
   Menu, 
@@ -35,7 +36,7 @@ interface BrandHeaderProps {
 
 export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const { user, logout } = useAuth();
-  const { selectedTests } = useData();
+  const { selectedTests, isCartOpen, setIsCartOpen } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -113,15 +114,19 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
 
         {/* Right Desktop: User info + Sign Out */}
         <div className="hidden lg:flex items-center gap-3">
-          {portalRole === 'patient' && selectedTests.length > 0 && (
-            <Link
-              href="/patient/book"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-botanical-900 bg-peach-100 hover:bg-peach-200 border border-peach-200 shadow-soft-sm transition-all"
-              title="View selected tests in cart"
+          {portalRole === 'patient' && (
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-soft-sm ${
+                selectedTests.length > 0
+                  ? 'text-botanical-950 bg-peach-300 hover:bg-peach-400 border border-peach-400'
+                  : 'text-botanical-800 bg-ivory-100 hover:bg-ivory-200 border border-ivory-300'
+              }`}
+              title="Open diagnostic cart view"
             >
-              <ShoppingBag className="w-4 h-4 text-peach-600" />
-              <span>Cart ({selectedTests.length})</span>
-            </Link>
+              <ShoppingBag className="w-4 h-4 text-peach-700" />
+              <span>Cart {selectedTests.length > 0 ? `(${selectedTests.length})` : ''}</span>
+            </button>
           )}
 
           {user ? (
@@ -152,21 +157,18 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
         {/* Right Mobile: Hamburger Button */}
         <div className="flex lg:hidden items-center gap-2">
           {portalRole === 'patient' && (
-            <Link
-              href={selectedTests.length > 0 ? '/patient/book' : '/patient/tests'}
-              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs shadow-soft transition-all ${
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-soft transition-all active:scale-95 ${
                 selectedTests.length > 0
-                  ? 'bg-peach-100 text-botanical-950 border border-peach-200'
-                  : 'bg-botanical-500 text-white'
+                  ? 'bg-peach-400 text-botanical-950 border border-peach-300'
+                  : 'bg-botanical-500 text-white hover:bg-botanical-600'
               }`}
+              aria-label="Open cart view"
             >
-              <ShoppingBag className="w-3.5 h-3.5 text-peach-600" />
-              {selectedTests.length > 0 ? (
-                <span>Cart ({selectedTests.length})</span>
-              ) : (
-                <span>Book</span>
-              )}
-            </Link>
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Cart {selectedTests.length > 0 ? `(${selectedTests.length})` : ''}</span>
+            </button>
           )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -195,6 +197,27 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
           )}
 
           {/* Navigation links */}
+          {/* Diagnostic Cart trigger on Mobile Menu */}
+          {portalRole === 'patient' && (
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setIsCartOpen(true);
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-peach-100 hover:bg-peach-200 text-botanical-950 border border-peach-200 transition-colors shadow-soft-xs"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="p-1.5 rounded-lg bg-peach-400 text-botanical-950">
+                  <ShoppingBag className="w-4 h-4" />
+                </span>
+                <span className="font-extrabold text-xs">Diagnostic Cart</span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white text-botanical-950 border border-peach-200">
+                {selectedTests.length} {selectedTests.length === 1 ? 'Test' : 'Tests'}
+              </span>
+            </button>
+          )}
+
           <nav className="flex flex-col space-y-1">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -245,6 +268,14 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Cart Drawer View */}
+      {portalRole === 'patient' && (
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+        />
       )}
     </header>
   );
