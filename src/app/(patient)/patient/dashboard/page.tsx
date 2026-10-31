@@ -19,7 +19,10 @@ import {
   Calendar,
   XCircle,
   ShoppingBag,
-  ArrowRight
+  ArrowRight,
+  FlaskConical,
+  Plus,
+  Check
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -30,16 +33,32 @@ import { LabReport, Invoice, Booking } from '@/types';
 export default function PatientDashboardPage() {
   const { user } = useAuth();
   const { 
+    tests,
     bookings, 
     reports, 
     invoices, 
     selectedTests, 
+    toggleSelectTest,
+    isTestSelected,
     removeSelectedTest, 
     clearSelectedTests 
   } = useData();
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
+
+  const popularTests = React.useMemo(() => {
+    const uniqueMap = new Map();
+    for (const t of tests) {
+      const key = (t.name || '').toLowerCase().trim();
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, t);
+      }
+    }
+    const all = Array.from(uniqueMap.values());
+    const popular = all.filter((t: any) => t.popular);
+    return (popular.length > 0 ? popular : all).slice(0, 4);
+  }, [tests]);
 
   // Filter bookings, reports, invoices for current authenticated patient
   const patientBookings = bookings.filter(
@@ -173,41 +192,56 @@ export default function PatientDashboardPage() {
       )}
 
       {/* Quick Stat Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white p-5 rounded-2xl border border-ivory-300 shadow-soft-sm">
-          <div className="flex items-center justify-between text-botanical-700 mb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+        <div className="bg-white p-4.5 rounded-2xl border border-ivory-300 shadow-soft-sm">
+          <div className="flex items-center justify-between text-botanical-700 mb-1.5">
             <span className="text-xs font-semibold">Active Bookings</span>
             <Clock className="w-4 h-4 text-botanical-500" />
           </div>
           <p className="text-2xl font-extrabold text-botanical-950">{upcomingBookings.length}</p>
-          <p className="text-[11px] text-botanical-700/70 mt-1">Home sample appointments</p>
+          <p className="text-[10px] text-botanical-700/70 mt-0.5">Sample appointments</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-ivory-300 shadow-soft-sm">
-          <div className="flex items-center justify-between text-botanical-700 mb-2">
+        <div className="bg-white p-4.5 rounded-2xl border border-ivory-300 shadow-soft-sm">
+          <div className="flex items-center justify-between text-botanical-700 mb-1.5">
             <span className="text-xs font-semibold">Lab Reports</span>
             <FileText className="w-4 h-4 text-emerald-600" />
           </div>
           <p className="text-2xl font-extrabold text-botanical-950">{patientReports.length}</p>
-          <p className="text-[11px] text-emerald-700 mt-1">Verified & Ready to Download</p>
+          <p className="text-[10px] text-emerald-700 mt-0.5">Verified & Ready</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-ivory-300 shadow-soft-sm">
-          <div className="flex items-center justify-between text-botanical-700 mb-2">
+        <div className="bg-white p-4.5 rounded-2xl border border-ivory-300 shadow-soft-sm">
+          <div className="flex items-center justify-between text-botanical-700 mb-1.5">
             <span className="text-xs font-semibold">Total Invoices</span>
             <Receipt className="w-4 h-4 text-peach-600" />
           </div>
           <p className="text-2xl font-extrabold text-botanical-950">{patientInvoices.length}</p>
-          <p className="text-[11px] text-botanical-700/70 mt-1">Itemized receipts in ₹</p>
+          <p className="text-[10px] text-botanical-700/70 mt-0.5">Itemized receipts in ₹</p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-ivory-300 shadow-soft-sm">
-          <div className="flex items-center justify-between text-botanical-700 mb-2">
+        <Link 
+          href="/patient/tests"
+          className="bg-white p-4.5 rounded-2xl border border-ivory-300 shadow-soft-sm hover:border-botanical-400 hover:shadow-soft transition-all group"
+        >
+          <div className="flex items-center justify-between text-botanical-700 mb-1.5">
+            <span className="text-xs font-semibold group-hover:text-botanical-900 transition-colors">All Tests</span>
+            <FlaskConical className="w-4 h-4 text-botanical-600 group-hover:scale-110 transition-transform" />
+          </div>
+          <p className="text-2xl font-extrabold text-botanical-950">{tests.length || 198}+</p>
+          <p className="text-[10px] text-botanical-600 font-semibold mt-0.5 flex items-center gap-0.5">
+            <span>Browse Catalog</span>
+            <ChevronRight className="w-3 h-3" />
+          </p>
+        </Link>
+
+        <div className="bg-white p-4.5 rounded-2xl border border-ivory-300 shadow-soft-sm col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between text-botanical-700 mb-1.5">
             <span className="text-xs font-semibold">Patient ID</span>
             <ShieldCheck className="w-4 h-4 text-botanical-600" />
           </div>
           <p className="text-lg font-extrabold text-botanical-950 truncate">{user?.patientId || user?.badgeId || 'WD-PT-001'}</p>
-          <p className="text-[11px] text-botanical-700/70 mt-1">Verified Clinical File</p>
+          <p className="text-[10px] text-botanical-700/70 mt-0.5">Verified Clinical File</p>
         </div>
       </div>
 
@@ -312,6 +346,76 @@ export default function PatientDashboardPage() {
               ))}
             </div>
           )}
+
+          {/* Quick-browse Diagnostic Tests & Packages */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-botanical-950">Book Diagnostic Tests & Packages</h2>
+                <p className="text-xs text-botanical-700/80">Select routine checkups or full-body diagnostic panels</p>
+              </div>
+              <Link
+                href="/patient/tests"
+                className="text-xs font-bold text-botanical-600 hover:text-botanical-700 flex items-center gap-1 group"
+              >
+                <span>View All Tests ({tests.length || 198}+)</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {popularTests.map((t: any) => {
+                const selected = isTestSelected(t.id);
+                return (
+                  <div
+                    key={t.id}
+                    className={`bg-white rounded-2xl p-4 border transition-all ${
+                      selected
+                        ? 'border-botanical-600 ring-2 ring-botanical-500/20 shadow-soft'
+                        : 'border-ivory-300 hover:border-botanical-300 shadow-soft-sm'
+                    } flex flex-col justify-between`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-ivory-100 text-botanical-700">
+                          {t.category || 'Clinical Profile'}
+                        </span>
+                        <span className="text-xs font-extrabold text-botanical-950">₹{t.price}</span>
+                      </div>
+                      <h3 className="font-bold text-botanical-950 text-sm mt-2 line-clamp-1">{t.name}</h3>
+                      <p className="text-[11px] text-botanical-700/80 line-clamp-2 mt-1">{t.description}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-ivory-100">
+                      <span className="text-[10px] text-botanical-600 font-semibold">
+                        {t.parameters_count || (t.parameters?.length) || 1} Tests Included
+                      </span>
+                      <button
+                        onClick={() => toggleSelectTest(t)}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          selected
+                            ? 'bg-botanical-700 text-white shadow-soft-sm'
+                            : 'bg-ivory-100 text-botanical-800 hover:bg-botanical-50 hover:text-botanical-700 border border-ivory-300'
+                        }`}
+                      >
+                        {selected ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Added</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Right Col: Latest Lab Reports & Actions */}
@@ -374,6 +478,17 @@ export default function PatientDashboardPage() {
               Quick Patient Actions
             </h3>
             <div className="space-y-2">
+              <Link
+                href="/patient/tests"
+                className="flex items-center justify-between p-3 rounded-xl bg-white text-xs font-semibold text-botanical-950 border border-peach-100 hover:border-peach-300 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <FlaskConical className="w-4 h-4 text-botanical-600" />
+                  <span>Browse All Diagnostic Tests ({tests.length || 198}+)</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-botanical-400" />
+              </Link>
+
               <Link
                 href="/patient/addresses"
                 className="flex items-center justify-between p-3 rounded-xl bg-white text-xs font-semibold text-botanical-950 border border-peach-100 hover:border-peach-300 transition-colors"

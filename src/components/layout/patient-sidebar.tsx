@@ -14,7 +14,8 @@ import {
   LogOut,
   ChevronRight,
   ShieldCheck,
-  PhoneCall
+  PhoneCall,
+  FlaskConical
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import BrandLogo from '@/components/common/BrandLogo';
@@ -28,7 +29,8 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/patient/dashboard', icon: LayoutDashboard },
-  { name: 'Book Home Collection', href: '/patient/book', icon: CalendarPlus, badge: 'New' },
+  { name: 'All Diagnostic Tests', href: '/patient/tests', icon: FlaskConical, badge: '200+' },
+  { name: 'Book Home Collection', href: '/patient/book', icon: CalendarPlus, badge: 'Book' },
   { name: 'My Bookings', href: '/patient/bookings', icon: CalendarCheck },
   { name: 'Laboratory Reports', href: '/patient/reports', icon: FileText },
   { name: 'Invoices & Billing', href: '/patient/invoices', icon: Receipt },

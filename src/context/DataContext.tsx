@@ -20,6 +20,7 @@ interface DataContextType {
   drivers: DriverProfile[];
   selectedTests: DiagnosticTest[];
   toggleSelectTest: (test: DiagnosticTest) => void;
+  addSelectedTest: (test: DiagnosticTest) => void;
   removeSelectedTest: (testId: string) => void;
   clearSelectedTests: () => void;
   isTestSelected: (testId: string) => boolean;
@@ -67,9 +68,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-          setTests(data.data);
+          // Deduplicate tests by unique normalized name so there are never double entries
+          const uniqueTests: DiagnosticTest[] = [];
+          const seen = new Set<string>();
+          for (const item of data.data) {
+            const key = (item.name || '').toLowerCase().trim();
+            if (!seen.has(key)) {
+              seen.add(key);
+              uniqueTests.push(item);
+            }
+          }
+          setTests(uniqueTests);
           try {
-            localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(data.data));
+            localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(uniqueTests));
           } catch {}
         }
       })
@@ -79,9 +90,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-          setPackages(data.data);
+          const uniquePkgs: DiagnosticPackage[] = [];
+          const seenPkgs = new Set<string>();
+          for (const pkg of data.data) {
+            const key = (pkg.name || '').toLowerCase().trim();
+            if (!seenPkgs.has(key)) {
+              seenPkgs.add(key);
+              uniquePkgs.push(pkg);
+            }
+          }
+          setPackages(uniquePkgs);
           try {
-            localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(data.data));
+            localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(uniquePkgs));
           } catch {}
         }
       })
@@ -205,12 +225,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const toggleSelectTest = (test: DiagnosticTest) => {
     setSelectedTests((prev) => {
-      const exists = prev.some((t) => t.id === test.id);
+      const exists = prev.some((t) => t.id === test.id || (t.name && t.name.toLowerCase().trim() === test.name.toLowerCase().trim()));
       if (exists) {
-        return prev.filter((t) => t.id !== test.id);
+        return prev.filter((t) => t.id !== test.id && t.name.toLowerCase().trim() !== test.name.toLowerCase().trim());
       } else {
         return [...prev, test];
       }
+    });
+  };
+
+  const addSelectedTest = (test: DiagnosticTest) => {
+    setSelectedTests((prev) => {
+      // If already present by id or name, replace with latest without duplicating
+      const filtered = prev.filter((t) => t.id !== test.id && t.name.toLowerCase().trim() !== test.name.toLowerCase().trim());
+      return [...filtered, test];
     });
   };
 
@@ -561,6 +589,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         drivers,
         selectedTests,
         toggleSelectTest,
+        addSelectedTest,
         removeSelectedTest,
         clearSelectedTests,
         isTestSelected,
