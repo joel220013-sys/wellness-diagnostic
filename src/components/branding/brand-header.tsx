@@ -39,6 +39,11 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
+  // Auto-close mobile drawer whenever route changes
+  React.useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   // Role-specific navigation links for the mobile drawer
   const getNavLinks = () => {
     if (portalRole === 'admin') {
@@ -78,8 +83,8 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const navLinks = getNavLinks();
 
   return (
-    <header className="h-16 bg-white border-b border-ivory-300 sticky top-0 z-50 shadow-soft-sm w-full flex items-center">
-      <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white border-b border-ivory-300 w-full shadow-soft-sm">
+      <div className="w-full h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Left: Brand Logo + Portal Pill */}
         <div className="flex items-center gap-3 sm:gap-4">
           <Link href="/" className="hover:opacity-95 transition-opacity" title="Back to Home">
@@ -169,7 +174,7 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
 
       {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-ivory-300 bg-white/98 backdrop-blur-md px-4 pt-3 pb-6 space-y-3 shadow-soft-xl max-h-[85vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="lg:hidden border-t border-ivory-300 bg-white/98 backdrop-blur-md px-4 pt-3 pb-6 space-y-3 shadow-soft-xl max-h-[calc(100vh-4rem)] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
           {/* User profile info bar on mobile */}
           {user && (
             <div className="p-3 bg-botanical-50/70 rounded-2xl border border-botanical-100 flex items-center justify-between mb-3">
