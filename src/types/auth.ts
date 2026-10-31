@@ -25,5 +25,6 @@ export interface SessionUser {
   badgeId?: string;
   designation?: string;
   active: boolean;
+  preferences?: Record<string, any>;
   createdAt: string;
 }

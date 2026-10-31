@@ -205,6 +205,7 @@ def login_user(payload: LoginInput):
         "role": row["role"],
         "badge_id": row["badge_id"],
         "designation": row["designation"],
+        "preferences": row.get("preferences") or {},
         "created_at": row.get("created_at")
     }
 
@@ -212,4 +213,153 @@ def login_user(payload: LoginInput):
         "success": True,
         "message": "Login successful",
         "data": profile_data
+    }
+
+class ChangePasswordInput(BaseModel):
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    current_password: str
+    new_password: str
+
+@router.post("/change-password")
+def change_password(payload: ChangePasswordInput):
+    if not payload.user_id and not payload.email:
+        raise HTTPException(status_code=400, detail="User identification (ID or Email) is required.")
+
+    query = "SELECT id, email, password_hash FROM public.profiles WHERE "
+    params = []
+    if payload.user_id:
+        query += "id = %s;"
+        params.append(payload.user_id)
+    else:
+        query += "LOWER(email) = %s;"
+        params.append(sanitize_text(payload.email).lower())
+
+    row = supabase_db.fetch_one(query, tuple(params))
+    if not row:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    stored_hash = row.get("password_hash")
+    if stored_hash:
+        if not verify_password(stored_hash, payload.current_password):
+            raise HTTPException(status_code=400, detail="The current password you entered is incorrect.")
+
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters long.")
+
+    if payload.new_password == payload.current_password:
+        raise HTTPException(status_code=400, detail="New password must be different from current password.")
+
+    new_hash = hash_password(payload.new_password)
+    supabase_db.execute(
+        "UPDATE public.profiles SET password_hash = %s, updated_at = NOW() WHERE id = %s;",
+        (new_hash, row["id"])
+    )
+
+    return {
+        "success": True,
+        "message": "Password updated successfully. Your account is secured."
+    }
+
+class UpdateProfileInput(BaseModel):
+    user_id: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    blood_group: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    medical_notes: Optional[str] = None
+    preferences: Optional[Dict[str, Any]] = None
+
+@router.post("/update-profile")
+def update_profile(payload: UpdateProfileInput):
+    clean_uid = payload.user_id.strip()
+    row = supabase_db.fetch_one("SELECT id, role, preferences FROM public.profiles WHERE id = %s;", (clean_uid,))
+    if not row:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    import json
+
+    # 1. Update basic profile
+    fields = []
+    vals = []
+    if payload.name:
+        fields.append("name = %s")
+        vals.append(sanitize_text(payload.name))
+    if payload.phone:
+        fields.append("phone = %s")
+        vals.append(sanitize_text(payload.phone))
+    if payload.preferences is not None:
+        merged_pref = {**(row.get("preferences") or {}), **payload.preferences}
+        fields.append("preferences = %s::jsonb")
+        vals.append(json.dumps(merged_pref))
+
+    if fields:
+        fields.append("updated_at = NOW()")
+        vals.append(clean_uid)
+        sql = f"UPDATE public.profiles SET {', '.join(fields)} WHERE id = %s RETURNING id, email, phone, name, role, badge_id, designation, preferences;"
+        updated_profile = supabase_db.fetch_one(sql, tuple(vals))
+    else:
+        updated_profile = row
+
+    # 2. Update or insert patient_details if medical fields provided
+    pref_json = json.dumps(payload.preferences or {})
+    existing_det = supabase_db.fetch_one("SELECT id FROM public.patient_details WHERE patient_id = %s;", (clean_uid,))
+    if existing_det:
+        supabase_db.execute("""
+            UPDATE public.patient_details 
+            SET date_of_birth = COALESCE(%s, date_of_birth),
+                gender = COALESCE(%s, gender),
+                blood_group = COALESCE(%s, blood_group),
+                emergency_contact = COALESCE(%s, emergency_contact),
+                medical_notes = COALESCE(%s, medical_notes),
+                preferences = COALESCE(%s::jsonb, preferences)
+            WHERE patient_id = %s;
+        """, (
+            payload.date_of_birth or None,
+            sanitize_text(payload.gender) or None,
+            sanitize_text(payload.blood_group) or None,
+            sanitize_text(payload.emergency_contact) or None,
+            sanitize_text(payload.medical_notes) or None,
+            pref_json,
+            clean_uid
+        ))
+    else:
+        det_id = str(uuid.uuid4())
+        supabase_db.execute("""
+            INSERT INTO public.patient_details (
+                id, patient_id, date_of_birth, gender, blood_group, emergency_contact, medical_notes, preferences, created_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, NOW());
+        """, (
+            det_id,
+            clean_uid,
+            payload.date_of_birth or None,
+            sanitize_text(payload.gender) or None,
+            sanitize_text(payload.blood_group) or None,
+            sanitize_text(payload.emergency_contact) or None,
+            sanitize_text(payload.medical_notes) or None,
+            pref_json
+        ))
+
+    return {
+        "success": True,
+        "message": "Patient profile and settings saved successfully.",
+        "data": updated_profile
+    }
+
+@router.get("/patient-details/{patient_id}")
+def get_patient_details(patient_id: str):
+    clean_uid = patient_id.strip()
+    profile = supabase_db.fetch_one("SELECT id, email, phone, name, role, badge_id, designation, preferences, created_at FROM public.profiles WHERE id = %s;", (clean_uid,))
+    if not profile:
+        raise HTTPException(status_code=404, detail="Patient profile not found.")
+
+    details = supabase_db.fetch_one("SELECT * FROM public.patient_details WHERE patient_id = %s;", (clean_uid,))
+    return {
+        "success": True,
+        "data": {
+            "profile": profile,
+            "details": details or {}
+        }
     }

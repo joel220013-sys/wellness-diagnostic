@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { 
   User, 
   Mail, 
@@ -10,7 +11,9 @@ import {
   Save, 
   CheckCircle2, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  KeyRound,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -48,6 +51,30 @@ export default function PatientProfilePage() {
           <span>Patient profile updated successfully in secure database.</span>
         </div>
       )}
+
+      {/* Account Settings & Security Shortcut Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-botanical-50 border border-botanical-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-soft-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-botanical-500 text-white flex items-center justify-center flex-shrink-0">
+            <KeyRound className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm font-bold text-botanical-950">
+              Need to change password or manage notification alerts?
+            </p>
+            <p className="text-xs text-botanical-700/80">
+              Manage PBKDF2 credentials, WhatsApp delivery, and unit preferences in Account Settings.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/patient/settings"
+          className="px-4 py-2 rounded-xl bg-botanical-500 text-white font-bold text-xs hover:bg-botanical-600 transition-colors shadow-soft inline-flex items-center gap-1.5 flex-shrink-0 self-start sm:self-auto"
+        >
+          <span>Account Settings</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Core Identity */}

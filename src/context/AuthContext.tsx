@@ -12,6 +12,17 @@ interface AuthContextType {
   login: (emailOrPhone: string, password: string, requiredRole: UserRole) => Promise<{ success: boolean; error?: string }>;
   registerPatient: (data: { name: string; email: string; phone: string; password: string; address?: string }) => Promise<{ success: boolean; error?: string }>;
   registerAccount: (data: { name: string; email: string; phone: string; password: string; role: UserRole; badgeId?: string; designation?: string }) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: {
+    name?: string;
+    phone?: string;
+    date_of_birth?: string;
+    gender?: string;
+    blood_group?: string;
+    emergency_contact?: string;
+    medical_notes?: string;
+    preferences?: Record<string, any>;
+  }) => Promise<{ success: boolean; error?: string }>;
   loginAsDemo: (role: UserRole) => void;
   logout: () => void;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -364,6 +375,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'You must be signed in to change your password.' };
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          email: user.email,
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        return { success: true };
+      } else {
+        return { success: false, error: data.detail || 'Failed to update password. Please check your current password.' };
+      }
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Network error updating password. Please try again.' };
+    }
+  };
+
+  const updateProfile = async (data: {
+    name?: string;
+    phone?: string;
+    date_of_birth?: string;
+    gender?: string;
+    blood_group?: string;
+    emergency_contact?: string;
+    medical_notes?: string;
+    preferences?: Record<string, any>;
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'You must be signed in to update your profile.' };
+
+    try {
+      const res = await fetch('/api/auth/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          name: data.name,
+          phone: data.phone,
+          date_of_birth: data.date_of_birth,
+          gender: data.gender,
+          blood_group: data.blood_group,
+          emergency_contact: data.emergency_contact,
+          medical_notes: data.medical_notes,
+          preferences: data.preferences,
+        }),
+      });
+
+      const updatedUser: SessionUser = {
+        ...user,
+        name: data.name || user.name,
+        phone: data.phone || user.phone,
+        preferences: { ...(user.preferences || {}), ...(data.preferences || {}) },
+      };
+      setUser(updatedUser);
+      setAuthCookies(updatedUser);
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedUser));
+
+      if (res.ok) {
+        return { success: true };
+      } else {
+        const err = await res.json().catch(() => ({}));
+        return { success: false, error: err.detail || 'Failed to update profile settings.' };
+      }
+    } catch {
+      // Local storage fallback
+      const updatedUser: SessionUser = {
+        ...user,
+        name: data.name || user.name,
+        phone: data.phone || user.phone,
+        preferences: { ...(user.preferences || {}), ...(data.preferences || {}) },
+      };
+      setUser(updatedUser);
+      setAuthCookies(updatedUser);
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedUser));
+      return { success: true };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -374,6 +471,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         registerPatient,
         registerAccount,
+        changePassword,
+        updateProfile,
         loginAsDemo,
         logout,
         requestPasswordReset,

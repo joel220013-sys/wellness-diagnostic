@@ -77,6 +77,7 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
       { name: 'Invoices & Billing', href: '/patient/invoices', icon: Receipt },
       { name: 'Saved Addresses', href: '/patient/addresses', icon: MapPin },
       { name: 'Patient Profile', href: '/patient/profile', icon: User },
+      { name: 'Settings & Security', href: '/patient/settings', icon: Settings },
     ];
   };
 

@@ -15,7 +15,8 @@ import {
   ChevronRight,
   ShieldCheck,
   PhoneCall,
-  FlaskConical
+  FlaskConical,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import BrandLogo from '@/components/common/BrandLogo';
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Invoices & Billing', href: '/patient/invoices', icon: Receipt },
   { name: 'Saved Addresses', href: '/patient/addresses', icon: MapPin },
   { name: 'Patient Profile', href: '/patient/profile', icon: User },
+  { name: 'Settings & Security', href: '/patient/settings', icon: Settings },
 ];
 
 export default function PatientSidebar() {

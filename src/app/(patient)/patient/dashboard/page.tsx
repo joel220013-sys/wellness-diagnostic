@@ -22,7 +22,8 @@ import {
   ArrowRight,
   FlaskConical,
   Plus,
-  Check
+  Check,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -131,6 +132,13 @@ export default function PatientDashboardPage() {
             >
               <CalendarPlus className="w-4 h-4" />
               <span>Book New Collection</span>
+            </Link>
+            <Link
+              href="/patient/settings"
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm backdrop-blur-sm border border-white/15 transition-all"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings & Security</span>
             </Link>
           </div>
         </div>
