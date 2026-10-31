@@ -517,6 +517,88 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
         tests: ['Calcium', 'Inorganic Phosphorus', 'Alkaline Phosphatase', 'Rheumatoid Factor', 'Additional Markers (16)']
       }
     ]
+  },
+
+  // 13. Thyroid Profile Total (T3, T4, TSH Ultra)
+  'thyroid profile total t3 t4 tsh ultra': {
+    name: 'Thyroid Profile Total (T3, T4, TSH Ultra)',
+    parametersCount: 3,
+    reportsIn: 'Reports In 8-12 Hrs',
+    fasting: 'Non-Fasting',
+    samples: ['Blood'],
+    description: 'Measures Total T3, Total T4, and Ultrasensitive TSH to evaluate thyroid gland health and detect hypothyroidism or hyperthyroidism.',
+    previewBullets: ['Total Triiodothyronine (T3)', 'Total Thyroxine (T4)', 'TSH - Ultrasensitive'],
+    profiles: [
+      {
+        name: 'Thyroid Total Hormones (T3-T4-UTSH)',
+        count: 3,
+        description: 'Complete hormonal regulation of basal metabolism and endocrine energy homeostasis.',
+        tests: ['Total Triiodothyronine (T3)', 'Total Thyroxine (T4)', 'Ultrasensitive TSH (UTSH)']
+      }
+    ]
+  },
+
+  // 14. Thyroid Profile Free (FT3, FT4, TSH Ultra)
+  'thyroid profile free ft3 ft4 tsh ultra': {
+    name: 'Thyroid Profile Free (FT3, FT4, TSH Ultra)',
+    parametersCount: 3,
+    reportsIn: 'Reports In 8-12 Hrs',
+    fasting: 'Non-Fasting',
+    samples: ['Blood'],
+    description: 'Measures unbound, biologically active Free T3, Free T4, and Ultrasensitive TSH for accurate thyroid disorder diagnosis.',
+    previewBullets: ['Free Triiodothyronine (FT3)', 'Free Thyroxine (FT4)', 'TSH - Ultrasensitive'],
+    profiles: [
+      {
+        name: 'Biologically Active Free Thyroid Hormones',
+        count: 3,
+        description: 'Evaluates unbound hormones unaffected by binding proteins for precision diagnosis.',
+        tests: ['Free T3 (FT3)', 'Free T4 (FT4)', 'Ultrasensitive TSH (UTSH)']
+      }
+    ]
+  },
+
+  // 15. Jaanch - Thyroid Profile Basic
+  'jaanch thyroid profile basic': {
+    name: 'Jaanch - Thyroid Profile Basic',
+    parametersCount: 3,
+    reportsIn: 'Reports In 8-12 Hrs',
+    fasting: 'Non-Fasting',
+    samples: ['Blood'],
+    description: 'Essential thyroid screening profile including Free T3, Free T4, and Ultrasensitive TSH.',
+    previewBullets: ['Free T3 (FT3)', 'Free T4 (FT4)', 'TSH - Ultrasensitive'],
+    profiles: [
+      {
+        name: 'Thyroid Primary Panel',
+        count: 3,
+        description: 'Targeted assessment for metabolic complaints, unexplained weight changes, and chronic fatigue.',
+        tests: ['Free T3 (FT3)', 'Free T4 (FT4)', 'Ultrasensitive TSH (UTSH)']
+      }
+    ]
+  },
+
+  // 16. Jaanch - Thyroid Profile Advanced (8 Tests)
+  'jaanch thyroid profile advanced': {
+    name: 'Jaanch - Thyroid Profile Advanced (8 Tests)',
+    parametersCount: 8,
+    reportsIn: 'Reports In 12-24 Hrs',
+    fasting: 'Non-Fasting',
+    samples: ['Blood'],
+    description: 'Comprehensive thyroid diagnostic panel: FT3, FT4, TSH Ultrasensitive, Anti-TPO, Anti-TG, Total T3, Total T4, and Thyroglobulin.',
+    previewBullets: ['FT3 & FT4', 'TSH Ultra', 'Anti-TPO Antibodies', 'Anti-TG Antibodies', 'Total T3 & T4', 'Thyroglobulin'],
+    profiles: [
+      {
+        name: 'Free & Total Thyroid Hormones',
+        count: 5,
+        description: 'Quantifies both circulating free and total triiodothyronine and thyroxine.',
+        tests: ['Free T3 (FT3)', 'Free T4 (FT4)', 'Total T3', 'Total T4', 'Ultrasensitive TSH (UTSH)']
+      },
+      {
+        name: 'Thyroid Autoantibodies & Tumor Markers',
+        count: 3,
+        description: 'Immunological screen detecting Hashimoto thyroiditis, Graves disease, and thyroid tissue markers.',
+        tests: ['Anti-TPO (Thyroid Peroxidase Antibodies)', 'Anti-Thyroglobulin Antibodies (Anti-TG)', 'Thyroglobulin (TG)']
+      }
+    ]
   }
 };
 

@@ -34,8 +34,11 @@ const BOOK_CATEGORIES = [
   'Diabetes',
   'Thyroid',
   'Lipid',
+  'Liver',
+  'Kidney',
   'Jaanch Packages',
   'Vitamins',
+  'Hematology',
 ];
 
 const COLLECTION_SLOTS = [
@@ -77,12 +80,114 @@ export default function BookCollectionPage() {
       t.category.toLowerCase().includes(q) ||
       (t.description && t.description.toLowerCase().includes(q));
 
-    const matchesCategory =
-      testCategory === 'All' ||
-      (testCategory === 'Aarogyam' && (t.name.toLowerCase().includes('aarogyam') || t.category.toLowerCase().includes('aarogyam'))) ||
-      (testCategory === 'Full Body Checkups' && (t.category.toLowerCase().includes('package') || t.category.toLowerCase().includes('checkup') || t.name.toLowerCase().includes('aarogyam'))) ||
-      (testCategory === 'Health Packages' && (t.category.toLowerCase().includes('package') || t.category.toLowerCase().includes('checkup'))) ||
-      t.category.toLowerCase().includes(testCategory.toLowerCase());
+    const catLower = (t.category || '').toLowerCase();
+    const nameLower = (t.name || '').toLowerCase();
+
+    let matchesCategory = testCategory === 'All';
+    if (!matchesCategory) {
+      if (testCategory === 'Thyroid') {
+        matchesCategory =
+          catLower.includes('thyroid') ||
+          catLower.includes('endocrin') ||
+          nameLower.includes('thyroid') ||
+          nameLower.includes('tsh') ||
+          nameLower.includes('t3') ||
+          nameLower.includes('t4') ||
+          nameLower.includes('anti-tpo') ||
+          nameLower.includes('anti-tg') ||
+          nameLower.includes('thyroglobulin');
+      } else if (testCategory === 'Kidney') {
+        matchesCategory =
+          catLower.includes('kidney') ||
+          catLower.includes('renal') ||
+          nameLower.includes('kidney') ||
+          nameLower.includes('renal') ||
+          nameLower.includes('kft') ||
+          nameLower.includes('kidpro') ||
+          nameLower.includes('creatinine') ||
+          nameLower.includes('microalbumin') ||
+          nameLower.includes('uric acid') ||
+          nameLower.includes('urea');
+      } else if (testCategory === 'Lipid') {
+        matchesCategory =
+          catLower.includes('lipid') ||
+          catLower.includes('cardiac') ||
+          nameLower.includes('lipid') ||
+          nameLower.includes('cholesterol') ||
+          nameLower.includes('triglyceride') ||
+          nameLower.includes('hdl') ||
+          nameLower.includes('ldl') ||
+          nameLower.includes('vldl') ||
+          nameLower.includes('cardiac') ||
+          nameLower.includes('apolipoprotein');
+      } else if (testCategory === 'Liver') {
+        matchesCategory =
+          catLower.includes('liver') ||
+          catLower.includes('hepatic') ||
+          nameLower.includes('liver') ||
+          nameLower.includes('lft') ||
+          nameLower.includes('hepatic') ||
+          nameLower.includes('bilirubin') ||
+          nameLower.includes('sgot') ||
+          nameLower.includes('sgpt') ||
+          nameLower.includes('alkaline phosphatase') ||
+          nameLower.includes('ggt');
+      } else if (testCategory === 'Diabetes') {
+        matchesCategory =
+          catLower.includes('diabet') ||
+          nameLower.includes('diabet') ||
+          nameLower.includes('glucose') ||
+          nameLower.includes('sugar') ||
+          nameLower.includes('hba1c') ||
+          nameLower.includes('insulin');
+      } else if (testCategory === 'Vitamins') {
+        matchesCategory =
+          catLower.includes('vitamin') ||
+          nameLower.includes('vitamin') ||
+          nameLower.includes('vit ') ||
+          nameLower.includes('vit-') ||
+          nameLower.includes('vitd') ||
+          nameLower.includes('vitb') ||
+          nameLower.includes('folate') ||
+          nameLower.includes('folic acid') ||
+          nameLower.includes('biotin') ||
+          nameLower.includes('cobalamin');
+      } else if (testCategory === 'Hematology') {
+        matchesCategory =
+          catLower.includes('hematolog') ||
+          catLower.includes('haematolog') ||
+          nameLower.includes('cbc') ||
+          nameLower.includes('hemogram') ||
+          nameLower.includes('hemoglobin') ||
+          nameLower.includes('esr') ||
+          nameLower.includes('platelet');
+      } else if (testCategory === 'Aarogyam') {
+        matchesCategory =
+          nameLower.includes('aarogyam') ||
+          catLower.includes('aarogyam');
+      } else if (testCategory === 'Full Body Checkups' || testCategory === 'Health Packages') {
+        matchesCategory =
+          catLower.includes('package') ||
+          catLower.includes('checkup') ||
+          catLower.includes('full body') ||
+          catLower.includes('health package') ||
+          (t.id && t.id.startsWith('pkg_')) ||
+          nameLower.includes('aarogyam') ||
+          nameLower.includes('package') ||
+          nameLower.includes('profile') ||
+          nameLower.includes('checkup');
+      } else if (testCategory === 'Jaanch Packages') {
+        matchesCategory =
+          catLower.includes('jaanch') ||
+          nameLower.includes('jaanch');
+      } else if (testCategory === 'Blood Test') {
+        matchesCategory =
+          catLower.includes('blood') ||
+          (t.sample_type || '').toLowerCase().includes('blood');
+      } else {
+        matchesCategory = catLower.includes(testCategory.toLowerCase());
+      }
+    }
 
     return matchesSearch && matchesCategory;
   });

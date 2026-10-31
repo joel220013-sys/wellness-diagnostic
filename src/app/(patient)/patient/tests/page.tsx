@@ -71,18 +71,93 @@ export default function PatientTestsPage() {
 
       let matchesCat = selectedCategory === 'All';
       if (!matchesCat) {
+        const nameLower = (t.name || '').toLowerCase();
         if (selectedCategory === 'Popular') {
           matchesCat = !!t.popular;
+        } else if (selectedCategory === 'Thyroid') {
+          matchesCat =
+            cat.includes('thyroid') ||
+            cat.includes('endocrin') ||
+            nameLower.includes('thyroid') ||
+            nameLower.includes('tsh') ||
+            nameLower.includes('t3') ||
+            nameLower.includes('t4') ||
+            nameLower.includes('anti-tpo') ||
+            nameLower.includes('anti-tg') ||
+            nameLower.includes('thyroglobulin');
         } else if (selectedCategory === 'Kidney') {
           matchesCat =
             cat.includes('kidney') ||
             cat.includes('renal') ||
-            (t.name || '').toLowerCase().includes('kidney') ||
-            (t.name || '').toLowerCase().includes('renal') ||
-            (t.name || '').toLowerCase().includes('kft') ||
-            (t.name || '').toLowerCase().includes('kidpro') ||
-            (t.name || '').toLowerCase().includes('creatinine') ||
-            (t.name || '').toLowerCase().includes('microalbumin');
+            nameLower.includes('kidney') ||
+            nameLower.includes('renal') ||
+            nameLower.includes('kft') ||
+            nameLower.includes('kidpro') ||
+            nameLower.includes('creatinine') ||
+            nameLower.includes('microalbumin') ||
+            nameLower.includes('uric acid') ||
+            nameLower.includes('urea');
+        } else if (selectedCategory === 'Lipid') {
+          matchesCat =
+            cat.includes('lipid') ||
+            cat.includes('cardiac') ||
+            nameLower.includes('lipid') ||
+            nameLower.includes('cholesterol') ||
+            nameLower.includes('triglyceride') ||
+            nameLower.includes('hdl') ||
+            nameLower.includes('ldl') ||
+            nameLower.includes('vldl') ||
+            nameLower.includes('cardiac') ||
+            nameLower.includes('apolipoprotein');
+        } else if (selectedCategory === 'Liver') {
+          matchesCat =
+            cat.includes('liver') ||
+            cat.includes('hepatic') ||
+            nameLower.includes('liver') ||
+            nameLower.includes('lft') ||
+            nameLower.includes('hepatic') ||
+            nameLower.includes('bilirubin') ||
+            nameLower.includes('sgot') ||
+            nameLower.includes('sgpt') ||
+            nameLower.includes('alkaline phosphatase') ||
+            nameLower.includes('ggt');
+        } else if (selectedCategory === 'Diabetes') {
+          matchesCat =
+            cat.includes('diabet') ||
+            nameLower.includes('diabet') ||
+            nameLower.includes('glucose') ||
+            nameLower.includes('sugar') ||
+            nameLower.includes('hba1c') ||
+            nameLower.includes('insulin');
+        } else if (selectedCategory === 'Vitamins') {
+          matchesCat =
+            cat.includes('vitamin') ||
+            nameLower.includes('vitamin') ||
+            nameLower.includes('vit ') ||
+            nameLower.includes('vit-') ||
+            nameLower.includes('vitd') ||
+            nameLower.includes('vitb') ||
+            nameLower.includes('folate') ||
+            nameLower.includes('folic acid') ||
+            nameLower.includes('biotin') ||
+            nameLower.includes('cobalamin');
+        } else if (selectedCategory === 'Hematology') {
+          matchesCat =
+            cat.includes('hematolog') ||
+            cat.includes('haematolog') ||
+            nameLower.includes('cbc') ||
+            nameLower.includes('hemogram') ||
+            nameLower.includes('hemoglobin') ||
+            nameLower.includes('esr') ||
+            nameLower.includes('platelet');
+        } else if (selectedCategory === 'Jaanch Packages') {
+          matchesCat =
+            cat.includes('jaanch') ||
+            nameLower.includes('jaanch');
+        } else if (selectedCategory === 'Blood Test') {
+          matchesCat =
+            cat.includes('blood') ||
+            (t.sample_type || '').toLowerCase().includes('blood');
         } else if (selectedCategory === 'Health Packages' || selectedCategory === 'Full Body Checkups') {
           matchesCat =
             cat.includes('package') ||
@@ -90,10 +165,10 @@ export default function PatientTestsPage() {
             cat.includes('full body') ||
             cat.includes('health package') ||
             (t.id && t.id.startsWith('pkg_')) ||
-            (t.name || '').toLowerCase().includes('aarogyam') ||
-            (t.name || '').toLowerCase().includes('package') ||
-            (t.name || '').toLowerCase().includes('profile') ||
-            (t.name || '').toLowerCase().includes('checkup');
+            nameLower.includes('aarogyam') ||
+            nameLower.includes('package') ||
+            nameLower.includes('profile') ||
+            nameLower.includes('checkup');
         } else {
           matchesCat = cat.includes(selCat);
         }
