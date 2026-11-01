@@ -47,8 +47,8 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const STORAGE_KEY_TESTS = 'wellness_tests_data_v8';
-const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v8';
+const STORAGE_KEY_TESTS = 'wellness_tests_data_v9';
+const STORAGE_KEY_PACKAGES = 'wellness_packages_data_v9';
 const STORAGE_KEY_BOOKINGS = 'wellness_bookings_data_v5';
 const STORAGE_KEY_REPORTS = 'wellness_reports_data_v5';
 const STORAGE_KEY_INVOICES = 'wellness_invoices_data_v5';
@@ -65,12 +65,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [selectedTests, setSelectedTests] = useState<DiagnosticTest[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
+  // Clear obsolete cached test catalog versions on client start
+  useEffect(() => {
+    try {
+      localStorage.removeItem('wellness_tests_data_v8');
+      localStorage.removeItem('wellness_packages_data_v8');
+      localStorage.removeItem('wellness_tests_data_v7');
+      localStorage.removeItem('wellness_packages_data_v7');
+    } catch {}
+  }, []);
+
   // Fetch live tests, packages, bookings, and invoices from Supabase backend API on mount
   useEffect(() => {
     fetch('/api/tests')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+        if (data && Array.isArray(data.data)) {
           // Deduplicate tests by unique normalized name so there are never double entries
           const uniqueTests: DiagnosticTest[] = [];
           const seen = new Set<string>();
@@ -92,7 +102,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     fetch('/api/packages')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+        if (data && Array.isArray(data.data)) {
           const uniquePkgs: DiagnosticPackage[] = [];
           const seenPkgs = new Set<string>();
           for (const pkg of data.data) {
