@@ -498,7 +498,7 @@ export default function PatientTestsPage() {
                           Sample
                         </span>
                         <div className="flex items-center gap-1.5">
-                          {(pkgInfo?.samples || (test.sample_type ? [test.sample_type] : ['Blood'])).map((s, sIdx) => (
+                          {(pkgInfo?.samples || (test.sample_type ? (test.sample_type.includes('&') ? test.sample_type.split('&').map(s => s.trim()) : [test.sample_type]) : ['Blood'])).map((s, sIdx) => (
                             <span 
                               key={sIdx} 
                               className="px-2.5 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block"

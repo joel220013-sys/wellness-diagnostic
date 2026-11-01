@@ -24,7 +24,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 72,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.1 With UTSH is a comprehensive preventive wellness profile covering 72 essential parameters. Its key distinguishing feature is the screening of 22 Essential and Toxic Elements, alongside dedicated Cardiac Risk Markers, Liver, Kidney, Thyroid, Iron Deficiency, and Lipid assessments.',
     previewBullets: ['Elements 22 (Toxic & Nutrients)', 'Cardiac Risk Markers (5)', 'Thyroid T3-T4-UTSH (3)', 'Iron Deficiency (4)', 'Liver Function LFT (12)', 'Kidney Function KFT (7)', 'Lipid Profile (10)'],
     profiles: [
@@ -116,7 +116,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 84,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.2 With UTSH builds upon Aarogyam 1.1 by integrating a 24-parameter Complete Hemogram (CBC) and Glycemic Control Diabetes screening (HbA1c & Average Blood Glucose), creating an 84-parameter full-body health profile.',
     previewBullets: ['Complete Hemogram CBC (24)', 'Diabetes HbA1c & ABG (2)', 'Elements 22 (Toxic & Nutrients)', 'Cardiac Risk (5)', 'Thyroid T3-T4-UTSH (3)', 'Liver LFT (12)', 'Kidney KFT (7)'],
     profiles: [
@@ -197,7 +197,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 90,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.3 With UTSH covers 90 parameters, adding critical Vitamin D and Vitamin B12 deficiencies, vitality hormone Total Testosterone, Serum Zinc, and renal biomarker Cystatin C to the Aarogyam 1.2 framework.',
     previewBullets: ['Vitamin D & B12 (2)', 'Total Testosterone (Vitality)', 'Cystatin C (Kidney Biomarker)', 'Serum Zinc & Copper (2)', 'Complete Hemogram (24)', 'Diabetes HbA1c (2)', 'Elements 22'],
     profiles: [
@@ -288,7 +288,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 98,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.4 With UTSH features 98 parameters, incorporating high-risk vascular marker Homocysteine, advanced diabetic monitoring (Blood Ketone D3HB & Fructosamine), and a complete 3-ion electrolyte panel on top of Aarogyam 1.3.',
     previewBullets: ['Homocysteine (Vascular Marker)', 'Blood Ketone D3HB & Fructosamine (2)', 'Electrolytes Na, K, Cl (3)', 'Vitamins D & B12 (2)', 'Testosterone & Cystatin C (2)', 'Complete Hemogram (24)', 'Elements 22'],
     profiles: [
@@ -385,7 +385,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 105,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.5 With UTSH encompasses 105 parameters, expanding clinical insight with Pancreatic Enzymes (Serum Amylase & Lipase), Fasting Serum Insulin for insulin resistance/PCOS, and Serum Ferritin for cellular iron stores.',
     previewBullets: ['Pancreatic Amylase & Lipase (2)', 'Fasting Serum Insulin', 'Serum Ferritin Storage', 'Homocysteine (Heart Attack Marker)', 'Vitamins D & B12', 'Elements 22', 'Complete Hemogram (24)'],
     profiles: [
@@ -488,7 +488,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 108,
     reportsIn: 'Reports In 24-38 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.6 With UTSH spans 108 parameters, introducing dedicated Arthritis & Autoimmune Screening (Anti-CCP & ANA) to detect rheumatoid conditions and systemic autoimmunity alongside full metabolic, pancreatic, and organ surveillance.',
     previewBullets: ['Arthritis Anti-CCP & ANA (2)', 'Pancreatic Amylase & Lipase (2)', 'Fasting Insulin & Ferritin', 'Homocysteine & Cardiac Risk', 'Vitamins D & B12', 'Elements 22', 'Complete Hemogram (24)'],
     profiles: [
@@ -588,7 +588,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 118,
     reportsIn: 'Reports In 24-38 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.7 With UTSH encompasses 118 parameters, introducing the cutting-edge neuro-vascular inflammation marker Lp-PLA2 (Lipoprotein-associated Phospholipase A2) to accurately assess arterial plaque rupture, stroke, and cardiovascular event risk.',
     previewBullets: ['Lp-PLA2 (Arterial Stroke & Plaque Marker)', 'Arthritis Anti-CCP & ANA (2)', 'Pancreatic Amylase & Lipase', 'Fasting Insulin & Ferritin', 'Homocysteine & Cardiac Risk', 'Vitamins D & B12', 'Elements 22'],
     profiles: [
@@ -697,7 +697,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 121,
     reportsIn: 'Reports In 24-38 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 1.8 With UTSH covers 121 parameters, adding a comprehensive Vitamin expansion—featuring Fat-Soluble Vitamins (A, E, K1) and Vitamin B-Complex components (B1, B2, B6, B9)—on top of the full cardiovascular, Lp-PLA2, and arthritis panels.',
     previewBullets: ['Expanded Vitamins & B-Complex (10)', 'Lp-PLA2 Stroke & Plaque Marker', 'Arthritis Anti-CCP & ANA', 'Pancreatic Amylase & Lipase', 'Fasting Insulin & Ferritin', 'Elements 22', 'Homocysteine'],
     profiles: [
@@ -810,7 +810,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 149,
     reportsIn: 'Reports In 38 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: "Aarogyam XL With UTSH is Thyrocare's biggest flagship package on the menu consisting of 149 parameters for total wellness. Key highlight is the inclusion of Steroid Profile for complete evaluation of 10 Hormones (including Testosterone, Progesterone & Estrogen), full 8-part Vitamin B-Complex, 6 Fat-Soluble Vitamins, Elements 22, Kidpro, LFT, CBC, Diabetes, and Pancreatic enzymes.",
     previewBullets: ['Elements 22 (Toxic And Nutrients)', 'Silver', 'Aluminium', 'Arsenic'],
     profiles: [
@@ -950,7 +950,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 36,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Aarogyam A With UTSH is a streamlined clinical organ assessment profile covering 36 parameters across Lipid, Liver, Kidney, Thyroid, Iron, and Cardiac Risk Markers without routine blood hemogram.',
     previewBullets: ['Lipid Profile (10)', 'Liver Function LFT (12)', 'Kidney Function KFT (7)', 'Thyroid T3-T4-UTSH (3)', 'Iron Profile (4)'],
     profiles: [
@@ -993,7 +993,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 60,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam B With UTSH is an essential 60-parameter health checkup combining Complete Hemogram (CBC), Diabetes (HbA1c & Glucose), Cardiac Risk Markers, Liver, Kidney, Lipid, Iron, and Thyroid panels.',
     previewBullets: ['Complete Hemogram (24)', 'Diabetes HbA1c & Glucose (2)', 'Cardiac Risk (5)', 'Thyroid T3-T4-UTSH (3)', 'Iron Deficiency (4)', 'Liver LFT (12)', 'Kidney KFT (7)'],
     profiles: [
@@ -1054,7 +1054,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 86,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Aarogyam C Pro With UTSH covers 86 parameters, adding essential Vitamin D & B12, Serum Electrolytes, and complete Urine Routine analysis to Aarogyam B.',
     previewBullets: ['Vitamins D & B12 (2)', 'Electrolytes Na & Cl (2)', 'Complete Hemogram (24)', 'Diabetes HbA1c (2)', 'Cardiac Risk (5)', 'Routine Urine (15)', 'Liver & Kidney (19)'],
     profiles: [
@@ -1133,7 +1133,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 50,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Aarogyam Basic 1 With UTSH is an affordable entry checkup featuring 50 parameters covering Complete Blood Count (CBC), Diabetes (HbA1c & Glucose), Thyroid (UTSH), Liver, Kidney, and Lipid profiles.',
     previewBullets: ['Complete Hemogram (24)', 'Diabetes HbA1c (2)', 'Thyroid UTSH (1)', 'Liver LFT (12)', 'Kidney KFT (7)', 'Lipid Profile (10)'],
     profiles: [
@@ -1182,7 +1182,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 60,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Aarogyam Basic 2 With UTSH upgrades Basic 1 by incorporating full 4-part Iron Deficiency Profile (Iron, TIBC, UIBC, % Saturation) and full 3-test Thyroid (T3, T4, UTSH) for 60 total parameters.',
     previewBullets: ['Complete Hemogram (24)', 'Iron Deficiency Profile (4)', 'Thyroid T3-T4-UTSH (3)', 'Diabetes HbA1c (2)', 'Liver LFT (12)', 'Kidney KFT (7)', 'Lipid (10)'],
     profiles: [
@@ -1237,7 +1237,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 106,
     reportsIn: 'Reports In 24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Comprehensive 106-parameter wellness package covering Toxic Elements (22), Vitamins D & B12, Complete Hemogram (24), Cardiac Risk Markers (5), Liver, Kidney, Lipid, Thyroid, Iron, and Urinogram.',
     previewBullets: ['Elements 22 (Toxic & Nutrients)', 'Vitamins D & B12 (2)', 'Cardiac Risk (5)', 'Complete Hemogram (24)', 'Thyroid UTSH (3)', 'Liver LFT (12)', 'Kidney KFT (7)'],
     profiles: [
@@ -1322,7 +1322,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 125,
     reportsIn: 'Reports In 24-38 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Designed for corporate executives, working professionals, and comprehensive health monitoring. Covers 125 parameters including Toxic Elements 22, Pancreatic Enzymes, Stress Hormone Cortisol, Homocysteine, Vitamins D & B12, and comprehensive organ mapping.',
     previewBullets: ['Elements 22 (Toxic & Nutrients)', 'Pancreatic Amylase & Lipase', 'Serum Cortisol (Stress Hormone)', 'Homocysteine (Cardiac Marker)', 'Vitamins D & B12', 'Complete Hemogram (24)', 'Liver LFT (12)'],
     profiles: [
@@ -1419,7 +1419,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 127,
     reportsIn: 'Reports In 24-38 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'In-depth 360-degree wellness screening featuring 127 parameters. Combines Toxic Elements 22, Expanded Vitamins, Pancreatic Profile, Cardiac Risk Markers, Complete Blood Count, and Microscopic Urinalysis.',
     previewBullets: ['Toxic Elements 22', 'Expanded Vitamins (6)', 'Pancreatic Amylase & Lipase', 'Cardiac Risk & Homocysteine (6)', 'Complete Hemogram (24)', 'Urine Microscopy (20)', 'Liver LFT (12)'],
     profiles: [
@@ -1510,7 +1510,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 92,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Customized wellness checkup for men covering 92 parameters. Key features include PSA (Prostate-Specific Antigen) for prostate screening, Total & Free Testosterone, DHEA-S, Cardiac Risk Markers, and comprehensive organ functions.',
     previewBullets: ['PSA (Prostate Cancer Screening)', 'Total & Free Testosterone (2)', 'DHEA-S Vitality Hormone', 'Cardiac Risk Markers (5)', 'Complete Hemogram (24)', 'Liver LFT (12)', 'Kidney KFT (7)'],
     profiles: [
@@ -1589,7 +1589,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 95,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Customized wellness checkup for women covering 95 parameters. Features CA-125 (Ovarian cancer screening), Estradiol, Serum Ferritin, Vitamins D & B12, Thyroid regulation, and complete organ function tests.',
     previewBullets: ['CA-125 (Ovarian Cancer Marker)', 'Estradiol & Female Hormones', 'Serum Ferritin Storage Iron', 'Vitamins D & B12', 'Thyroid T3-T4-UTSH (3)', 'Complete Hemogram (24)', 'Liver & Kidney (19)'],
     profiles: [
@@ -1668,7 +1668,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 92,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Specialized diagnostic panel for men aged 50+ evaluating joint and bone health, prostate PSA screening, cardiac risk, diabetic kidney disease, and core organ functions.',
     previewBullets: ['PSA Prostate Screening', 'Bone Health Calcium & Phosphorus', 'Cardiac Risk Markers (5)', 'Kidney Function & eGFR', 'Complete Hemogram (24)', 'Diabetes HbA1c (2)'],
     profiles: [
@@ -1740,7 +1740,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 92,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Specialized diagnostic panel for women aged 50+ focusing on post-menopausal osteoporosis, arthritis/gout screening, cardiovascular risk, diabetic surveillance, and renal clearance.',
     previewBullets: ['Bone Health Calcium & Phosphorus', 'Cardiac Risk Markers (5)', 'Kidney Function & eGFR', 'Complete Hemogram (24)', 'Diabetes HbA1c (2)', 'Thyroid T3-T4-UTSH (3)'],
     profiles: [
@@ -1807,7 +1807,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 24,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Targeted nephrological kidney assessment: BUN, Serum Creatinine, Uric Acid, Calcium, Phosphorus, Serum Electrolytes (Sodium, Potassium, Chloride), Microalbuminuria, and Complete Urine Microscopy.',
     previewBullets: ['Urine Microalbumin/Creatinine Ratio (ACR)', 'Electrolytes Na, K, Cl (3)', 'Renal Function KFT (7)', 'Complete Urine Microscopy (12)'],
     profiles: [
@@ -1851,7 +1851,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 14,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Precision cardiovascular and coronary artery disease panel covering Homocysteine, hs-CRP, Apolipoprotein A1, Apolipoprotein B, Apo B/A1 ratio, Lipoprotein(a), and full Lipid Profile.',
     previewBullets: ['Homocysteine (Stroke Risk)', 'High-Sensitivity CRP (hs-CRP)', 'Apolipoproteins A1 & B', 'Lipoprotein (a)', 'Lipid Profile (8)'],
     profiles: [
@@ -1884,7 +1884,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 12,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Precision diabetes management panel assessing 90-day glycemic control (HbA1c & ABG), intermediate protein glycation (Fructosamine), Blood Ketones (D3HB), Fasting Insulin, and Diabetic Nephropathy microalbuminuria.',
     previewBullets: ['HbA1c & Average Blood Glucose', 'Blood Ketone (D3HB)', 'Fructosamine', 'Fasting Serum Insulin', 'Urine Microalbumin/Creatinine Ratio (ACR)', 'Renal Creatinine & eGFR'],
     profiles: [
@@ -1922,7 +1922,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 8,
     reportsIn: 'Reports In 24-38 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Advanced female oncology panel evaluating circulating tumor markers across ovarian, breast, gastrointestinal, and hepatic systems for proactive health protection.',
     previewBullets: ['CA-125 (Ovarian Cancer)', 'CA 15-3 (Breast Cancer)', 'CEA (Colorectal Marker)', 'AFP (Liver/Germ Cell)', 'CA 19-9 (Pancreatic/GI)', 'HE4 (Ovarian Epithelial)'],
     profiles: [
@@ -1950,7 +1950,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 92,
     reportsIn: 'Reports In 24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Comprehensive oncology and baseline organ screening for men: Total PSA (Prostate), CEA (Colorectal), Complete Hemogram (24), Liver, Kidney, Lipid, and Urine examination.',
     previewBullets: ['PSA (Prostate Cancer Screening)', 'CEA (Colorectal Cancer Marker)', 'Complete Hemogram (24)', 'Liver Function LFT (12)', 'Kidney Function KFT (7)', 'Lipid Profile (10)'],
     profiles: [
@@ -2011,7 +2011,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 95,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Comprehensive 95-parameter full-body health checkup combining Vitamin D & B12, Cardiac Risk Markers, Complete Hemogram, Diabetes, Liver, Kidney, Lipid, Thyroid, and Iron deficiency profiles.',
     previewBullets: ['Vitamin D Total (25-OH)', 'Vitamin B12 Active', 'Cardiac Risk Markers (5)', 'Complete Hemogram (24)', 'Diabetes HbA1c (2)', 'Liver & Kidney (19)'],
     profiles: [
@@ -2090,7 +2090,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 3,
     reportsIn: 'Reports In 8-12 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Gold-standard 3-parameter thyroid evaluation quantifying circulating Total Triiodothyronine (T3), Total Thyroxine (T4), and Ultrasensitive Thyroid Stimulating Hormone (uTSH).',
     previewBullets: ['Total Triiodothyronine (T3)', 'Total Thyroxine (T4)', 'TSH - Ultrasensitive (uTSH)'],
     profiles: [
@@ -2109,7 +2109,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 8,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Comprehensive thyroid diagnostic panel: Free T3, Free T4, TSH Ultrasensitive, Anti-TPO, Anti-TG, Total T3, Total T4, and Thyroglobulin.',
     previewBullets: ['Free T3 & Free T4', 'TSH Ultrasensitive', 'Anti-TPO Antibodies', 'Anti-TG Antibodies', 'Thyroglobulin (TG)'],
     profiles: [
@@ -2135,7 +2135,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 94,
     reportsIn: 'Reports In 24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam D Pro With UTSH encompasses 94 parameters providing an extensive preventive screening. It includes Free Thyroid Hormones (Free T3 & Free T4) and Anti-TPO autoantibodies to detect autoimmune thyroiditis early, alongside Complete Hemogram (CBC 24), Lipid Profile (10), Liver Function (12), Kidney Function (7), Toxic Elements 22, and Urine Microalbuminuria.',
     previewBullets: ['Free T3, Free T4 & Anti-TPO (3)', 'Elements 22 (Toxic & Nutrients)', 'Complete Hemogram (24)', 'Urine Microalbumin / Creatinine', 'Cardiac Risk Markers (5)', 'Liver Function LFT (12)', 'Kidney Function KFT (7)'],
     profiles: [
@@ -2202,7 +2202,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 102,
     reportsIn: 'Reports In 24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam E Pro With UTSH features 102 parameters integrating Pancreatic enzymes (Serum Amylase & Lipase) and Fasting Insulin resistance testing alongside Homocysteine, Lp(a), Free Thyroid Hormones, 22 Toxic Elements, Hemogram CBC, and full organ profiles.',
     previewBullets: ['Pancreatic Amylase & Lipase (2)', 'Fasting Insulin & Homocysteine (2)', 'Lipoprotein (a) & Apo B/A1 (3)', 'Elements 22 (Toxic & Nutrients)', 'Free T3, Free T4 & Anti-TPO', 'Complete Hemogram (24)', 'Liver & Kidney (19)'],
     profiles: [
@@ -2281,7 +2281,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 110,
     reportsIn: 'Reports In 24-36 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam F Plus With UTSH provides 110 parameters incorporating advanced Arthritis screening (Anti-CCP & ANA), Pancreatic enzymes (Amylase & Lipase), Serum Ferritin, Homocysteine, Lp(a), 22 Toxic Elements, Free Thyroid Hormones, and full vital organ panels.',
     previewBullets: ['Anti-CCP & ANA Arthritis Screen (2)', 'Pancreatic Amylase & Lipase (2)', 'Serum Ferritin & Homocysteine (2)', 'Elements 22 (Toxic & Nutrients)', 'Free T3, Free T4 & Anti-TPO', 'Complete Hemogram (24)', 'Full Organ Profiles (33)'],
     profiles: [
@@ -2360,7 +2360,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 86,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: 'Non-Fasting (Anytime Test)',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Aarogyam 24x7 Non-Fasting Advanced is engineered for active individuals who cannot observe overnight fasting. Covering 86 parameters, it utilizes Direct LDL, Glycated Hemoglobin (HbA1c), Ultrasensitive TSH, Elements 22, Liver, Kidney, and CBC to deliver accurate results without meal restrictions.',
     previewBullets: ['Direct LDL (Non-Fasting Accurate)', 'HbA1c & Estimated Blood Glucose', 'Elements 22 (Toxic & Nutrients)', 'Complete Hemogram (24)', 'Thyroid uTSH (1)', 'Liver Function LFT (12)', 'Kidney Function KFT (7)'],
     profiles: [
@@ -2415,7 +2415,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 22,
     reportsIn: 'Reports In 38 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Elements 22 profile quantifies 22 toxic heavy metals and essential nutrient minerals using state-of-the-art Inductively Coupled Plasma Mass Spectrometry (ICP-MS). It detects environmental poisonings (Lead, Mercury, Arsenic) and traces vital co-factor minerals (Selenium, Zinc, Copper, Cobalt).',
     previewBullets: ['Toxic Heavy Metals: Lead, Mercury, Arsenic', 'Environmental Toxins: Aluminium, Cadmium', 'Essential Trace Minerals: Selenium, Copper', 'ICP-MS High Precision Quantification'],
     profiles: [
@@ -2440,7 +2440,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 45,
     reportsIn: 'Reports In 48-72 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Food Intolerance Profile measures circulating IgG antibodies against 45 dietary antigens to identify delayed food sensitivities causing chronic digestive bloating, migraines, fatigue, and systemic inflammation.',
     previewBullets: ['Dairy & Milk Proteins (5)', 'Cereals & Gluten Grains (7)', 'Nuts & Legumes (8)', 'Meats & Seafood (10)', 'Fruits & Spices (15)'],
     profiles: [
@@ -2489,7 +2489,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 35,
     reportsIn: 'Reports In 36-48 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Comprehensive multi-modal allergy panel measuring allergen-specific IgE antibodies across 35 environmental inhalants, dietary foods, non-veg antigens, and common pharmaceutical drugs.',
     previewBullets: ['Inhalant Dust Mites & Pollens (10)', 'Food Antigens & Non-Veg (15)', 'Drug Allergens: Penicillin, NSAIDs (5)', 'Total Serum IgE (1)'],
     profiles: [
@@ -2526,7 +2526,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 8,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Anemia Profile Advanced investigates microcytic, macrocytic, and hemolytic anemias covering 8 biomarkers: Serum Ferritin, Vitamin B12, Folic Acid, Serum Iron, TIBC, UIBC, % Transferrin Saturation, and Hemoglobin.',
     previewBullets: ['Serum Ferritin (Storage Iron)', 'Vitamin B12 & Folic Acid (Active)', 'Iron Deficiency Profile (4)', 'Hemoglobin Concentration'],
     profiles: [
@@ -2551,7 +2551,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 10,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Bone Profile Advanced provides 10 key biochemical markers evaluating bone turnover, osteoporosis risk, and calcium-phosphorus homeostasis: 25-OH Vitamin D, Parathyroid Hormone (PTH), Calcium, Phosphorus, Alkaline Phosphatase, and Osteocalcin.',
     previewBullets: ['Total 25-OH Vitamin D', 'Intact Parathyroid Hormone (PTH)', 'Serum Calcium & Ionized Calcium (2)', 'Alkaline Phosphatase & Phosphorus (2)'],
     profiles: [
@@ -2576,7 +2576,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 4,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'AMH Advanced Profile evaluates female ovarian follicular reserve and reproductive lifespan covering 4 endocrine markers: Anti-Mullerian Hormone (AMH), Follicle Stimulating Hormone (FSH), Luteinizing Hormone (LH), and Estradiol (E2).',
     previewBullets: ['Anti-Mullerian Hormone (AMH)', 'Follicle Stimulating Hormone (FSH)', 'Luteinizing Hormone (LH)', 'Estradiol (E2)'],
     profiles: [
@@ -2595,7 +2595,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 12,
     reportsIn: 'Reports In 24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Comprehensive reproductive endocrine workup covering 12 parameters: FSH, LH, Prolactin, AMH, Estradiol, Progesterone, Total & Free Testosterone, DHEA-S, TSH, and SHBG.',
     previewBullets: ['AMH Ovarian Reserve', 'FSH, LH & Prolactin (3)', 'Total & Free Testosterone (2)', 'Estradiol & Progesterone (2)'],
     profiles: [
@@ -2626,7 +2626,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 8,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Specialized rheumatology and joint pain evaluation covering 8 parameters: Anti-CCP, ANA, Rheumatoid Factor (RF), High-Sensitivity CRP, Uric Acid, Calcium, Phosphorus, and uTSH.',
     previewBullets: ['Anti-CCP Antibodies (Rheumatoid Specific)', 'ANA Antinuclear Antibodies Screen', 'Rheumatoid Factor (RF Quantitative)', 'High-Sensitivity CRP (hs-CRP)'],
     profiles: [
@@ -2651,7 +2651,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 18,
     reportsIn: 'Reports In 12 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood', 'Urine'],
     description: 'Rapid acute tropical fever diagnostic panel covering 18 parameters: Dengue NS1 Antigen, Dengue IgM & IgG Antibodies, Malarial Parasite Antigen (Pv/Pf), Typhoid Widal Test, CBC with Platelet Count, and Complete Urine Analysis.',
     previewBullets: ['Dengue NS1 Antigen & IgM/IgG (3)', 'Malarial Parasite Antigen (Pv/Pf)', 'Typhoid Widal Tube Agglutination', 'Complete Hemogram CBC (24)', 'Urine Routine & Microscopic (15)'],
     profiles: [
@@ -2682,7 +2682,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 16,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Clinical alopecia investigation covering 16 parameters: Serum Ferritin, Iron Profile (4), Vitamin D, Vitamin B12, Thyroid T3-T4-uTSH, DHEA-S, Total Testosterone, Zinc, and Hemogram.',
     previewBullets: ['Serum Ferritin (Hair Follicle Iron)', 'Vitamin D & Active Vitamin B12 (2)', 'Thyroid T3, T4 & UTSH (3)', 'Total Testosterone & DHEA-S (2)', 'Serum Zinc Mineral Level'],
     profiles: [
@@ -2713,7 +2713,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 16,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)'],
+    samples: ['Blood'],
     description: 'Dermatological health and anti-aging blood profile covering 16 parameters: Vitamin C, Vitamin E, Zinc, Copper, Serum Ferritin, Total IgE, Thyroid, Liver Function, and Hemogram.',
     previewBullets: ['Vitamin C & Vitamin E Antioxidants (2)', 'Zinc & Copper Trace Elements (2)', 'Total Serum IgE (Atopic Skin Screen)', 'Thyroid uTSH & Ferritin (2)'],
     profiles: [
@@ -2744,7 +2744,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 6,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Complete viral hepatitis diagnostic profile covering 6 parameters: HBsAg, Anti-HBs, Anti-HCV, HAV IgM, HEV IgM, and Total Bilirubin.',
     previewBullets: ['Hepatitis B Surface Antigen (HBsAg)', 'Hepatitis B Surface Antibody (Anti-HBs)', 'Hepatitis C Virus Antibody (Anti-HCV)', 'Hepatitis A & E Acute IgM Antibodies'],
     profiles: [
@@ -2763,7 +2763,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 6,
     reportsIn: 'Reports In 12 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Sodium Citrate)'],
+    samples: ['Blood'],
     description: 'Pre-operative and thrombotic risk coagulation panel covering 6 parameters: Prothrombin Time (PT), INR, Activated Partial Thromboplastin Time (aPTT), Thrombin Time (TT), Fibrinogen, and D-Dimer.',
     previewBullets: ['Prothrombin Time (PT) & INR (2)', 'Activated Partial Thromboplastin Time (aPTT)', 'D-Dimer Quantitative (Thrombosis Marker)', 'Fibrinogen & Thrombin Time (2)'],
     profiles: [
@@ -2782,7 +2782,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 8,
     reportsIn: 'Reports In 24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Blood (Serum)'],
+    samples: ['Blood'],
     description: 'Comprehensive sexual health and infectious disease screening covering 8 parameters: HIV 1 & 2 4th Gen Antigen/Antibody, HBsAg, Anti-HCV, VDRL/Syphilis, TPHA, HSV 1 & 2 IgG, and HSV 1 & 2 IgM.',
     previewBullets: ['HIV 1 & 2 p24 Ag/Ab (4th Generation)', 'Syphilis VDRL & TPHA Confirmatory (2)', 'Hepatitis B & C Serology (2)', 'Herpes Simplex Virus (HSV 1 & 2) IgG/IgM'],
     profiles: [
@@ -2801,7 +2801,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 6,
     reportsIn: 'Reports In 24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Nasal / Throat Swab & Blood'],
+    samples: ['Nasal/Throat Swab'],
     description: 'Multiplex real-time viral respiratory panel covering 6 parameters detecting Influenza A (H1N1, H3N2), Influenza B (Victoria & Yamagata), and acute inflammatory markers.',
     previewBullets: ['Influenza A (H3N2 Seasonal Strain)', 'Influenza A (H1N1 Pandemic Strain)', 'Influenza B Virus Screen', 'High-Sensitivity CRP Inflammatory Marker'],
     profiles: [
@@ -2820,7 +2820,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 16,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: 'Targeted monitoring profile for patients undergoing GLP-1 receptor agonist therapy covering 16 parameters: HbA1c, Fasting Insulin, Pancreatic Amylase & Lipase, Creatinine, eGFR, LFT, and Lipid Profile.',
     previewBullets: ['Pancreatic Amylase & Lipase Safety (2)', 'HbA1c & Fasting Serum Insulin (2)', 'Renal Function Creatinine & eGFR (2)', 'Complete Lipid Profile & Liver LFT'],
     profiles: [
@@ -2851,7 +2851,7 @@ export const PACKAGE_DETAILS_REGISTRY: Record<string, DetailedPackageData> = {
     parametersCount: 10,
     reportsIn: 'Reports In 12-24 Hrs',
     fasting: 'Non-Fasting',
-    samples: ['Urine (Sterile Cup)'],
+    samples: ['Urine'],
     description: 'Comprehensive 10-panel toxicology immunoassay screening for drugs of abuse: Amphetamines, Barbiturates, Benzodiazepines, Cocaine, Methadone, Methamphetamines, Morphine/Opiates, PCP, THC, and MDMA.',
     previewBullets: ['Amphetamines & Methamphetamines (2)', 'Cocaine Metabolite (Benzoylecgonine)', 'Cannabinoids THC & Opiates Morphine (2)', 'Benzodiazepines & Barbiturates (2)'],
     profiles: [
@@ -2990,7 +2990,7 @@ export function getPackageDetails(name: string, fallbackCount: number = 72, fall
       parametersCount: count,
       reportsIn: 'Reports In 24-48 Hrs',
       fasting: 'Non-Fasting',
-      samples: ['Blood (Serum)'],
+      samples: ['Blood'],
       description: fallbackDesc || `${name} evaluates specific IgE antibody reactions against common inhalants, environmental dust, animal dander, pollens, and food allergens.`,
       previewBullets: ['Inhalant Allergen Specific IgE', 'Food Allergen Screen', 'Total Serum IgE', 'Eosinophil Counts'],
       profiles: [
@@ -3022,7 +3022,7 @@ export function getPackageDetails(name: string, fallbackCount: number = 72, fall
       parametersCount: count,
       reportsIn: 'Reports In 12-24 Hrs',
       fasting: '10-12 Hrs',
-      samples: ['Blood (Serum)'],
+      samples: ['Blood'],
       description: fallbackDesc || `${name} provides targeted cardiovascular surveillance evaluating cardiac enzymes, vascular risk proteins, inflammatory markers, and lipid fractions.`,
       previewBullets: ['hs-CRP High Sensitivity', 'Homocysteine Stroke Marker', 'Apolipoproteins A1 & B', 'Complete Lipid Profile (10)'],
       profiles: [
@@ -3048,7 +3048,7 @@ export function getPackageDetails(name: string, fallbackCount: number = 72, fall
       parametersCount: count,
       reportsIn: 'Reports In 8-12 Hrs',
       fasting: 'Non-Fasting',
-      samples: ['Blood (EDTA & Serum)', 'Urine'],
+      samples: ['Blood'],
       description: fallbackDesc || `${name} evaluates acute seasonal and monsoon febrile illnesses, checking for Dengue, Malaria, Typhoid, bacterial infections, and liver/renal involvement.`,
       previewBullets: ['Dengue NS1 Antigen & IgG/IgM', 'Malarial Parasite Antigen', 'Widal Test for Typhoid', 'Complete Hemogram & Platelets (24)', 'Urine Routine (15)'],
       profiles: [
@@ -3106,7 +3106,7 @@ export function getPackageDetails(name: string, fallbackCount: number = 72, fall
     parametersCount: count,
     reportsIn: count > 100 ? 'Reports In 38 Hrs' : 'Reports In 24 Hrs',
     fasting: '10-12 Hrs',
-    samples: ['Blood (EDTA & Serum)', 'Urine'],
+    samples: ['Blood'],
     description: fallbackDesc || `${name} is an extensive preventive diagnostic profile covering ${count} essential clinical parameters across multi-organ wellness, metabolic vitals, and lifestyle disease screening.`,
     previewBullets: [
       `Complete Hemogram (${Math.min(24, Math.floor(count * 0.3))})`,

@@ -126,7 +126,7 @@ export default function PackagesPage() {
                           Sample
                         </span>
                         <div className="flex items-center gap-1.5">
-                          {(pkgInfo.samples || ['Blood', 'Urine']).map((s, sIdx) => (
+                          {(pkgInfo.samples || (pkg.sample_type ? (pkg.sample_type.includes('&') ? ['Blood', 'Urine'] : [pkg.sample_type]) : ['Blood'])).map((s, sIdx) => (
                             <span 
                               key={sIdx}
                               className="px-2.5 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block"
