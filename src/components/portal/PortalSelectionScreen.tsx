@@ -10,7 +10,6 @@ import {
   ArrowRight, 
   Sparkles,
   CheckCircle2, 
-  Lock, 
   Building2, 
   ChevronRight,
   Globe,
@@ -217,30 +216,6 @@ export default function PortalSelectionScreen() {
             </div>
           </div>
 
-        </div>
-
-        {/* Security Notice */}
-        <div className="mt-12 w-full max-w-4xl bg-white/80 backdrop-blur rounded-2xl p-4 sm:p-5 border border-ivory-300 shadow-soft-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-botanical-50 border border-botanical-100 flex items-center justify-center text-botanical-600 flex-shrink-0">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-botanical-950">
-                Enterprise Role-Based Access Control (RBAC)
-              </h4>
-              <p className="text-xs text-botanical-800/70">
-                Role authorization is strictly verified. Unauthorized role traversal or URL tampering is rejected at the route and API level.
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href="/"
-            className="flex-shrink-0 text-xs sm:text-sm font-semibold text-botanical-700 hover:text-botanical-900 underline underline-offset-4"
-          >
-            Explore Public Website & Catalog →
-          </Link>
         </div>
       </main>
 
