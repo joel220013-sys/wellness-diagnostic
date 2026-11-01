@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import CartDrawer from '@/components/cart/CartDrawer';
 import AdminSidebar from '@/components/layout/admin-sidebar';
+import { isSoundAlertsEnabled, setSoundAlertsEnabled, playOrderChime } from '@/lib/notificationService';
 import { 
   LogOut, 
   Menu, 
@@ -26,7 +27,9 @@ import {
   FlaskConical, 
   Boxes, 
   Truck,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 
 interface BrandHeaderProps {
@@ -39,7 +42,19 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const { user, logout } = useAuth();
   const { selectedTests, isCartOpen, setIsCartOpen } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const pathname = usePathname();
+
+  React.useEffect(() => {
+    setSoundEnabled(isSoundAlertsEnabled());
+  }, []);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    setSoundAlertsEnabled(next);
+    if (next) playOrderChime();
+  };
 
   // Auto-close mobile drawer whenever route changes
   React.useEffect(() => {
@@ -132,6 +147,30 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
             </button>
           )}
 
+          {(portalRole === 'admin' || portalRole === 'driver') && (
+            <button
+              onClick={toggleSound}
+              className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                soundEnabled
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-ivory-100 text-botanical-600 border-ivory-300 hover:bg-ivory-200'
+              }`}
+              title={soundEnabled ? 'Order sound alert is ON (click to mute)' : 'Order sound alert is OFF (click to unmute)'}
+            >
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden xl:inline text-[11px]">Chime ON</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-botanical-500" />
+                  <span className="hidden xl:inline text-[11px]">Muted</span>
+                </>
+              )}
+            </button>
+          )}
+
           {user ? (
             <div className="flex items-center gap-3">
               <div className="text-right">
@@ -171,6 +210,23 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Cart {selectedTests.length > 0 ? `(${selectedTests.length})` : ''}</span>
+            </button>
+          )}
+          {(portalRole === 'admin' || portalRole === 'driver') && (
+            <button
+              onClick={toggleSound}
+              className={`p-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
+                soundEnabled
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-ivory-100 text-botanical-600 border-ivory-300'
+              }`}
+              title={soundEnabled ? 'Order sound alert is ON' : 'Order sound alert is Muted'}
+            >
+              {soundEnabled ? (
+                <Volume2 className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-botanical-500" />
+              )}
             </button>
           )}
           <button

@@ -399,6 +399,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
 
+    // Broadcast alert across tabs immediately for instant audio chime & push notification
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('wellness_order_notifications');
+        channel.postMessage({
+          type: 'NEW_ORDER_ALERT',
+          order: {
+            id: newBooking.id,
+            reference: newBooking.booking_reference,
+            patientName: newBooking.patient_name,
+            phone: newBooking.patient_phone,
+            totalAmount: newBooking.total_amount,
+            testName: (newBooking.tests && newBooking.tests.length > 0)
+              ? newBooking.tests[0].name
+              : (newBooking.items?.[0]?.item_name || 'Health Diagnostic Checkup'),
+            timeSlot: newBooking.scheduled_slot
+          }
+        });
+        channel.close();
+      }
+    } catch {}
+
     clearSelectedTests();
     return newBooking;
   };

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
+import NotificationQuickControl from '@/components/notifications/NotificationQuickControl';
 import { 
   BarChart, 
   Bar, 
@@ -96,6 +97,23 @@ export default function AdminDashboardPage() {
             <span>Manage Orders</span>
           </Link>
         </div>
+      </div>
+
+      {/* Live Order Audio & Push Alert Banner */}
+      <div className="bg-white/80 backdrop-blur p-3.5 sm:p-4 rounded-2xl border border-ivory-300 shadow-soft-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="text-xs font-bold text-botanical-950">
+            Real-Time Order Alert System
+          </span>
+          <span className="text-[11px] text-botanical-700/70 hidden md:inline">
+            • Loud audio chime & lock-screen push notifications enabled for desk staff
+          </span>
+        </div>
+        <NotificationQuickControl />
       </div>
 
       {/* 6 Key Operational Metrics (Database Derived) */}
