@@ -28,6 +28,24 @@ export type { ParsedAddress };
 // Default initial coordinates: Davanagere / Karnataka / Central (or Delhi NCR fallback)
 const DEFAULT_COORDS = { lat: 14.47540, lng: 75.88510 };
 
+/**
+ * Calculates straight-line distance in meters between two GPS coordinates (Haversine formula).
+ * Used to filter out Wi-Fi/cellular triangulation jitter when clicking "Use Current Location".
+ */
+function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function AddressMapPicker({
   initialAddress,
   onConfirmAddress,
@@ -187,11 +205,20 @@ export default function AddressMapPicker({
     };
   }, []);
 
-  // Update map marker when coords change programmatically
+  // Update map marker when coords change programmatically with smooth gliding
   const updateMapMarker = (lat: number, lng: number) => {
     setCoords({ lat, lng });
     if (mapInstanceRef.current && markerRef.current) {
-      mapInstanceRef.current.setView([lat, lng], 16);
+      const currentZoom = typeof mapInstanceRef.current.getZoom === 'function' 
+        ? mapInstanceRef.current.getZoom() 
+        : 16;
+      const targetZoom = Math.max(currentZoom, 16);
+
+      if (typeof mapInstanceRef.current.flyTo === 'function') {
+        mapInstanceRef.current.flyTo([lat, lng], targetZoom, { duration: 0.6 });
+      } else {
+        mapInstanceRef.current.setView([lat, lng], targetZoom);
+      }
       markerRef.current.setLatLng([lat, lng]);
     }
   };
@@ -303,12 +330,14 @@ export default function AddressMapPicker({
     }
   };
 
-  // Use Browser Geolocation
+  // Use Browser Geolocation with Anti-Jitter Filter and 60-Second Position Cache
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       setGeoError('Geolocation is not supported by your browser.');
       return;
     }
+
+    if (isGeolocating) return; // Prevent double triggers if clicked in rapid succession
 
     setIsGeolocating(true);
     setGeoError(null);
@@ -317,8 +346,23 @@ export default function AddressMapPicker({
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        updateMapMarker(lat, lng);
-        await handleReverseGeocode(lat, lng);
+
+        // Anti-jitter check: If newly read position is within 15 meters of existing pin,
+        // keep pin steady to prevent annoying jumps caused by Wi-Fi tower signal fluctuations
+        const distance = calculateDistanceMeters(coords.lat, coords.lng, lat, lng);
+        const isDefaultLocation = 
+          Math.abs(coords.lat - DEFAULT_COORDS.lat) < 0.0001 && 
+          Math.abs(coords.lng - DEFAULT_COORDS.lng) < 0.0001;
+
+        if (distance > 15 || isDefaultLocation) {
+          updateMapMarker(lat, lng);
+          await handleReverseGeocode(lat, lng);
+        } else {
+          // If already at the exact spot, gently highlight the pin without jumping the camera
+          if (markerRef.current) {
+            markerRef.current.openPopup();
+          }
+        }
         setIsGeolocating(false);
       },
       (error) => {
@@ -329,7 +373,7 @@ export default function AddressMapPicker({
           setGeoError('Could not determine current location. Please use manual address search.');
         }
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 10000, enableHighAccuracy: true, maximumAge: 60000 }
     );
   };
 
