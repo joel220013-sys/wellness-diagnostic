@@ -39,6 +39,7 @@ interface DataContextType {
   updateDriver: (driverId: string, data: Partial<DriverProfile>) => Promise<{ success: boolean; data?: DriverProfile; error?: string }>;
   deleteDriver: (driverId: string) => Promise<{ success: boolean; error?: string }>;
   syncDrivers: () => void;
+  syncBookings: () => void;
   updateBookingStatus: (bookingId: string, status: BookingStatus, sampleDetails?: Booking['sample_details']) => void;
   addReportForBooking: (orderId: string, results: LabReportResultItem[], overallRemarks: string) => LabReport;
   addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => Promise<DiagnosticTest | null> | void;
@@ -142,8 +143,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     syncPackages();
 
     // Live Bookings sync with automatic cross-device synchronization (Read-only polling)
-    const syncBookings = () => {
-      fetch('/api/bookings')
+    const syncBookingsInternal = () => {
+      fetch(`/api/bookings?_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.data && Array.isArray(data.data)) {
@@ -156,7 +157,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         .catch(() => {});
     };
 
-    syncBookings();
+    syncBookingsInternal();
 
     // Sync Invoices (Read-only polling)
     const syncInvoices = () => {
@@ -213,12 +214,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const drvInterval = setInterval(syncDriversInternal, 10000);
 
     // Auto-refresh when switching tabs and every 10-15 seconds so Desktop & Mobile are always in sync
-    const interval = setInterval(syncBookings, 10000);
+    const interval = setInterval(syncBookingsInternal, 10000);
     const testInterval = setInterval(syncTests, 15000);
     const onFocus = () => {
       syncTests();
       syncPackages();
-      syncBookings();
+      syncBookingsInternal();
       syncInvoices();
       syncReports();
       syncDriversInternal();
@@ -398,6 +399,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return newBooking;
   };
 
+  const syncBookings = () => {
+    fetch(`/api/bookings?_t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data)) {
+          setBookings(data.data);
+          try {
+            localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  };
+
   const syncDrivers = () => {
     fetch(`/api/admin/drivers?_t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
@@ -555,8 +570,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     status: BookingStatus,
     sampleDetails?: Booking['sample_details']
   ) => {
+    const cleanId = String(bookingId).replace(/^#/, '').trim();
     const updatedBookings = bookings.map((b) => {
-      if (b.id === bookingId) {
+      if (
+        b.id === bookingId || 
+        b.booking_reference === bookingId || 
+        b.id === cleanId || 
+        b.booking_reference === cleanId ||
+        `#${b.booking_reference}` === bookingId
+      ) {
         const mergedDetails = sampleDetails ? { ...b.sample_details, ...sampleDetails } : b.sample_details;
         return {
           ...b,
@@ -569,7 +591,37 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
 
     setBookings(updatedBookings);
-    localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(updatedBookings));
+    try {
+      localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(updatedBookings));
+    } catch {}
+
+    // Persist status change to FastAPI backend & Supabase PostgreSQL
+    const payload = {
+      status,
+      sample_details: sampleDetails,
+    };
+
+    fetch(`/api/admin/orders/${encodeURIComponent(cleanId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          return fetch(`/api/bookings/${encodeURIComponent(cleanId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
+      })
+      .then(() => {
+        // Synchronize driver active counts and live bookings
+        syncDrivers();
+      })
+      .catch((err) => {
+        console.error('Failed to update booking status in database:', err);
+      });
   };
 
   const addReportForBooking = (
@@ -755,6 +807,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         updateDriver,
         deleteDriver,
         syncDrivers,
+        syncBookings,
         updateBookingStatus,
         addReportForBooking,
         addTestPackage,

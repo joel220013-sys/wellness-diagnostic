@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingBag, 
@@ -24,11 +24,25 @@ import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
 
 export default function AdminOrdersPage() {
-  const { bookings, drivers, syncDrivers, addDriver, updateBookingStatus, assignDriverToBooking } = useData();
+  const { bookings, drivers, syncDrivers, syncBookings, addDriver, updateBookingStatus, assignDriverToBooking } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [driverFilter, setDriverFilter] = useState<string>('ALL');
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Sync latest orders and phlebotomists from database on page mount
+  useEffect(() => {
+    syncBookings();
+    syncDrivers();
+  }, []);
+
+  const handleManualSync = () => {
+    setIsSyncing(true);
+    syncBookings();
+    syncDrivers();
+    setTimeout(() => setIsSyncing(false), 800);
+  };
 
   // Assign driver modal state
   const [assigningBookingId, setAssigningBookingId] = useState<string | null>(null);
@@ -56,6 +70,8 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = (bookingId: string, newStatus: BookingStatus) => {
     updateBookingStatus(bookingId, newStatus);
+    setAssignmentToast(`Order status updated to "${newStatus}"`);
+    setTimeout(() => setAssignmentToast(null), 3000);
   };
 
   const openAssignModal = (bookingId: string) => {
@@ -150,12 +166,13 @@ export default function AdminOrdersPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => syncDrivers()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-ivory-300 text-botanical-800 hover:bg-ivory-100 text-xs font-bold shadow-soft-sm transition-all"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-ivory-300 text-botanical-800 hover:bg-ivory-100 text-xs font-bold shadow-soft-sm transition-all disabled:opacity-50"
             title="Sync live bookings and phlebotomists"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Sync Fleet</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-botanical-600' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Fleet & Orders'}</span>
           </button>
 
           <div className="text-xs font-bold px-3 py-1.5 rounded-full bg-botanical-100 text-botanical-900 border border-botanical-200">

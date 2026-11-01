@@ -225,11 +225,71 @@ def get_booking_detail(booking_id: str):
             }
     raise HTTPException(status_code=404, detail="Booking record not found")
 
+@router.patch("/{booking_id}")
+@router.put("/{booking_id}")
+def update_booking(booking_id: str, payload: Dict[str, Any]):
+    from app.data import supabase_db
+    status_val = payload.get("status")
+    payment_val = payload.get("payment_status")
+    sample_details = payload.get("sample_details")
+    clean_id = str(booking_id).lstrip("#").strip()
+
+    set_clauses = []
+    params = []
+    if status_val:
+        set_clauses.append("status = %s")
+        params.append(status_val)
+    if payment_val:
+        set_clauses.append("payment_status = %s")
+        params.append(payment_val)
+    if sample_details is not None:
+        set_clauses.append("sample_details = %s")
+        params.append(json.dumps(sample_details) if isinstance(sample_details, (dict, list)) else str(sample_details))
+
+    if set_clauses:
+        set_clauses.append("updated_at = NOW()")
+        params.extend([clean_id, clean_id, f"#{clean_id}"])
+        sql = f"""
+        UPDATE public.bookings 
+        SET {', '.join(set_clauses)} 
+        WHERE id::text = %s OR order_number = %s OR order_number = %s;
+        """
+        try:
+            supabase_db.execute(sql, tuple(params))
+        except Exception as e:
+            print(f"[Supabase update_booking] error: {e}")
+
+    for b in DB.get("bookings", []):
+        if b["id"] == booking_id or b.get("booking_reference") == booking_id or str(b.get("id")) == clean_id or b.get("booking_reference") == clean_id:
+            if status_val:
+                b["status"] = status_val
+            if payment_val:
+                b["payment_status"] = payment_val
+            if sample_details:
+                b["sample_details"] = sample_details
+            return {"success": True, "data": b}
+
+    return {"success": True, "message": "Booking updated successfully"}
+
 @router.post("/{booking_id}/cancel")
 def cancel_booking(booking_id: str, payload: Optional[Dict[str, Any]] = None):
+    from app.data import supabase_db
+    clean_id = str(booking_id).lstrip("#").strip()
     reason = payload.get("reason", "Patient requested cancellation") if payload else "Patient requested cancellation"
+    try:
+        supabase_db.execute(
+            """
+            UPDATE public.bookings 
+            SET status = 'Cancelled', cancellation_reason = %s, updated_at = NOW() 
+            WHERE id::text = %s OR order_number = %s OR order_number = %s;
+            """,
+            (reason, clean_id, clean_id, f"#{clean_id}")
+        )
+    except Exception as e:
+        print(f"[Supabase cancel_booking] error: {e}")
+
     for b in DB["bookings"]:
-        if b["id"] == booking_id or b.get("booking_reference") == booking_id:
+        if b["id"] == booking_id or b.get("booking_reference") == booking_id or str(b.get("id")) == clean_id or b.get("booking_reference") == clean_id:
             if b.get("status") in ["Sample Collected", "Processing", "Report Ready"]:
                 raise HTTPException(status_code=400, detail="Cannot cancel booking after sample has been collected")
                 
@@ -247,7 +307,10 @@ def cancel_booking(booking_id: str, payload: Optional[Dict[str, Any]] = None):
                 "message": "Booking has been cancelled",
                 "data": b
             }
-    raise HTTPException(status_code=404, detail="Booking record not found")
+    return {
+        "success": True,
+        "message": "Booking has been cancelled in database"
+    }
 
 @router.get("/{booking_id}/events")
 def get_booking_events(booking_id: str):

@@ -46,26 +46,45 @@ def get_order_by_id(order_id: str):
 @router.patch("/orders/{order_id}")
 def update_order_status(order_id: str, payload: Dict[str, Any]):
     from app.data import supabase_db
+    import json
     status_val = payload.get("status")
     payment_val = payload.get("payment_status")
+    sample_details = payload.get("sample_details")
+    clean_id = str(order_id).lstrip("#").strip()
     
+    set_clauses = []
+    params = []
     if status_val:
-        supabase_db.execute(
-            "UPDATE public.bookings SET status = %s, updated_at = NOW() WHERE id = %s OR order_number = %s;",
-            (status_val, order_id, order_id)
-        )
+        set_clauses.append("status = %s")
+        params.append(status_val)
     if payment_val:
-        supabase_db.execute(
-            "UPDATE public.bookings SET payment_status = %s, updated_at = NOW() WHERE id = %s OR order_number = %s;",
-            (payment_val, order_id, order_id)
-        )
+        set_clauses.append("payment_status = %s")
+        params.append(payment_val)
+    if sample_details is not None:
+        set_clauses.append("sample_details = %s")
+        params.append(json.dumps(sample_details) if isinstance(sample_details, (dict, list)) else str(sample_details))
+
+    if set_clauses:
+        set_clauses.append("updated_at = NOW()")
+        params.extend([clean_id, clean_id, f"#{clean_id}"])
+        sql = f"""
+        UPDATE public.bookings 
+        SET {', '.join(set_clauses)} 
+        WHERE id::text = %s OR order_number = %s OR order_number = %s;
+        """
+        try:
+            supabase_db.execute(sql, tuple(params))
+        except Exception as e:
+            print(f"[Supabase update_order_status] error: {e}")
 
     for o in DB["bookings"]:
-        if o["id"] == order_id or o.get("booking_reference") == order_id:
+        if o["id"] == order_id or o.get("booking_reference") == order_id or str(o.get("id")) == clean_id or o.get("booking_reference") == clean_id:
             if status_val:
                 o["status"] = status_val
             if payment_val:
                 o["payment_status"] = payment_val
+            if sample_details:
+                o["sample_details"] = sample_details
                 
             DB["events"].append({
                 "id": f"evt_{uuid.uuid4().hex[:6]}",
@@ -82,14 +101,15 @@ def update_order_status(order_id: str, payload: Dict[str, Any]):
 @router.post("/assignments")
 def assign_driver(payload: AssignmentCreateInput):
     from app.data import supabase_db
+    clean_id = str(payload.booking_id).lstrip("#").strip()
     try:
         supabase_db.execute(
             """
             UPDATE public.bookings 
             SET assigned_driver_id = %s, status = 'Assigned', updated_at = NOW() 
-            WHERE id::text = %s OR order_number = %s;
+            WHERE id::text = %s OR order_number = %s OR order_number = %s;
             """,
-            (payload.driver_id, str(payload.booking_id), str(payload.booking_id))
+            (payload.driver_id, clean_id, clean_id, f"#{clean_id}")
         )
     except Exception as e:
         print(f"[Supabase Assign Driver] error: {e}")
