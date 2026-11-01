@@ -76,6 +76,12 @@ class SecurityAndRateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
+        # Prevent browser and intermediate proxies from serving stale cached data for all API routes
+        if path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+
         return response
 
 app.add_middleware(SecurityAndRateLimitMiddleware)

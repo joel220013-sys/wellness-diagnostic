@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   FileText, 
@@ -9,9 +9,9 @@ import {
   Search, 
   Calendar, 
   ShieldCheck, 
-  Award,
-  CheckCircle2,
-  ExternalLink
+  Award, 
+  CheckCircle2, 
+  ExternalLink 
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -20,14 +20,21 @@ import LabReportModal from '@/components/reports/LabReportModal';
 
 export default function PatientReportsPage() {
   const { user } = useAuth();
-  const { reports, selectedTests } = useData();
+  const { reports, selectedTests, syncReports } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
 
+  useEffect(() => {
+    syncReports();
+  }, []);
+
   // Filter for this patient
   const patientReports = reports.filter(
-    (r) => r.patient_id === user?.id || r.patient_name === user?.name || user?.email === 'patient@wellness.com'
+    (r) => 
+      r.patient_id === user?.id || 
+      (user?.name && r.patient_name?.toLowerCase() === user.name.toLowerCase()) || 
+      user?.email === 'patient@wellness.com'
   );
 
   const filteredReports = patientReports.filter((r) =>

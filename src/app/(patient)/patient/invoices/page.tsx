@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Receipt, 
@@ -9,9 +9,9 @@ import {
   Search, 
   Calendar, 
   CreditCard, 
-  CheckCircle2,
-  Clock,
-  Printer
+  CheckCircle2, 
+  Clock, 
+  Printer 
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -20,14 +20,21 @@ import InvoiceModal from '@/components/invoices/InvoiceModal';
 
 export default function PatientInvoicesPage() {
   const { user } = useAuth();
-  const { invoices } = useData();
+  const { invoices, syncInvoices } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
 
+  useEffect(() => {
+    syncInvoices();
+  }, []);
+
   // Filter for this patient
   const patientInvoices = invoices.filter(
-    (inv) => inv.patient_id === user?.id || inv.patient_name === user?.name || user?.email === 'patient@wellness.com'
+    (inv) => 
+      inv.patient_id === user?.id || 
+      (user?.name && inv.patient_name?.toLowerCase() === user.name.toLowerCase()) || 
+      user?.email === 'patient@wellness.com'
   );
 
   const filteredInvoices = patientInvoices.filter((inv) =>

@@ -34,7 +34,7 @@ import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
 import MobileBottomCartBar from '@/components/cart/MobileBottomCartBar';
 
 export default function PatientDashboardPage() {
-  const { user } = useAuth();
+  const { user, refreshCurrentUser } = useAuth();
   const { 
     tests,
     bookings, 
@@ -45,12 +45,24 @@ export default function PatientDashboardPage() {
     isTestSelected,
     removeSelectedTest, 
     clearSelectedTests,
-    setIsCartOpen 
+    setIsCartOpen,
+    syncBookings,
+    syncReports,
+    syncInvoices,
+    syncTests
   } = useData();
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
   const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
+
+  React.useEffect(() => {
+    syncBookings();
+    syncReports();
+    syncInvoices();
+    syncTests();
+    refreshCurrentUser?.();
+  }, []);
 
   const popularTests = React.useMemo(() => {
     const uniqueMap = new Map();
@@ -65,17 +77,27 @@ export default function PatientDashboardPage() {
     return (popular.length > 0 ? popular : all).slice(0, 4);
   }, [tests]);
 
-  // Filter bookings, reports, invoices for current authenticated patient
+  // Filter bookings, reports, invoices for current authenticated patient by ID, Name, or Phone
   const patientBookings = bookings.filter(
-    (b) => b.patient_id === user?.id || b.patient_name === user?.name || user?.email === 'patient@wellness.com'
+    (b) => 
+      b.patient_id === user?.id || 
+      (user?.name && b.patient_name?.toLowerCase() === user.name.toLowerCase()) || 
+      (user?.phone && b.patient_phone && b.patient_phone.replace(/\D/g, '') === user.phone.replace(/\D/g, '')) ||
+      user?.email === 'patient@wellness.com'
   );
 
   const patientReports = reports.filter(
-    (r) => r.patient_id === user?.id || r.patient_name === user?.name || user?.email === 'patient@wellness.com'
+    (r) => 
+      r.patient_id === user?.id || 
+      (user?.name && r.patient_name?.toLowerCase() === user.name.toLowerCase()) || 
+      user?.email === 'patient@wellness.com'
   );
 
   const patientInvoices = invoices.filter(
-    (inv) => inv.patient_id === user?.id || inv.patient_name === user?.name || user?.email === 'patient@wellness.com'
+    (inv) => 
+      inv.patient_id === user?.id || 
+      (user?.name && inv.patient_name?.toLowerCase() === user.name.toLowerCase()) || 
+      user?.email === 'patient@wellness.com'
   );
 
   const upcomingBookings = patientBookings.filter(

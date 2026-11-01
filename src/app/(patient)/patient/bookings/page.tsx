@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Calendar, 
@@ -10,10 +10,11 @@ import {
   Search, 
   Filter, 
   CheckCircle2, 
-  AlertCircle,
-  FileText,
-  CalendarPlus,
-  Ban
+  AlertCircle, 
+  FileText, 
+  CalendarPlus, 
+  Ban,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -21,14 +22,22 @@ import { BookingStatus } from '@/types';
 
 export default function PatientBookingsPage() {
   const { user } = useAuth();
-  const { bookings, updateBookingStatus, selectedTests } = useData();
+  const { bookings, updateBookingStatus, selectedTests, syncBookings } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // Filter for this patient
+  useEffect(() => {
+    syncBookings();
+  }, []);
+
+  // Filter for this patient by ID, Name, or Phone
   const patientBookings = bookings.filter(
-    (b) => b.patient_id === user?.id || b.patient_name === user?.name || user?.email === 'patient@wellness.com'
+    (b) => 
+      b.patient_id === user?.id || 
+      (user?.name && b.patient_name?.toLowerCase() === user.name.toLowerCase()) || 
+      (user?.phone && b.patient_phone && b.patient_phone.replace(/\D/g, '') === user.phone.replace(/\D/g, '')) ||
+      user?.email === 'patient@wellness.com'
   );
 
   const filteredBookings = patientBookings.filter((b) => {

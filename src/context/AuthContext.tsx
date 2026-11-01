@@ -26,6 +26,7 @@ interface AuthContextType {
   loginAsDemo: (role: UserRole) => void;
   logout: () => void;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
+  refreshCurrentUser: () => Promise<void>;
   usersList: SessionUser[];
 }
 
@@ -93,9 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Also sync profiles from Supabase backend if available
-    fetch('/api/auth/users')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+    refreshCurrentUser();
+    window.addEventListener('focus', refreshCurrentUser);
+
+    return () => {
+      window.removeEventListener('focus', refreshCurrentUser);
+    };
+  }, []);
+
+  const refreshCurrentUser = async () => {
+    try {
+      const res = await fetch(`/api/auth/users?_t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
         if (data?.data && Array.isArray(data.data)) {
           const mapped: SessionUser[] = data.data.map((p: any) => ({
             id: p.id,
@@ -124,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return combined;
             });
 
-            // Also synchronize active logged-in user if their sequential badge_id was updated in Supabase
+            // Synchronize active logged-in user with live database record
             const activeStored = localStorage.getItem(STORAGE_KEY_USER);
             if (activeStored) {
               try {
@@ -133,22 +144,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   (m) => m.id === activeParsed.id || m.email?.toLowerCase() === activeParsed.email?.toLowerCase()
                 );
                 if (serverMatch) {
-                  const updatedActive = {
+                  const updatedActive: SessionUser = {
                     ...activeParsed,
+                    name: serverMatch.name || activeParsed.name,
+                    phone: serverMatch.phone || activeParsed.phone,
+                    email: serverMatch.email || activeParsed.email,
                     badgeId: serverMatch.badgeId,
                     patientId: serverMatch.patientId || serverMatch.badgeId,
+                    designation: serverMatch.designation || activeParsed.designation,
+                    avatar: serverMatch.avatar || activeParsed.avatar,
                   };
                   setUser(updatedActive);
                   setAuthCookies(updatedActive);
-                  localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedActive));
+                  try {
+                    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedActive));
+                  } catch {}
                 }
               } catch {}
             }
           }
         }
-      })
-      .catch(() => {});
-  }, []);
+      }
+    } catch {}
+  };
 
   const setSelectedPortal = (role: UserRole | null) => {
     setSelectedPortalState(role);
@@ -515,6 +533,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginAsDemo,
         logout,
         requestPasswordReset,
+        refreshCurrentUser,
         usersList
       }}
     >

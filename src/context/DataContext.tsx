@@ -40,6 +40,10 @@ interface DataContextType {
   deleteDriver: (driverId: string) => Promise<{ success: boolean; error?: string }>;
   syncDrivers: () => void;
   syncBookings: () => void;
+  syncTests: () => void;
+  syncPackages: () => void;
+  syncReports: () => void;
+  syncInvoices: () => void;
   updateBookingStatus: (bookingId: string, status: BookingStatus, sampleDetails?: Booking['sample_details']) => void;
   addReportForBooking: (orderId: string, results: LabReportResultItem[], overallRemarks: string) => LabReport;
   addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => Promise<DiagnosticTest | null> | void;
@@ -91,7 +95,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Sync live tests from Supabase PostgreSQL database
     const syncTests = () => {
-      fetch('/api/tests?all=true')
+      fetch(`/api/tests?all=true&_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && Array.isArray(data.data)) {
@@ -116,7 +120,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // Sync live packages from Supabase
     const syncPackages = () => {
-      fetch('/api/packages')
+      fetch(`/api/packages?_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && Array.isArray(data.data)) {
@@ -161,7 +165,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // Sync Invoices (Read-only polling)
     const syncInvoices = () => {
-      fetch('/api/invoices')
+      fetch(`/api/invoices?_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && Array.isArray(data.data)) {
@@ -179,7 +183,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // Sync Reports from Supabase & Cloudflare R2 (Read-only polling)
     const syncReports = () => {
-      fetch('/api/reports')
+      fetch(`/api/reports?_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && Array.isArray(data.data)) {
@@ -407,6 +411,80 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setBookings(data.data);
           try {
             localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  };
+
+  const syncTests = () => {
+    fetch(`/api/tests?all=true&_t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.data)) {
+          const uniqueTests: DiagnosticTest[] = [];
+          const seen = new Set<string>();
+          for (const item of data.data) {
+            const key = (item.name || '').toLowerCase().trim();
+            if (!seen.has(key)) {
+              seen.add(key);
+              uniqueTests.push(item);
+            }
+          }
+          setTests(uniqueTests);
+          try {
+            localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(uniqueTests));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  };
+
+  const syncPackages = () => {
+    fetch(`/api/packages?_t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.data)) {
+          const uniquePkgs: DiagnosticPackage[] = [];
+          const seenPkgs = new Set<string>();
+          for (const pkg of data.data) {
+            const key = (pkg.name || '').toLowerCase().trim();
+            if (!seenPkgs.has(key)) {
+              seenPkgs.add(key);
+              uniquePkgs.push(pkg);
+            }
+          }
+          setPackages(uniquePkgs);
+          try {
+            localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(uniquePkgs));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  };
+
+  const syncReports = () => {
+    fetch(`/api/reports?_t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.data)) {
+          setReports(data.data);
+          try {
+            localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  };
+
+  const syncInvoices = () => {
+    fetch(`/api/invoices?_t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.data)) {
+          setInvoices(data.data);
+          try {
+            localStorage.setItem(STORAGE_KEY_INVOICES, JSON.stringify(data.data));
           } catch {}
         }
       })
@@ -808,6 +886,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         deleteDriver,
         syncDrivers,
         syncBookings,
+        syncTests,
+        syncPackages,
+        syncReports,
+        syncInvoices,
         updateBookingStatus,
         addReportForBooking,
         addTestPackage,

@@ -30,7 +30,17 @@ import MobileBottomCartBar from '@/components/cart/MobileBottomCartBar';
 
 export default function PatientTestsPage() {
   const router = useRouter();
-  const { tests, selectedTests, toggleSelectTest, addSelectedTest, isTestSelected, clearSelectedTests, setIsCartOpen } = useData();
+  const { 
+    tests, 
+    selectedTests, 
+    toggleSelectTest, 
+    addSelectedTest, 
+    isTestSelected, 
+    clearSelectedTests, 
+    setIsCartOpen,
+    syncTests,
+    syncPackages
+  } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -38,6 +48,11 @@ export default function PatientTestsPage() {
   const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
   const [showEmptyCartPrompt, setShowEmptyCartPrompt] = useState(false);
   const [visibleCount, setVisibleCount] = useState<number>(36);
+
+  useEffect(() => {
+    syncTests();
+    syncPackages();
+  }, []);
 
   useEffect(() => {
     setVisibleCount(36);
