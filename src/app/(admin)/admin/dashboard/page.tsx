@@ -243,7 +243,7 @@ export default function AdminDashboardPage() {
                   <td className="p-3 text-botanical-700/80 truncate max-w-[150px]">
                     {booking.address_snapshot?.locality}, {booking.address_snapshot?.city}
                   </td>
-                  <td className="p-3 text-botanical-800">{booking.items?.length || 1} Tests</td>
+                  <td className="p-3 text-botanical-800">{booking.items ? booking.items.length : 0} Tests</td>
                   <td className="p-3 font-bold text-botanical-950">₹{booking.total_amount}</td>
                   <td className="p-3">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-ivory-200 text-botanical-800 border border-ivory-300">

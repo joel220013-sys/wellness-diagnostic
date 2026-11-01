@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: '%s | Wellness Diagnostic Center',
   },
   description:
-    'Book certified blood tests, schedule doorstep home sample collection, and access verified NABL laboratory reports with Wellness Diagnostic Center. 200+ routine & specialized diagnostic panels.',
+    'Book certified blood tests, schedule doorstep home sample collection, and access verified NABL laboratory reports with Wellness Diagnostic Center. Routine & specialized diagnostic panels.',
   keywords: [
     'Wellness Diagnostic Center',
     'Wellness Diagnostic Centre',

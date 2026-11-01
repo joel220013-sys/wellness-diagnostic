@@ -99,7 +99,7 @@ export default function PatientInvoicesPage() {
                   <span>•</span>
                   <span>Patient: <strong>{invoice.patient_name}</strong></span>
                   <span>•</span>
-                  <span>Diagnostic Tests: <strong>{invoice.items?.length || 1} Items</strong></span>
+                  <span>Diagnostic Tests: <strong>{invoice.items ? invoice.items.length : 0} Items</strong></span>
                 </div>
 
                 <div className="text-xs text-botanical-800/80 pt-1">

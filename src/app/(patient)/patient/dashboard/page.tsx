@@ -240,7 +240,7 @@ export default function PatientDashboardPage() {
             <span className="text-xs font-semibold group-hover:text-botanical-900 transition-colors">All Tests</span>
             <FlaskConical className="w-4 h-4 text-botanical-600 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-extrabold text-botanical-950">{tests.length || 198}+</p>
+          <p className="text-2xl font-extrabold text-botanical-950">{tests.length > 0 ? `${tests.length}+` : '0'}</p>
           <p className="text-[10px] text-botanical-600 font-semibold mt-0.5 flex items-center gap-0.5">
             <span>Browse Catalog</span>
             <ChevronRight className="w-3 h-3" />
@@ -370,13 +370,20 @@ export default function PatientDashboardPage() {
                 href="/patient/tests"
                 className="text-xs font-bold text-botanical-600 hover:text-botanical-700 flex items-center gap-1 group"
               >
-                <span>View All Tests ({tests.length || 198}+)</span>
+                <span>View All Tests ({tests.length})</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {popularTests.map((t: any) => {
+            {popularTests.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center border border-ivory-300 shadow-soft-sm space-y-2">
+                <FlaskConical className="w-8 h-8 text-botanical-400 mx-auto" />
+                <p className="text-xs font-bold text-botanical-950">No diagnostic tests currently in catalog</p>
+                <p className="text-[11px] text-botanical-700/80">New specialized tests and health checkup profiles will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {popularTests.map((t: any) => {
                 const selected = isTestSelected(t.id);
                 return (
                   <div
@@ -436,6 +443,7 @@ export default function PatientDashboardPage() {
                 );
               })}
             </div>
+            )}
           </div>
         </div>
 
@@ -505,7 +513,7 @@ export default function PatientDashboardPage() {
               >
                 <div className="flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-botanical-600" />
-                  <span>Browse All Diagnostic Tests ({tests.length || 198}+)</span>
+                  <span>Browse All Diagnostic Tests ({tests.length})</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-botanical-400" />
               </Link>

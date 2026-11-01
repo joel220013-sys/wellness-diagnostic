@@ -97,7 +97,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="space-y-1.5">
               <h3 className="text-base font-extrabold text-botanical-950">Your Cart is Empty</h3>
               <p className="text-xs text-botanical-700/80 max-w-xs mx-auto">
-                Explore our 228+ verified pathology tests and Aarogyam preventive health checkup packages.
+                Explore our verified pathology tests and Aarogyam preventive health checkup packages.
               </p>
             </div>
             <button

@@ -160,7 +160,7 @@ export default function PublicLandingPage() {
                   Select Tests & Pick a Slot
                 </h3>
                 <p className="text-xs sm:text-sm text-botanical-800/75 leading-relaxed">
-                  Choose from 200+ specialized tests or preventive health packages. Select your preferred date and convenient morning time slot.
+                  Choose from verified specialized tests or preventive health packages. Select your preferred date and convenient morning time slot.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-ivory-200">

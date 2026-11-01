@@ -381,7 +381,7 @@ export default function PatientTestsPage() {
           <FlaskConical className="w-12 h-12 text-botanical-400 mx-auto" />
           <h3 className="text-base font-bold text-botanical-950">No diagnostic tests found</h3>
           <p className="text-xs text-botanical-700/80 max-w-sm mx-auto">
-            We couldn't find any tests matching "{searchQuery}". Try searching for another parameter like "Lipid", "Thyroid", or "CBC".
+            {searchQuery ? `We couldn't find any tests matching "${searchQuery}". Try searching for another parameter like "Lipid", "Thyroid", or "CBC".` : 'There are currently no diagnostic tests listed in the catalog.'}
           </p>
           <button
             onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Sparkles, CheckCircle2, ArrowRight, ChevronRight, Clock, Droplet, ShieldCheck } from 'lucide-react';
+import { Sparkles, CheckCircle2, ArrowRight, ChevronRight, Clock, Droplet, ShieldCheck, FlaskConical } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import PublicHeader from '@/components/layout/public-header';
 import { useData } from '@/context/DataContext';
@@ -34,8 +34,23 @@ export default function PackagesPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {packages.map((pkg) => {
+        {packages.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 text-center border border-ivory-300 shadow-soft-sm space-y-3">
+            <FlaskConical className="w-12 h-12 text-botanical-400 mx-auto" />
+            <h3 className="text-base font-bold text-botanical-950">No health packages currently available</h3>
+            <p className="text-xs text-botanical-700/80 max-w-sm mx-auto">
+              Comprehensive preventive wellness checkup packages will appear here once updated by the laboratory.
+            </p>
+            <Link
+              href="/patient/tests"
+              className="inline-block mt-2 px-4 py-2 rounded-xl bg-botanical-500 text-white font-bold text-xs shadow-soft"
+            >
+              Browse Pathology Tests
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {packages.map((pkg) => {
             const pkgInfo = getPackageDetails(pkg.name, pkg.parameters_count, pkg.description);
             const isFasting = Boolean(
               (pkg as any).fasting_required || 
@@ -174,6 +189,7 @@ export default function PackagesPage() {
             );
           })}
         </div>
+        )}
       </main>
 
       {/* Package Overview Drawer */}

@@ -68,10 +68,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // Clear obsolete cached test catalog versions on client start
   useEffect(() => {
     try {
-      localStorage.removeItem('wellness_tests_data_v8');
-      localStorage.removeItem('wellness_packages_data_v8');
-      localStorage.removeItem('wellness_tests_data_v7');
-      localStorage.removeItem('wellness_packages_data_v7');
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (
+          k && 
+          (k.startsWith('wellness_tests_data') || k.startsWith('wellness_packages_data')) && 
+          k !== STORAGE_KEY_TESTS && 
+          k !== STORAGE_KEY_PACKAGES
+        ) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
     } catch {}
   }, []);
 
@@ -147,7 +156,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       fetch('/api/invoices')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          if (data && Array.isArray(data.data)) {
             setInvoices(data.data);
             try {
               localStorage.setItem(STORAGE_KEY_INVOICES, JSON.stringify(data.data));
@@ -165,7 +174,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       fetch('/api/reports')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          if (data && Array.isArray(data.data)) {
             setReports(data.data);
             try {
               localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(data.data));
@@ -183,7 +192,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       fetch('/api/admin/drivers')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          if (data && Array.isArray(data.data)) {
             setDrivers(data.data);
             try {
               localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(data.data));
@@ -372,7 +381,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     fetch('/api/admin/drivers')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+        if (data && Array.isArray(data.data)) {
           setDrivers(data.data);
           try {
             localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(data.data));

@@ -32,7 +32,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', href: '/patient/dashboard', icon: LayoutDashboard },
-  { name: 'All Diagnostic Tests', href: '/patient/tests', icon: FlaskConical, badge: '200+' },
+  { name: 'All Diagnostic Tests', href: '/patient/tests', icon: FlaskConical },
   { name: 'Book Home Collection', href: '/patient/book', icon: CalendarPlus, badge: 'Book' },
   { name: 'My Bookings', href: '/patient/bookings', icon: CalendarCheck },
   { name: 'Laboratory Reports', href: '/patient/reports', icon: FileText },
@@ -45,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
 export default function PatientSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { selectedTests, setIsCartOpen } = useData();
+  const { selectedTests, setIsCartOpen, tests } = useData();
 
   return (
     <aside className="w-64 bg-white border-r border-ivory-300 h-full flex flex-col justify-between p-4 shadow-soft-sm overflow-y-auto">
@@ -77,6 +77,10 @@ export default function PatientSidebar() {
             // Smart routing for Book Home Collection
             let targetHref = item.href;
             let badgeText = item.badge;
+
+            if (item.href === '/patient/tests') {
+              badgeText = tests.length > 0 ? `${tests.length}+` : undefined;
+            }
 
             if (item.href === '/patient/book') {
               if (selectedTests.length > 0) {

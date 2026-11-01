@@ -424,7 +424,7 @@ export default function BookCollectionPage() {
                   Prefer browsing with detailed test drawers & Aarogyam breakdowns?
                 </p>
                 <p className="text-xs text-botanical-700/80">
-                  Explore all 228+ NABL diagnostic panels with sample requirements, fasting guidelines, and package overviews.
+                  Explore verified NABL diagnostic panels with sample requirements, fasting guidelines, and package overviews.
                 </p>
               </div>
             </div>
@@ -432,7 +432,7 @@ export default function BookCollectionPage() {
               href="/patient/tests"
               className="px-4 py-2 rounded-xl bg-botanical-500 text-white font-bold text-xs hover:bg-botanical-600 transition-colors shadow-soft inline-flex items-center gap-1.5 flex-shrink-0 self-start sm:self-auto"
             >
-              <span>Browse Full 228+ Catalog</span>
+              <span>Browse Diagnostic Catalog</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
