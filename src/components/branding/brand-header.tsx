@@ -7,6 +7,7 @@ import BrandLogo from './logo';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import CartDrawer from '@/components/cart/CartDrawer';
+import AdminSidebar from '@/components/layout/admin-sidebar';
 import { 
   LogOut, 
   Menu, 
@@ -50,14 +51,16 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
     if (portalRole === 'admin') {
       return [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Live Dispatch Map', href: '/admin/map', icon: Map },
-        { name: 'Diagnostic Orders', href: '/admin/orders', icon: ShoppingBag },
-        { name: 'Phlebotomists / Staff', href: '/admin/drivers', icon: Truck },
-        { name: 'Patient Directory', href: '/admin/patients', icon: Users },
-        { name: 'Test Catalog', href: '/admin/tests', icon: FlaskConical },
+        { name: 'Orders & Bookings', href: '/admin/orders', icon: ShoppingBag },
+        { name: 'Collection Map', href: '/admin/map', icon: MapPin },
+        { name: 'Patients Records', href: '/admin/patients', icon: Users },
+        { name: 'Diagnostic Tests', href: '/admin/tests', icon: FlaskConical },
         { name: 'Health Packages', href: '/admin/packages', icon: Boxes },
+        { name: 'Phlebotomists / Drivers', href: '/admin/drivers', icon: Truck },
+        { name: 'Job Assignments', href: '/admin/assignments', icon: CalendarCheck },
+        { name: 'Lab Reports', href: '/admin/reports', icon: FileText },
         { name: 'Invoices & Revenue', href: '/admin/invoices', icon: Receipt },
-        { name: 'System Settings', href: '/admin/settings', icon: Settings },
+        { name: 'Lab Settings', href: '/admin/settings', icon: Settings },
       ];
     }
     if (portalRole === 'driver') {
@@ -172,16 +175,40 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
           )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl bg-ivory-100 text-botanical-900 hover:bg-ivory-200 active:scale-95 transition-all border border-ivory-300"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-soft-sm active:scale-95 ${
+              portalRole === 'admin'
+                ? 'bg-[#18352E] text-white border-botanical-700/50 hover:bg-botanical-800'
+                : 'bg-ivory-100 text-botanical-900 hover:bg-ivory-200 border-ivory-300'
+            }`}
             aria-label="Toggle navigation menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5 text-botanical-900" /> : <Menu className="w-5 h-5 text-botanical-900" />}
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            <span>Menu</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation */}
-      {mobileMenuOpen && (
+      {/* Mobile Slide-Over Drawer for Admin (Exact Dark-Green Menu from Desktop Sidebar) */}
+      {mobileMenuOpen && portalRole === 'admin' && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop overlay */}
+          <div 
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200" 
+          />
+          {/* Slide-over panel */}
+          <div className="relative w-72 max-w-[85vw] bg-[#18352E] shadow-2xl z-10 flex flex-col h-full animate-in slide-in-from-left duration-200">
+            <AdminSidebar 
+              isMobileDrawer={true} 
+              onClose={() => setMobileMenuOpen(false)} 
+              onItemClick={() => setMobileMenuOpen(false)} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Drawer Navigation for Non-Admin Portals (Patient / Driver) */}
+      {mobileMenuOpen && portalRole !== 'admin' && (
         <div className="lg:hidden border-t border-ivory-300 bg-white/98 backdrop-blur-md px-4 pt-3 pb-6 space-y-3 shadow-soft-xl max-h-[calc(100vh-4rem)] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
           {/* User profile info bar on mobile */}
           {user && (

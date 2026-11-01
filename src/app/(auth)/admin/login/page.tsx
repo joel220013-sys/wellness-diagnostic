@@ -25,13 +25,18 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { login, registerAccount, usersList } = useAuth();
 
-  const hasExistingAdmin = usersList.some((u) => u.role === 'admin');
-  const [isSetupMode, setIsSetupMode] = useState(!hasExistingAdmin);
+  // Default to standard Login mode directly without blocking on user list
+  const [isSetupMode, setIsSetupMode] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Pre-warm backend API to prevent cold-start delay
+  React.useEffect(() => {
+    fetch('/api/ping').catch(() => {});
+  }, []);
 
   // Form states
   const [name, setName] = useState('');
@@ -76,9 +81,7 @@ export default function AdminLoginPage() {
 
         if (res.success) {
           setSuccessMessage('Administrator account initialized successfully! Loading console...');
-          setTimeout(() => {
-            router.push('/admin/dashboard');
-          }, 400);
+          router.push('/admin/dashboard');
         } else {
           setErrorMessage(res.error || 'Failed to initialize admin account.');
         }
@@ -86,9 +89,7 @@ export default function AdminLoginPage() {
         const result = await login(email, password, 'admin');
         if (result.success) {
           setSuccessMessage('Admin credentials verified. Launching Clinical Laboratory Management...');
-          setTimeout(() => {
-            router.push('/admin/dashboard');
-          }, 400);
+          router.push('/admin/dashboard');
         } else {
           setErrorMessage(result.error || 'Invalid login credentials. Please check your email and password.');
         }

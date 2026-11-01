@@ -17,8 +17,11 @@ import {
   Settings, 
   LogOut,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  X,
+  ArrowLeftRight
 } from 'lucide-react';
+import BrandLogo from '@/components/branding/logo';
 import { useAuth } from '@/context/AuthContext';
 
 interface AdminNavItem {
@@ -26,6 +29,12 @@ interface AdminNavItem {
   href: string;
   icon: React.ElementType;
   badge?: string;
+}
+
+interface AdminSidebarProps {
+  onItemClick?: () => void;
+  onClose?: () => void;
+  isMobileDrawer?: boolean;
 }
 
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
@@ -42,13 +51,31 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { name: 'Lab Settings', href: '/admin/settings', icon: Settings },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ onItemClick, onClose, isMobileDrawer = false }: AdminSidebarProps = {}) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 bg-[#18352E] text-white h-full flex flex-col justify-between p-4 shadow-soft overflow-y-auto">
-      <div className="space-y-5">
+    <aside className={`w-full max-w-xs sm:w-64 bg-[#18352E] text-white h-full flex flex-col justify-between p-4 shadow-soft overflow-y-auto ${
+      isMobileDrawer ? 'h-screen' : ''
+    }`}>
+      <div className="space-y-4">
+        {/* Mobile Header with Logo & Close button */}
+        {isMobileDrawer && (
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <BrandLogo size="sm" showTagline={false} />
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Admin Credential Badge */}
         <div className="p-3.5 bg-white/10 rounded-2xl border border-white/15 backdrop-blur-sm">
           <div className="flex items-center gap-3">
@@ -58,7 +85,7 @@ export default function AdminSidebar() {
             <div className="overflow-hidden">
               <p className="text-sm font-bold text-white truncate">{user?.name || 'Administrator'}</p>
               <p className="text-[11px] text-ivory-200/80 truncate">{user?.email || 'admin@wellness.com'}</p>
-              <span className="inline-block mt-1 px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-300/30">
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-300/30">
                 Medical Director / Admin
               </span>
             </div>
@@ -78,6 +105,7 @@ export default function AdminSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => onItemClick?.()}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   isActive
                     ? 'bg-botanical-500 text-white shadow-soft font-bold'
@@ -99,11 +127,26 @@ export default function AdminSidebar() {
         </nav>
       </div>
 
-      {/* Admin Sign Out */}
-      <div className="pt-4 border-t border-white/10">
+      {/* Admin Actions: Switch Portal & Sign Out */}
+      <div className="pt-4 border-t border-white/10 space-y-2 mt-4">
+        <Link
+          href="/portal"
+          onClick={() => onItemClick?.()}
+          className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-ivory-200 hover:bg-white/10 border border-white/10 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <ArrowLeftRight className="w-4 h-4 text-peach-300" />
+            <span>Switch Portal</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-ivory-200/60" />
+        </Link>
+
         <button
-          onClick={logout}
-          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-rose-300 hover:bg-rose-500/20 border border-transparent hover:border-rose-400/30 transition-colors"
+          onClick={() => {
+            onItemClick?.();
+            logout();
+          }}
+          className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-300 hover:bg-rose-500/20 border border-transparent hover:border-rose-400/30 transition-colors"
         >
           <div className="flex items-center gap-3">
             <LogOut className="w-4 h-4 text-rose-300" />
