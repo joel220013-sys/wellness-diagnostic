@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   X, 
@@ -13,10 +13,12 @@ import {
   ShoppingBag, 
   ArrowRight,
   Check,
-  Plus
+  Plus,
+  Layers,
+  ListFilter
 } from 'lucide-react';
-import { DiagnosticTest } from '@/types';
-import { getPackageDetails, DetailedPackageData, SubProfileItem } from '@/data/package-details';
+import { DiagnosticTest, TestParameterItem } from '@/types';
+import { getPackageDetails, DetailedPackageData } from '@/data/package-details';
 import { useData } from '@/context/DataContext';
 
 interface PackageOverviewDrawerProps {
@@ -34,21 +36,65 @@ export default function PackageOverviewDrawer({
 }: PackageOverviewDrawerProps) {
   const router = useRouter();
   const { toggleSelectTest, addSelectedTest, isTestSelected } = useData();
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0); // First item expanded by default
+  const [isAccordionOpen, setIsAccordionOpen] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'flat' | 'grouped'>('flat');
+  const [expandedGroupIndex, setExpandedGroupIndex] = useState<number | null>(0);
+
+  // Normalize parameters from test.parameters_list
+  const parsedParameters: TestParameterItem[] = useMemo(() => {
+    if (!test?.parameters_list) return [];
+    let list: any = test.parameters_list;
+    if (typeof list === 'string') {
+      try {
+        list = JSON.parse(list);
+      } catch {
+        list = [];
+      }
+    }
+    if (Array.isArray(list)) {
+      return list.map((item: any) => {
+        if (typeof item === 'string') {
+          return { name: item, groupName: 'General' };
+        }
+        return {
+          code: item.code || '',
+          name: item.name || '',
+          type: item.type || 'TEST',
+          groupName: item.groupName || 'General',
+        };
+      });
+    }
+    return [];
+  }, [test]);
+
+  // Group parameters by organ/profile category if available
+  const groupedProfiles = useMemo(() => {
+    if (parsedParameters.length === 0) return [];
+    const map = new Map<string, string[]>();
+    for (const item of parsedParameters) {
+      const grp = item.groupName || 'Clinical Marker';
+      if (!map.has(grp)) map.set(grp, []);
+      map.get(grp)!.push(item.name);
+    }
+    return Array.from(map.entries()).map(([name, tests]) => ({
+      name,
+      count: tests.length,
+      tests,
+    }));
+  }, [parsedParameters]);
 
   if (!isOpen || !test) return null;
 
-  const details: DetailedPackageData = getPackageDetails(
+  const fallbackDetails: DetailedPackageData = getPackageDetails(
     test.name, 
     test.parameters_count || 72, 
     test.description
   );
 
   const selected = isTestSelected(test.id);
-
-  const handleToggleAccordion = (idx: number) => {
-    setExpandedIndex(expandedIndex === idx ? null : idx);
-  };
+  const totalCount = parsedParameters.length > 0 
+    ? parsedParameters.length 
+    : (test.parameters_count || fallbackDetails.parametersCount || 1);
 
   const handleBook = () => {
     if (onBookNow) {
@@ -60,6 +106,12 @@ export default function PackageOverviewDrawer({
     onClose();
   };
 
+  const isFasting = Boolean(
+    test.fasting_required || 
+    (test.preparation_instructions && test.preparation_instructions.toLowerCase().includes('fasting')) ||
+    (test.description && test.description.toLowerCase().includes('fasting') && !test.description.toLowerCase().includes('non fasting'))
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
       {/* Backdrop */}
@@ -70,15 +122,14 @@ export default function PackageOverviewDrawer({
 
       {/* Drawer Container (Sliding in from right) */}
       <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-ivory-200 flex items-center justify-between bg-botanical-50/60">
-          <div className="flex items-center gap-2">
-            <FlaskConical className="w-5 h-5 text-botanical-600" />
-            <h2 className="text-base font-bold text-botanical-950">Package Overview</h2>
-          </div>
+        {/* Header - Verbatim 'Test/Package Details' from Thyrocare Pic 2 */}
+        <div className="px-6 py-4 border-b border-ivory-200 flex items-center justify-between bg-white">
+          <h2 className="text-base sm:text-lg font-bold text-botanical-950 tracking-tight">
+            Test/Package Details
+          </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-ivory-200 text-botanical-800 transition-colors"
+            className="p-1.5 rounded-full hover:bg-ivory-100 text-botanical-800 transition-colors"
             aria-label="Close Overview"
           >
             <X className="w-5 h-5" />
@@ -87,130 +138,162 @@ export default function PackageOverviewDrawer({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Turnaround Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-botanical-900 text-white text-xs font-semibold">
-            <Clock className="w-3.5 h-3.5 text-peach-300" />
-            <span>{details.reportsIn || test.turnaround_description || 'Reports in 24-38 Hrs'}</span>
-          </div>
-
-          {/* Title & Description */}
+          {/* Test / Package Title in Bold Caps */}
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-botanical-950 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-botanical-950 tracking-tight uppercase leading-snug">
               {test.name}
             </h1>
-            <p className="text-xs sm:text-sm text-botanical-800/80 leading-relaxed mt-2.5">
-              {details.description || test.description}
-            </p>
-          </div>
 
-          {/* Sample Type & Fasting Information Row */}
-          <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-ivory-50 border border-ivory-200">
-            <div>
-              <span className="text-[11px] font-semibold text-botanical-700 block mb-1">Sample Type</span>
-              <div className="flex flex-wrap gap-1.5">
-                {(details.samples || ['Blood']).map((s, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-ivory-300 text-xs font-bold text-botanical-900"
-                  >
-                    <Droplet className="w-3 h-3 text-peach-600" />
-                    <span>{s}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-[11px] font-semibold text-botanical-700 block mb-1">Fasting Required</span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-ivory-300 text-xs font-bold text-botanical-900">
-                <Clock className="w-3 h-3 text-botanical-600" />
-                <span>{details.fasting || (test.fasting_required ? `${test.fasting_hours || 10}-12 Hrs` : 'Non-Fasting')}</span>
+            {/* Fasting, Sample Type, Turnaround Badges */}
+            <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-botanical-100 text-botanical-900 font-bold">
+                <Droplet className="w-3.5 h-3.5 text-botanical-600" />
+                <span>{test.sample_type || 'Blood'}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-ivory-100 border border-ivory-300 text-botanical-800 font-semibold">
+                <Clock className="w-3.5 h-3.5 text-botanical-500" />
+                <span>{isFasting ? `${test.fasting_hours || 10}-12 Hrs Fasting` : 'Non-Fasting'}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-peach-100 text-peach-900 font-semibold">
+                <Clock className="w-3.5 h-3.5 text-peach-600" />
+                <span>TAT: {test.turnaround_description || '24-38 Hrs'}</span>
               </span>
             </div>
           </div>
 
-          {/* Includes Section */}
-          <div className="space-y-3 pt-2">
-            <div>
-              <h3 className="text-base font-extrabold text-botanical-950">
-                Includes {details.parametersCount || test.parameters_count || 1} Tests
+          {/* Description Section - Verbatim Pic 2 */}
+          <div className="space-y-1.5">
+            <h3 className="text-sm font-extrabold text-botanical-950">
+              Description
+            </h3>
+            <p className="text-xs sm:text-sm text-botanical-800/85 leading-relaxed">
+              {test.description || fallbackDetails.description || 'Comprehensive clinical laboratory screening evaluating vital metabolic and organ parameters.'}
+            </p>
+          </div>
+
+          {/* Tests included in this package Section - Verbatim Pic 2 & Pic 3 */}
+          <div className="space-y-3 pt-2 border-t border-ivory-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm sm:text-base font-extrabold text-botanical-950">
+                Tests included in this package <span className="text-botanical-600">{totalCount} Tests</span>
               </h3>
-              <p className="text-xs text-botanical-700/80 mt-0.5">
-                This Package Will Include The Following Tests
-              </p>
+              
+              {/* Optional Flat vs Grouped toggle */}
+              {groupedProfiles.length > 1 && (
+                <div className="inline-flex rounded-lg bg-ivory-100 p-0.5 border border-ivory-300 text-[10px] font-bold">
+                  <button
+                    onClick={() => setViewMode('flat')}
+                    className={`px-2 py-0.5 rounded-md transition-all ${
+                      viewMode === 'flat' ? 'bg-white shadow-soft-xs text-botanical-950' : 'text-botanical-600'
+                    }`}
+                  >
+                    All Tests
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grouped')}
+                    className={`px-2 py-0.5 rounded-md transition-all ${
+                      viewMode === 'grouped' ? 'bg-white shadow-soft-xs text-botanical-950' : 'text-botanical-600'
+                    }`}
+                  >
+                    By Organ ({groupedProfiles.length})
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Accordion Profiles List */}
-            <div className="space-y-2.5">
-              {details.profiles.map((profile, idx) => {
-                const isExpanded = expandedIndex === idx;
+            {/* Accordion Dropdown Button (Includes X Tests) - Verbatim Pic 2 & Pic 3 */}
+            <div className="border border-ivory-300 rounded-2xl overflow-hidden bg-white shadow-soft-xs">
+              <button
+                type="button"
+                onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                className="w-full px-4 py-3 flex items-center justify-between text-left bg-ivory-50/60 hover:bg-ivory-100/70 transition-colors"
+              >
+                <span className="text-xs sm:text-sm font-bold text-botanical-900">
+                  (Includes {totalCount} {totalCount === 1 ? 'test' : 'tests'})
+                </span>
+                <span className="text-botanical-600 p-1">
+                  {isAccordionOpen ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </span>
+              </button>
 
-                return (
-                  <div
-                    key={idx}
-                    className="rounded-2xl border border-ivory-300 bg-white shadow-soft-sm overflow-hidden transition-all"
-                  >
-                    {/* Accordion Header */}
-                    <button
-                      onClick={() => handleToggleAccordion(idx)}
-                      className="w-full p-4 text-left flex items-start justify-between gap-3 hover:bg-ivory-50/70 transition-colors"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-xs sm:text-sm font-bold text-botanical-950">
-                            {profile.name}
-                          </h4>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-botanical-100 text-botanical-900">
-                            {profile.count} Tests
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-botanical-700/80 line-clamp-1">
-                          {profile.description}
-                        </p>
-                      </div>
-
-                      <div className="p-1 rounded-full text-botanical-600 flex-shrink-0 mt-0.5">
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Accordion Expanded Body */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 pt-1 border-t border-ivory-100 bg-ivory-50/40 space-y-2 animate-in fade-in duration-200">
-                        <p className="text-[11px] text-botanical-800 leading-relaxed">
-                          {profile.description}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {profile.tests.map((testName, tIdx) => (
-                            <span
-                              key={tIdx}
-                              className="px-2.5 py-1 rounded-lg bg-white border border-ivory-300 text-[11px] font-medium text-botanical-900 shadow-soft-xs"
+              {/* Accordion Content when open */}
+              {isAccordionOpen && (
+                <div className="p-4 border-t border-ivory-200 bg-white">
+                  {viewMode === 'flat' ? (
+                    /* Flat list with bullets matching Pic 3 */
+                    <ul className="space-y-2 max-h-96 overflow-y-auto pr-2 divide-y divide-ivory-100">
+                      {parsedParameters.length > 0 ? (
+                        parsedParameters.map((param, pIdx) => (
+                          <li key={pIdx} className="pt-2 first:pt-0 flex items-start gap-2.5 text-xs font-semibold text-botanical-950">
+                            <span className="text-botanical-500 font-extrabold mt-0.5 leading-none">•</span>
+                            <div className="flex-1">
+                              <span className="tracking-tight uppercase">{param.name}</span>
+                              {param.groupName && param.groupName !== 'General' && (
+                                <span className="ml-2 text-[10px] font-normal text-botanical-600/75">
+                                  ({param.groupName})
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        ))
+                      ) : (
+                        /* Fallback flat list from profiles if parsedParameters is empty */
+                        fallbackDetails.profiles.flatMap((prof) => prof.tests).map((tName, tIdx) => (
+                          <li key={tIdx} className="pt-2 first:pt-0 flex items-start gap-2.5 text-xs font-semibold text-botanical-950">
+                            <span className="text-botanical-500 font-extrabold mt-0.5 leading-none">•</span>
+                            <span className="tracking-tight uppercase">{tName}</span>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  ) : (
+                    /* Grouped by organ/category view */
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                      {groupedProfiles.map((grp, gIdx) => {
+                        const isGrpExpanded = expandedGroupIndex === gIdx;
+                        return (
+                          <div key={gIdx} className="rounded-xl border border-ivory-200 overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedGroupIndex(isGrpExpanded ? null : gIdx)}
+                              className="w-full px-3 py-2 flex items-center justify-between text-left bg-ivory-50 text-xs font-bold text-botanical-900"
                             >
-                              • {testName}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                              <span>{grp.name} ({grp.count})</span>
+                              {isGrpExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+                            {isGrpExpanded && (
+                              <div className="p-3 bg-white space-y-1.5 border-t border-ivory-200">
+                                {grp.tests.map((tName, tIdx) => (
+                                  <div key={tIdx} className="flex items-start gap-2 text-[11px] text-botanical-800">
+                                    <span className="text-botanical-400">•</span>
+                                    <span>{tName}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Sticky Bottom Booking Bar */}
+        {/* Sticky Bottom Booking Bar - Matching Pic 1/2 */}
         <div className="p-4 sm:p-5 border-t border-ivory-200 bg-white flex items-center justify-between gap-4 shadow-soft-lg">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block">
               Package Price
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-botanical-950">
+              <span className="text-2xl font-black text-botanical-950">
                 ₹{Number(test.price).toLocaleString('en-IN')}
               </span>
               {Boolean(test.original_price && test.original_price > test.price) && (
@@ -245,7 +328,7 @@ export default function PackageOverviewDrawer({
 
             <button
               onClick={handleBook}
-              className="px-5 py-2.5 rounded-xl bg-peach-500 hover:bg-peach-600 text-white font-extrabold text-xs shadow-soft transition-all flex items-center gap-1.5"
+              className="px-6 py-2.5 rounded-xl bg-peach-500 hover:bg-peach-600 text-white font-extrabold text-xs shadow-soft transition-all flex items-center gap-1.5"
             >
               <span>Book Now</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -256,4 +339,3 @@ export default function PackageOverviewDrawer({
     </div>
   );
 }
-

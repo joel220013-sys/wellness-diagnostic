@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -37,6 +37,11 @@ export default function PatientTestsPage() {
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'parameters'>('featured');
   const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
   const [showEmptyCartPrompt, setShowEmptyCartPrompt] = useState(false);
+  const [visibleCount, setVisibleCount] = useState<number>(36);
+
+  useEffect(() => {
+    setVisibleCount(36);
+  }, [searchQuery, selectedCategory, sortBy]);
 
   const handleScrollToCatalog = () => {
     setShowEmptyCartPrompt(true);
@@ -189,11 +194,26 @@ export default function PatientTestsPage() {
         }
       }
 
+      let paramMatch = false;
+      if (q && t.parameters_list) {
+        try {
+          const pList = Array.isArray(t.parameters_list) ? t.parameters_list : JSON.parse(t.parameters_list as any);
+          if (Array.isArray(pList)) {
+            paramMatch = pList.some((item: any) => {
+              const pName = typeof item === 'string' ? item : (item.name || '');
+              const pCode = typeof item === 'object' ? (item.code || '') : '';
+              return pName.toLowerCase().includes(q) || pCode.toLowerCase().includes(q);
+            });
+          }
+        } catch {}
+      }
+
       const matchesSearch =
         !q ||
         (t.name || '').toLowerCase().includes(q) ||
         (t.category || '').toLowerCase().includes(q) ||
-        (t.description || '').toLowerCase().includes(q);
+        (t.description || '').toLowerCase().includes(q) ||
+        paramMatch;
 
       return matchesCat && matchesSearch;
     });
@@ -367,7 +387,7 @@ export default function PatientTestsPage() {
 
       {/* Test Count Feedback */}
       <div className="flex items-center justify-between text-xs text-botanical-700/80 px-1">
-        <span>Showing <strong className="text-botanical-950">{displayedTests.length}</strong> unique diagnostic tests & health profiles</span>
+        <span>Showing <strong className="text-botanical-950">{Math.min(visibleCount, displayedTests.length)}</strong> of <strong className="text-botanical-950">{displayedTests.length}</strong> diagnostic tests & health profiles</span>
         {searchQuery && (
           <button onClick={() => setSearchQuery('')} className="underline hover:text-botanical-950">
             Clear search filter
@@ -391,178 +411,229 @@ export default function PatientTestsPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {displayedTests.map((test) => {
-            const isSelected = isTestSelected(test.id);
-            const originalPrice = test.original_price || (test.price * 1.3);
-            const discountPct = originalPrice > test.price 
-              ? Math.round(((originalPrice - test.price) / originalPrice) * 100) 
-              : 0;
-            const isPackage = 
-              test.category === 'Health Packages' || 
-              (test.parameters_count || 1) >= 2 || 
-              test.id.startsWith('pkg_');
-            const pkgInfo = isPackage ? getPackageDetails(test.name, test.parameters_count, test.description) : null;
-            const isFasting = Boolean(
-              test.fasting_required || 
-              test.preparation_instructions?.toLowerCase().includes('fasting')
-            );
-            const fastingText = isFasting 
-              ? `${test.fasting_hours || 10}-12 Hrs Fasting` 
-              : 'Non-Fasting';
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {displayedTests.slice(0, visibleCount).map((test) => {
+              const isSelected = isTestSelected(test.id);
+              const originalPrice = test.original_price || (test.price * 1.3);
+              const discountPct = originalPrice > test.price 
+                ? Math.round(((originalPrice - test.price) / originalPrice) * 100) 
+                : 0;
+              const isPackage = 
+                test.category === 'Health Packages' || 
+                (test.parameters_count || 1) >= 2 || 
+                test.id.startsWith('pkg_');
+              const pkgInfo = isPackage ? getPackageDetails(test.name, test.parameters_count, test.description) : null;
+              const isFasting = Boolean(
+                test.fasting_required || 
+                test.preparation_instructions?.toLowerCase().includes('fasting')
+              );
+              const fastingText = isFasting 
+                ? `${test.fasting_hours || 10}-12 Hrs Fasting` 
+                : 'Non-Fasting';
 
-            return (
-              <div
-                key={test.id}
-                className={`bg-white rounded-3xl border transition-all flex flex-col justify-between overflow-hidden hover:shadow-soft-lg ${
-                  isSelected 
-                    ? 'border-botanical-500 ring-2 ring-botanical-500/20 shadow-soft-sm' 
-                    : 'border-ivory-300 hover:border-botanical-300'
-                }`}
-              >
-                {/* Dark Header Banner (Reports in XX Hrs) - Verbatim like Pic 1 */}
-                <div className="bg-botanical-950 text-white px-5 py-2.5 flex items-center justify-between text-xs font-semibold">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-peach-400" />
-                    <span className="font-medium tracking-wide">
-                      {pkgInfo?.reportsIn || (test.turnaround_description ? `Reports In ${test.turnaround_description}` : 'Reports In 24-38 Hrs')}
-                    </span>
-                  </div>
-                  {discountPct > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full bg-peach-500 text-white text-[10px] font-extrabold tracking-tight">
-                      {discountPct}% OFF
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold text-botanical-200">
-                      {test.category || 'Health Package'}
-                    </span>
-                  )}
-                </div>
+              let paramsList: string[] = [];
+              if (test.parameters_list) {
+                if (Array.isArray(test.parameters_list)) {
+                  paramsList = test.parameters_list.map((item: any) => typeof item === 'string' ? item : (item.name || '')).filter(Boolean);
+                } else if (typeof test.parameters_list === 'string') {
+                  try {
+                    const parsed = JSON.parse(test.parameters_list);
+                    if (Array.isArray(parsed)) {
+                      paramsList = parsed.map((item: any) => typeof item === 'string' ? item : (item.name || '')).filter(Boolean);
+                    }
+                  } catch {}
+                }
+              }
+              const totalParams = paramsList.length > 0 ? paramsList.length : (test.parameters_count || pkgInfo?.parametersCount || 1);
 
-                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-3">
-                    {/* Title */}
-                    <div>
-                      <h3 
-                        onClick={() => setOverviewTest(test)}
-                        className="text-lg font-extrabold text-botanical-950 tracking-tight leading-snug cursor-pointer hover:text-botanical-700 transition-colors"
-                      >
-                        {test.name}
-                      </h3>
-                      <p className="text-xs text-botanical-800/80 mt-1.5 leading-relaxed line-clamp-3">
-                        {pkgInfo?.description || test.description || 'Comprehensive clinical laboratory screening evaluating vital metabolic and organ parameters.'}
-                      </p>
-                    </div>
-
-                    {/* Includes Section with Show All Tests Link (Like Pic 1 & Pic 3) */}
-                    <div className="pt-3 border-t border-ivory-200">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="font-extrabold text-botanical-950">
-                          Includes {pkgInfo?.parametersCount || test.parameters_count || 1} Tests
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setOverviewTest(test)}
-                          className="text-xs font-bold text-blue-600 hover:text-blue-800 inline-flex items-center gap-0.5 hover:underline"
-                        >
-                          <span>Show All Tests</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Preview bullets like Pic 1 & Pic 3 */}
-                      {pkgInfo && pkgInfo.previewBullets && pkgInfo.previewBullets.length > 0 && (
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mt-1 text-[11px] text-botanical-800 font-medium">
-                          {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
-                            <div key={bIdx} className="flex items-center gap-1.5 truncate">
-                              <span className="text-botanical-400 font-bold">•</span>
-                              <span className="truncate">{bullet}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Fasting & Sample pills row like Pic 1 */}
-                    <div className="pt-3 border-t border-ivory-200 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1">
-                          Fasting
-                        </span>
-                        <span className="px-3 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block">
-                          {pkgInfo?.fasting || fastingText}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1 text-right">
-                          Sample
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {(pkgInfo?.samples || (test.sample_type ? (test.sample_type.includes('&') ? test.sample_type.split('&').map(s => s.trim()) : [test.sample_type]) : ['Blood'])).map((s, sIdx) => (
-                            <span 
-                              key={sIdx} 
-                              className="px-2.5 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Pricing & Add/Book Buttons */}
-                  <div className="pt-4 border-t border-ivory-200 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-xl font-extrabold text-botanical-950 font-mono">
-                          ₹{Number(test.price).toLocaleString('en-IN')}
-                        </span>
-                        {originalPrice > test.price && (
-                          <span className="text-xs text-botanical-600/60 line-through">
-                            ₹{Math.round(originalPrice).toLocaleString('en-IN')}
-                          </span>
-                        )}
-                      </div>
-                      <span className="block text-[10px] text-emerald-700 font-bold">
-                        Free Doorstep Pickup
+              return (
+                <div
+                  key={test.id}
+                  className={`bg-white rounded-3xl border transition-all flex flex-col justify-between overflow-hidden hover:shadow-soft-lg ${
+                    isSelected 
+                      ? 'border-botanical-500 ring-2 ring-botanical-500/20 shadow-soft-sm' 
+                      : 'border-ivory-300 hover:border-botanical-300'
+                  }`}
+                >
+                  {/* Dark Header Banner (Reports in XX Hrs) - Verbatim like Pic 1 */}
+                  <div className="bg-botanical-950 text-white px-5 py-2.5 flex items-center justify-between text-xs font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-peach-400" />
+                      <span className="font-medium tracking-wide">
+                        {pkgInfo?.reportsIn || (test.turnaround_description ? `Reports In ${test.turnaround_description}` : 'Reports In 24-38 Hrs')}
                       </span>
                     </div>
+                    {discountPct > 0 ? (
+                      <span className="px-2 py-0.5 rounded-full bg-peach-500 text-white text-[10px] font-extrabold tracking-tight">
+                        {discountPct}% OFF
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-botanical-200">
+                        {test.category || 'Health Package'}
+                      </span>
+                    )}
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleSelectTest(test)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-soft-sm'
-                            : 'bg-ivory-100 hover:bg-botanical-50 text-botanical-900 border border-ivory-300'
-                        }`}
-                      >
-                        {isSelected ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-700" />
-                            <span>Added</span>
-                          </>
+                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      {/* Title */}
+                      <div>
+                        <h3 
+                          onClick={() => setOverviewTest(test)}
+                          className="text-lg font-extrabold text-botanical-950 tracking-tight leading-snug cursor-pointer hover:text-botanical-700 transition-colors"
+                        >
+                          {test.name}
+                        </h3>
+                        <p className="text-xs text-botanical-800/80 mt-1.5 leading-relaxed line-clamp-3">
+                          {pkgInfo?.description || test.description || 'Comprehensive clinical laboratory screening evaluating vital metabolic and organ parameters.'}
+                        </p>
+                      </div>
+
+                      {/* Includes Section with Show All Tests Link (Like Pic 1 & Pic 3) */}
+                      <div className="pt-3 border-t border-ivory-200">
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="font-extrabold text-botanical-950">
+                            Includes {totalParams} Tests
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setOverviewTest(test)}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-800 inline-flex items-center gap-0.5 hover:underline"
+                          >
+                            <span>Show All Tests</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Preview snippet like Pic 1 & Pic 3 */}
+                        {paramsList.length > 0 ? (
+                          <div className="text-xs text-botanical-800 leading-relaxed">
+                            <span className="font-medium text-botanical-800">
+                              {paramsList.slice(0, 2).join(', ')}...
+                            </span>
+                            {totalParams > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => setOverviewTest(test)}
+                                className="ml-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline inline-block"
+                              >
+                                +{totalParams - 2} Tests
+                              </button>
+                            )}
+                          </div>
+                        ) : pkgInfo && pkgInfo.previewBullets && pkgInfo.previewBullets.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mt-1 text-[11px] text-botanical-800 font-medium">
+                            {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
+                              <div key={bIdx} className="flex items-center gap-1.5 truncate">
+                                <span className="text-botanical-400 font-bold">•</span>
+                                <span className="truncate">{bullet}</span>
+                              </div>
+                            ))}
+                          </div>
                         ) : (
-                          <>
-                            <Plus className="w-3.5 h-3.5 text-botanical-600" />
-                            <span>Add</span>
-                          </>
+                          <p className="text-[11px] text-botanical-700/80 line-clamp-2">
+                            {test.description}
+                          </p>
                         )}
-                      </button>
+                      </div>
 
-                      <button
-                        onClick={() => handleBookNow(test)}
-                        className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white text-xs font-extrabold shadow-soft transition-all"
-                      >
-                        Book
-                      </button>
+                      {/* Fasting & Sample pills row like Pic 1 */}
+                      <div className="pt-3 border-t border-ivory-200 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1">
+                            Fasting
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block">
+                            {pkgInfo?.fasting || fastingText}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1 text-right">
+                            Sample
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {(pkgInfo?.samples || (test.sample_type ? (test.sample_type.includes('&') ? test.sample_type.split('&').map(s => s.trim()) : [test.sample_type]) : ['Blood'])).map((s, sIdx) => (
+                              <span 
+                                key={sIdx} 
+                                className="px-2.5 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pricing & Add/Book Buttons */}
+                    <div className="pt-4 border-t border-ivory-200 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl font-extrabold text-botanical-950 font-mono">
+                            ₹{Number(test.price).toLocaleString('en-IN')}
+                          </span>
+                          {originalPrice > test.price && (
+                            <span className="text-xs text-botanical-600/60 line-through">
+                              ₹{Math.round(originalPrice).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                        <span className="block text-[10px] text-emerald-700 font-bold">
+                          Free Doorstep Pickup
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleSelectTest(test)}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-soft-sm'
+                              : 'bg-ivory-100 hover:bg-botanical-50 text-botanical-900 border border-ivory-300'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Added</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5 text-botanical-600" />
+                              <span>Add</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => handleBookNow(test)}
+                          className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white text-xs font-extrabold shadow-soft transition-all"
+                        >
+                          Book
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Load More Button when tests exceed current visible count */}
+          {visibleCount < displayedTests.length && (
+            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-2">
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 36)}
+                className="px-8 py-3 rounded-2xl bg-white border border-ivory-300 hover:border-botanical-500 text-botanical-950 font-extrabold text-sm shadow-soft hover:shadow-soft-md transition-all active:scale-95"
+              >
+                Load More Tests ({displayedTests.length - visibleCount} more)
+              </button>
+              <span className="text-xs text-botanical-600">
+                Showing {Math.min(visibleCount, displayedTests.length)} of {displayedTests.length} total diagnostic tests
+              </span>
+            </div>
+          )}
         </div>
       )}
 

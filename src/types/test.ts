@@ -17,6 +17,13 @@ export type TestCategory =
   | 'Others'
   | string;
 
+export interface TestParameterItem {
+  code?: string;
+  name: string;
+  type?: string;
+  groupName?: string;
+}
+
 export interface DiagnosticTest {
   id: string;
   name: string;
@@ -31,7 +38,7 @@ export interface DiagnosticTest {
   turnaround_description: string; // e.g. "12-24 Hours"
   sample_type: string; // e.g. "Blood (EDTA & Serum)"
   parameters_count?: number;
-  parameters_list?: string[];
+  parameters_list?: TestParameterItem[] | string[];
   active: boolean;
   popular?: boolean;
   icon_name?: string;

@@ -102,7 +102,7 @@ export default function TestDetailPage() {
                 {test.parameters_list.map((param, idx) => (
                   <div key={idx} className="p-2 rounded-xl bg-ivory-50 border border-ivory-200 flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-botanical-500 flex-shrink-0" />
-                    <span className="text-botanical-900">{param}</span>
+                    <span className="text-botanical-900">{typeof param === 'string' ? param : (param.name || '')}</span>
                   </div>
                 ))}
               </div>
