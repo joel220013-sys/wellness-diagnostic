@@ -72,5 +72,5 @@ export const ReportUploadSchema = z.object({
     })
   ).min(1, 'At least one parameter result is required'),
   overall_remarks: z.string().min(5, 'Clinical remarks required'),
-  doctor_name: z.string().optional().default('Dr. Eleanor Vance, MD (Pathologist)'),
+  doctor_name: z.string().optional().default('Consultant Pathologist, MD'),
 });

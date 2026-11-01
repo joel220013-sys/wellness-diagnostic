@@ -16,7 +16,7 @@ export default function InvoiceModal({ invoice, onClose }: InvoiceModalProps) {
   };
 
   const invoiceNum = invoice.invoice_number || (invoice as any).invoiceNumber || 'WD-INV-001';
-  const patient = invoice.patient_name || (invoice as any).patientName || 'Sarah Jenkins';
+  const patient = invoice.patient_name || (invoice as any).patientName || 'Patient';
   const orderRef = (invoice as any).orderNumber || (invoice as any).booking_reference || invoice.booking_id || 'WD-ORD-101';
   const issueDate = invoice.issued_at || (invoice as any).date || 'Today';
   const subtotal = invoice.subtotal || (invoice as any).amount || 0;

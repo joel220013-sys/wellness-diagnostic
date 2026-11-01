@@ -92,7 +92,7 @@ export default function AdminOrderDetailPage() {
       formData.append('file', file);
       formData.append('booking_id', booking.id);
       formData.append('patient_id', booking.patient_id || 'user_patient_1');
-      formData.append('doctor_name', 'Dr. Eleanor Vance, MD (Chief Pathologist)');
+      formData.append('doctor_name', 'Chief Pathologist, MD');
       formData.append('lab_technician', 'Robert Thorne, B.Sc MLT');
       formData.append('overall_remarks', pathologyRemarks || 'NABL Signed Diagnostic Lab Report');
 

@@ -16,13 +16,13 @@ export default function LabReportModal({ report, onClose }: LabReportModalProps)
   };
 
   const reportNum = report.report_number || (report as any).reportNumber || 'WD-REP-001';
-  const patientName = report.patient_name || (report as any).patientName || 'Sarah Jenkins';
+  const patientName = report.patient_name || (report as any).patientName || 'Patient';
   const patientAge = report.patient_age || (report as any).patientAge || 32;
   const patientGender = report.patient_gender || (report as any).patientGender || 'Female';
   const orderNum = report.booking_reference || (report as any).orderNumber || (report as any).booking_id || 'WD-ORD-101';
   const sampleDate = (report as any).dateSampleCollected || report.released_at || 'Today';
   const reportDate = report.released_at || (report as any).dateReportGenerated || 'Today';
-  const doctor = report.doctor_name || report.verified_by_name || (report as any).doctorName || 'Dr. Eleanor Vance, MD';
+  const doctor = report.doctor_name || report.verified_by_name || (report as any).doctorName || 'Consultant Pathologist, MD';
   const technician = report.lab_technician || (report as any).labTechnician || 'Senior Technologist';
   const remarks = report.overall_remarks || (report as any).overallRemarks || 'Sample analyzed according to standard clinical pathology guidelines.';
   const testsList = report.tests_included || (report as any).testsIncluded || (report.test_name ? [report.test_name] : ['Routine Blood Profile']);
@@ -219,7 +219,7 @@ export default function LabReportModal({ report, onClose }: LabReportModalProps)
 
             <div className="text-right">
               <div className="font-serif italic text-sm text-botanical-800 font-semibold mb-1">
-                Eleanor Vance, MD
+                {doctor}
               </div>
               <p className="font-bold text-xs text-botanical-950">{doctor}</p>
               <p className="text-[10px] text-botanical-600">Consultant Pathologist, Reg #OR-41982</p>

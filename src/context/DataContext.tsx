@@ -723,7 +723,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       patient_age: booking.patient_age || 35,
       patient_gender: booking.patient_gender || 'Female',
       released_at: new Date().toISOString(),
-      doctor_name: 'Dr. Eleanor Vance, MD (Chief Pathologist)',
+      doctor_name: 'Chief Pathologist, MD',
       lab_technician: 'Robert Thorne, B.Sc MLT',
       tests_included: booking.tests?.map((t) => t.name) || booking.items?.map((it) => it.item_name) || ['Routine Checkup'],
       results,

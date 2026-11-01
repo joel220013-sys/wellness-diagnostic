@@ -50,7 +50,7 @@ def _format_db_report(r: Dict[str, Any]) -> Dict[str, Any]:
         "status": r.get("status") or "Released",
         "results": results,
         "overall_remarks": r.get("overall_remarks") or "",
-        "doctor_name": r.get("doctor_name") or "Dr. Eleanor Vance, MD (Chief Pathologist)",
+        "doctor_name": r.get("doctor_name") or "Chief Pathologist, MD",
         "lab_technician": r.get("lab_technician") or "Robert Thorne, B.Sc MLT",
         "created_at": created_str,
         "storage_provider": "cloudflare_r2" if file_path else "local"
@@ -99,7 +99,7 @@ def upload_report(payload: Dict[str, Any]):
     file_path = payload.get("file_path")
     results = payload.get("results") or []
     remarks = payload.get("overall_remarks") or "Sample analyzed in accordance with ISO 15189:2022 guidelines."
-    doctor = payload.get("doctor_name") or "Dr. Eleanor Vance, MD (Chief Pathologist)"
+    doctor = payload.get("doctor_name") or "Chief Pathologist, MD"
     tech = payload.get("lab_technician") or "Robert Thorne, B.Sc MLT"
 
     # Insert into Supabase
@@ -180,7 +180,7 @@ async def upload_report_file(
     file: UploadFile = File(...),
     booking_id: Optional[str] = Form(None),
     patient_id: Optional[str] = Form("user_patient_1"),
-    doctor_name: Optional[str] = Form("Dr. Eleanor Vance, MD (Chief Pathologist)"),
+    doctor_name: Optional[str] = Form("Chief Pathologist, MD"),
     lab_technician: Optional[str] = Form("Robert Thorne, B.Sc MLT"),
     overall_remarks: Optional[str] = Form("Official digital pathology report verified.")
 ):

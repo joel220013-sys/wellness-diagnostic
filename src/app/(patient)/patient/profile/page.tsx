@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   User, 
@@ -20,15 +20,23 @@ import { useAuth } from '@/context/AuthContext';
 export default function PatientProfilePage() {
   const { user } = useAuth();
 
-  const [name, setName] = useState(user?.name || 'Sarah Jenkins');
-  const [email, setEmail] = useState(user?.email || 'patient@wellness.com');
-  const [phone, setPhone] = useState(user?.phone || '+91 98765 43210');
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [dob, setDob] = useState('1994-06-18');
   const [gender, setGender] = useState('Female');
   const [bloodGroup, setBloodGroup] = useState('O+ Positive');
-  const [emergencyContact, setEmergencyContact] = useState('+91 98111 55667 (Husband)');
+  const [emergencyContact, setEmergencyContact] = useState('');
   const [allergies, setAllergies] = useState('None reported');
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.email) setEmail(user.email);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, [user]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

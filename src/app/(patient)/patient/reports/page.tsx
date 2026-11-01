@@ -112,7 +112,7 @@ export default function PatientReportsPage() {
                     Released: {report.released_at}
                   </span>
                   <span>•</span>
-                  <span>Doctor: <strong>{report.verified_by_name || 'Dr. Eleanor Vance, MD'}</strong></span>
+                  <span>Doctor: <strong>{report.verified_by_name || 'Chief Pathologist, MD'}</strong></span>
                   <span>•</span>
                   <span>Parameters Tested: <strong>{report.results.length}</strong></span>
                 </div>

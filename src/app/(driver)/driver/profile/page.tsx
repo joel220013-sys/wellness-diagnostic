@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Truck, 
@@ -16,11 +16,18 @@ import { useAuth } from '@/context/AuthContext';
 export default function DriverProfilePage() {
   const { user } = useAuth();
 
-  const [name, setName] = useState(user?.name || 'Marcus Cole');
-  const [phone, setPhone] = useState(user?.phone || '+91 98111 22334');
-  const [vehicle, setVehicle] = useState('Mobile Diagnostics Lab Van 04 (DL-01-AB-1234)');
+  const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [vehicle, setVehicle] = useState('Mobile Diagnostics Lab Van (Davangere Hub)');
   const [coolerSerial, setCoolerSerial] = useState('MED-COOL-BOX-884');
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, [user]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

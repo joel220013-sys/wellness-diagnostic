@@ -61,7 +61,7 @@ npm run dev
 
 ## 🔑 Demo Login Credentials
 
-Each login screen has a 1-click **Quick Fill** button, or enter:
+Each login screen provides credentials or quick fill options:
 
 | Portal | URL | Email | Password |
 | :--- | :--- | :--- | :--- |

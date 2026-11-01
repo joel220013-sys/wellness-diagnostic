@@ -91,7 +91,7 @@ export default function AdminReportsPage() {
                     {report.results.length} Analytes
                   </td>
                   <td className="p-3.5 text-botanical-800">
-                    {report.verified_by_name || 'Dr. Eleanor Vance, MD'}
+                    {report.verified_by_name || 'Chief Pathologist, MD'}
                   </td>
                   <td className="p-3.5 text-botanical-700">
                     {report.released_at}

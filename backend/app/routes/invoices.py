@@ -24,7 +24,7 @@ def create_invoice(payload: Dict[str, Any]):
         "invoice_number": f"INV-2026-{uuid.uuid4().hex[:4].upper()}",
         "booking_id": payload.get("booking_id"),
         "patient_id": payload.get("patient_id", "user_patient_1"),
-        "patient_name": payload.get("patient_name", "Sarah Jenkins"),
+        "patient_name": payload.get("patient_name", "Patient"),
         "amount": payload.get("amount", 0),
         "status": payload.get("status", "Pending"),
         "created_at": datetime.utcnow().isoformat() + "Z"

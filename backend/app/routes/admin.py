@@ -125,7 +125,7 @@ def assign_driver(payload: AssignmentCreateInput):
                 "id": f"evt_{uuid.uuid4().hex[:6]}",
                 "booking_id": b["id"],
                 "event_type": "DRIVER_ASSIGNED",
-                "actor_name": "Dr. Eleanor Vance (Admin)",
+                "actor_name": "Lab Administrator",
                 "notes": f"Dispatched phlebotomist {payload.driver_name} to patient location.",
                 "timestamp": datetime.utcnow().isoformat() + "Z"
             })

@@ -23,7 +23,6 @@ interface AuthContextType {
     medical_notes?: string;
     preferences?: Record<string, any>;
   }) => Promise<{ success: boolean; error?: string }>;
-  loginAsDemo: (role: UserRole) => void;
   logout: () => void;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
   refreshCurrentUser: () => Promise<void>;
@@ -401,20 +400,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const loginAsDemo = (role: UserRole) => {
-    const demoUser = usersList.find((u) => u.role === role);
-    if (demoUser) {
-      setUser(demoUser);
-      setAuthCookies(demoUser);
-      setSelectedPortal(role);
-      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(demoUser));
-
-      if (role === 'patient') router.push('/patient/dashboard');
-      else if (role === 'admin') router.push('/admin/dashboard');
-      else if (role === 'driver') router.push('/driver/dashboard');
-    }
-  };
-
   const logout = () => {
     setUser(null);
     setSelectedPortal(null);
@@ -530,7 +515,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         registerAccount,
         changePassword,
         updateProfile,
-        loginAsDemo,
         logout,
         requestPasswordReset,
         refreshCurrentUser,

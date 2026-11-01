@@ -8,7 +8,7 @@ import {
   ShieldCheck, 
   Truck, 
   ArrowRight, 
-  Sparkles, 
+  Sparkles,
   CheckCircle2, 
   Lock, 
   Building2, 
@@ -23,7 +23,7 @@ import { UserRole } from '@/types';
 
 export default function PortalSelectionScreen() {
   const router = useRouter();
-  const { setSelectedPortal, loginAsDemo } = useAuth();
+  const { setSelectedPortal } = useAuth();
 
   const handlePortalSelect = (role: UserRole) => {
     setSelectedPortal(role);
@@ -110,21 +110,13 @@ export default function PortalSelectionScreen() {
               </div>
             </div>
 
-            <div className="mt-8 space-y-3">
+            <div className="mt-8">
               <button
                 onClick={() => handlePortalSelect('patient')}
                 className="w-full py-3.5 px-4 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-soft transition-all duration-200 group-hover:shadow-md"
               >
                 <span>Continue as Patient</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                onClick={() => loginAsDemo('patient')}
-                className="w-full py-2 px-3 rounded-lg text-xs font-medium text-botanical-700 hover:bg-botanical-50 transition-colors flex items-center justify-center gap-1.5 border border-dashed border-botanical-200"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-botanical-500" />
-                <span>1-Click Test: Sarah Jenkins</span>
               </button>
             </div>
           </div>
@@ -166,21 +158,13 @@ export default function PortalSelectionScreen() {
               </div>
             </div>
 
-            <div className="mt-8 space-y-3">
+            <div className="mt-8">
               <button
                 onClick={() => handlePortalSelect('admin')}
                 className="w-full py-3.5 px-4 rounded-xl bg-botanical-900 hover:bg-botanical-950 active:bg-black text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-soft transition-all duration-200 group-hover:shadow-md"
               >
                 <span>Continue as Admin</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                onClick={() => loginAsDemo('admin')}
-                className="w-full py-2 px-3 rounded-lg text-xs font-medium text-botanical-800 hover:bg-peach-50 transition-colors flex items-center justify-center gap-1.5 border border-dashed border-peach-300"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-peach-500" />
-                <span>1-Click Test: Dr. Eleanor (Director)</span>
               </button>
             </div>
           </div>
@@ -222,21 +206,13 @@ export default function PortalSelectionScreen() {
               </div>
             </div>
 
-            <div className="mt-8 space-y-3">
+            <div className="mt-8">
               <button
                 onClick={() => handlePortalSelect('driver')}
                 className="w-full py-3.5 px-4 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-soft transition-all duration-200 group-hover:shadow-md"
               >
                 <span>Continue as Driver</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                onClick={() => loginAsDemo('driver')}
-                className="w-full py-2 px-3 rounded-lg text-xs font-medium text-botanical-700 hover:bg-botanical-50 transition-colors flex items-center justify-center gap-1.5 border border-dashed border-botanical-200"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-botanical-500" />
-                <span>1-Click Test: Marcus Cole (Phleb)</span>
               </button>
             </div>
           </div>

@@ -24,13 +24,13 @@ Designed following the **Wellness Diagnostic** brand design system with Botanica
 
 ---
 
-## 🔑 Demo Access Credentials (1-Click Login)
+## 🔑 Portal Access & Accounts
 
-| Portal | Role | Email | Password | Preloaded Context |
-| :--- | :--- | :--- | :--- | :--- |
-| **Patient Portal** | `patient` | `patient@wellness.com` | `patient123` | Sarah Jenkins (Preloaded bookings, lab reports & invoices) |
-| **Admin Portal** | `admin` | `admin@wellness.com` | `admin123` | Dr. Eleanor Vance, MD (Chief Pathologist & Lab Medical Director) |
-| **Driver Portal** | `driver` | `driver@wellness.com` | `driver123` | Marcus Cole (Senior Mobile Phlebotomist, Van 04) |
+| Portal | Role | Description |
+| :--- | :--- | :--- |
+| **Patient Portal** | `patient` | Patient appointments, live dispatch tracking, test catalogs & verified lab reports |
+| **Admin Portal** | `admin` | Laboratory management, order dispatching, driver assignments & diagnostics catalog |
+| **Driver Portal** | `driver` | Phlebotomist route schedule, home sample collection workflows & cold-chain logging |
 
 ---
 
