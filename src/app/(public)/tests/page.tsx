@@ -32,6 +32,7 @@ export default function TestsCatalogPage() {
   ];
 
   const filteredTests = tests.filter((t) => {
+    if (t.active === false) return false;
     const catLower = (t.category || '').toLowerCase();
     const selLower = selectedCategory.toLowerCase();
     const nameLower = (t.name || '').toLowerCase();

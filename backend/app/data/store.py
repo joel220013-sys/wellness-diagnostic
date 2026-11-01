@@ -29,9 +29,12 @@ def _format_record(r: Dict[str, Any]) -> Dict[str, Any]:
         "parameters_count": int(r.get("parameters_count") or 1),
     }
 
-def get_live_tests() -> List[Dict[str, Any]]:
+def get_live_tests(include_inactive: bool = False) -> List[Dict[str, Any]]:
     """Fetch live diagnostic tests catalog from Supabase PostgreSQL database."""
-    tests = supabase_db.fetch_all("SELECT * FROM public.tests WHERE is_active = true ORDER BY name ASC;")
+    if include_inactive:
+        tests = supabase_db.fetch_all("SELECT * FROM public.tests ORDER BY name ASC;")
+    else:
+        tests = supabase_db.fetch_all("SELECT * FROM public.tests WHERE is_active = true ORDER BY name ASC;")
     if not tests:
         return []
     return [_format_record(t) for t in tests]

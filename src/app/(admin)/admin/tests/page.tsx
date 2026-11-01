@@ -22,6 +22,8 @@ export default function AdminTestsPage() {
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [editingTest, setEditingTest] = useState<DiagnosticTest | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -69,38 +71,56 @@ export default function AdminTestsPage() {
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingTest) {
-      updateTestPackage(editingTest.id, {
-        name: formName,
-        category: formCategory as any,
-        price: Number(formPrice),
-        turnaround_description: formTurnaround,
-        sample_type: formSampleType,
-        preparation_instructions: formPrep,
-        description: formDesc,
-        active: formActive
-      });
-    } else {
-      addTestPackage({
-        name: formName,
-        slug: formName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        category: formCategory as any,
-        price: Number(formPrice),
-        turnaround_description: formTurnaround,
-        sample_type: formSampleType,
-        preparation_instructions: formPrep,
-        description: formDesc,
-        active: formActive,
-        popular: false
-      });
+    setIsSaving(true);
+    try {
+      if (editingTest) {
+        await updateTestPackage(editingTest.id, {
+          name: formName,
+          category: formCategory as any,
+          price: Number(formPrice),
+          turnaround_description: formTurnaround,
+          sample_type: formSampleType,
+          preparation_instructions: formPrep,
+          description: formDesc,
+          active: formActive
+        });
+        setToastMessage(`Test "${formName}" updated successfully in database!`);
+      } else {
+        await addTestPackage({
+          name: formName,
+          slug: formName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          category: formCategory as any,
+          price: Number(formPrice),
+          turnaround_description: formTurnaround,
+          sample_type: formSampleType,
+          preparation_instructions: formPrep,
+          description: formDesc,
+          active: formActive,
+          popular: false
+        });
+        setToastMessage(`Test "${formName}" created successfully in database!`);
+      }
+      setShowModal(false);
+      setTimeout(() => setToastMessage(null), 5000);
+    } catch (err) {
+      console.error('Failed to save test:', err);
+    } finally {
+      setIsSaving(false);
     }
-    setShowModal(false);
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center gap-2.5 text-xs sm:text-sm font-bold text-emerald-900 shadow-soft animate-in slide-in-from-top">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-botanical-950">Diagnostic Test Catalog</h1>
@@ -180,11 +200,16 @@ export default function AdminTestsPage() {
                   <td className="p-3.5 font-extrabold text-botanical-950 text-sm">₹{test.price}</td>
                   <td className="p-3.5">
                     <button
-                      onClick={() => updateTestPackage(test.id, { active: !test.active })}
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      onClick={async () => {
+                        const newActive = !test.active;
+                        await updateTestPackage(test.id, { active: newActive });
+                        setToastMessage(`Test "${test.name}" marked ${newActive ? 'Active' : 'Inactive'}.`);
+                        setTimeout(() => setToastMessage(null), 3000);
+                      }}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
                         test.active
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          : 'bg-rose-50 text-rose-800 border-rose-200'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
                       }`}
                     >
                       {test.active ? 'Active' : 'Inactive'}
@@ -199,8 +224,12 @@ export default function AdminTestsPage() {
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`Delete ${test.name}?`)) deleteTestPackage(test.id);
+                      onClick={async () => {
+                        if (confirm(`Delete ${test.name} permanently from database?`)) {
+                          await deleteTestPackage(test.id);
+                          setToastMessage(`Test "${test.name}" deleted permanently.`);
+                          setTimeout(() => setToastMessage(null), 4000);
+                        }
                       }}
                       className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
                       title="Delete Test"
@@ -325,9 +354,17 @@ export default function AdminTestsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft"
+                  disabled={isSaving}
+                  className="px-5 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white font-bold text-xs shadow-soft transition-all inline-flex items-center gap-1.5"
                 >
-                  {editingTest ? 'Save Changes' : 'Create Test'}
+                  {isSaving ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Saving to Database...</span>
+                    </>
+                  ) : (
+                    <span>{editingTest ? 'Save Changes' : 'Create Test'}</span>
+                  )}
                 </button>
               </div>
             </form>

@@ -86,6 +86,9 @@ export default function PatientTestsPage() {
     // 2. Filter by search & category
     const q = searchQuery.toLowerCase().trim();
     const filtered = list.filter((t) => {
+      // Hide inactive tests from patients
+      if (t.active === false) return false;
+
       const cat = (t.category || '').toLowerCase();
       const selCat = selectedCategory.toLowerCase();
 

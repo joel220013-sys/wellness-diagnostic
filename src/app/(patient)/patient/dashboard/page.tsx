@@ -60,7 +60,7 @@ export default function PatientDashboardPage() {
         uniqueMap.set(key, t);
       }
     }
-    const all = Array.from(uniqueMap.values());
+    const all = Array.from(uniqueMap.values()).filter((t: any) => t.active !== false);
     const popular = all.filter((t: any) => t.popular);
     return (popular.length > 0 ? popular : all).slice(0, 4);
   }, [tests]);

@@ -39,9 +39,9 @@ interface DataContextType {
   syncDrivers: () => void;
   updateBookingStatus: (bookingId: string, status: BookingStatus, sampleDetails?: Booking['sample_details']) => void;
   addReportForBooking: (orderId: string, results: LabReportResultItem[], overallRemarks: string) => LabReport;
-  addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => void;
-  updateTestPackage: (id: string, test: Partial<DiagnosticTest>) => void;
-  deleteTestPackage: (id: string) => void;
+  addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => Promise<DiagnosticTest | null> | void;
+  updateTestPackage: (id: string, test: Partial<DiagnosticTest>) => Promise<DiagnosticTest | null> | void;
+  deleteTestPackage: (id: string) => Promise<boolean> | void;
   resetAllDataToDefault: () => void;
 }
 
@@ -86,48 +86,58 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch live tests, packages, bookings, and invoices from Supabase backend API on mount
   useEffect(() => {
-    fetch('/api/tests')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && Array.isArray(data.data)) {
-          // Deduplicate tests by unique normalized name so there are never double entries
-          const uniqueTests: DiagnosticTest[] = [];
-          const seen = new Set<string>();
-          for (const item of data.data) {
-            const key = (item.name || '').toLowerCase().trim();
-            if (!seen.has(key)) {
-              seen.add(key);
-              uniqueTests.push(item);
+    // Sync live tests from Supabase PostgreSQL database
+    const syncTests = () => {
+      fetch('/api/tests?all=true')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.data)) {
+            // Deduplicate tests by unique normalized name so there are never double entries
+            const uniqueTests: DiagnosticTest[] = [];
+            const seen = new Set<string>();
+            for (const item of data.data) {
+              const key = (item.name || '').toLowerCase().trim();
+              if (!seen.has(key)) {
+                seen.add(key);
+                uniqueTests.push(item);
+              }
             }
+            setTests(uniqueTests);
+            try {
+              localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(uniqueTests));
+            } catch {}
           }
-          setTests(uniqueTests);
-          try {
-            localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(uniqueTests));
-          } catch {}
-        }
-      })
-      .catch(() => {});
+        })
+        .catch(() => {});
+    };
 
-    fetch('/api/packages')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && Array.isArray(data.data)) {
-          const uniquePkgs: DiagnosticPackage[] = [];
-          const seenPkgs = new Set<string>();
-          for (const pkg of data.data) {
-            const key = (pkg.name || '').toLowerCase().trim();
-            if (!seenPkgs.has(key)) {
-              seenPkgs.add(key);
-              uniquePkgs.push(pkg);
+    // Sync live packages from Supabase
+    const syncPackages = () => {
+      fetch('/api/packages')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.data)) {
+            const uniquePkgs: DiagnosticPackage[] = [];
+            const seenPkgs = new Set<string>();
+            for (const pkg of data.data) {
+              const key = (pkg.name || '').toLowerCase().trim();
+              if (!seenPkgs.has(key)) {
+                seenPkgs.add(key);
+                uniquePkgs.push(pkg);
+              }
             }
+            setPackages(uniquePkgs);
+            try {
+              localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(uniquePkgs));
+            } catch {}
           }
-          setPackages(uniquePkgs);
-          try {
-            localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(uniquePkgs));
-          } catch {}
-        }
-      })
-      .catch(() => {});
+        })
+        .catch(() => {});
+    };
+
+    // Initial fetch on mount
+    syncTests();
+    syncPackages();
 
     // Live Bookings sync with automatic cross-device synchronization (Read-only polling)
     const syncBookings = () => {
@@ -145,11 +155,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncBookings();
-
-    // Auto-refresh when switching tabs and every 10 seconds so Desktop & Mobile are always in sync
-    const interval = setInterval(syncBookings, 10000);
-    const onFocus = () => syncBookings();
-    window.addEventListener('focus', onFocus);
 
     // Sync Invoices (Read-only polling)
     const syncInvoices = () => {
@@ -205,8 +210,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     syncDriversInternal();
     const drvInterval = setInterval(syncDriversInternal, 10000);
 
+    // Auto-refresh when switching tabs and every 10-15 seconds so Desktop & Mobile are always in sync
+    const interval = setInterval(syncBookings, 10000);
+    const testInterval = setInterval(syncTests, 15000);
+    const onFocus = () => {
+      syncTests();
+      syncPackages();
+      syncBookings();
+      syncInvoices();
+      syncReports();
+      syncDriversInternal();
+    };
+    window.addEventListener('focus', onFocus);
+
     return () => {
       clearInterval(interval);
+      clearInterval(testInterval);
       clearInterval(invInterval);
       clearInterval(repInterval);
       clearInterval(drvInterval);
@@ -566,26 +585,87 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return newReport;
   };
 
-  const addTestPackage = (test: Omit<DiagnosticTest, 'id'>) => {
+  const addTestPackage = async (test: Omit<DiagnosticTest, 'id'>): Promise<DiagnosticTest | null> => {
+    const tempId = `pkg_${Date.now()}`;
     const newTest: DiagnosticTest = {
       ...test,
-      id: `pkg_${Date.now()}`
+      id: tempId,
     };
     const updated = [...tests, newTest];
     setTests(updated);
-    localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(updated));
+    try {
+      localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(updated));
+    } catch {}
+
+    // Persist directly to FastAPI backend & Supabase database
+    try {
+      const res = await fetch('/api/tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(test),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setTests((prev) => prev.map((t) => (t.id === tempId ? json.data : t)));
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to create test in database:', err);
+    }
+    return newTest;
   };
 
-  const updateTestPackage = (id: string, updatedFields: Partial<DiagnosticTest>) => {
+  const updateTestPackage = async (id: string, updatedFields: Partial<DiagnosticTest>): Promise<DiagnosticTest | null> => {
+    // 1. Optimistic update in UI
     const updated = tests.map((t) => (t.id === id ? { ...t, ...updatedFields } : t));
     setTests(updated);
-    localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(updated));
+    try {
+      localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(updated));
+    } catch {}
+
+    // 2. Persist directly to FastAPI backend & Supabase database
+    try {
+      const res = await fetch(`/api/tests/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          // Sync canonical record returned from database
+          setTests((prev) => prev.map((t) => (t.id === id ? { ...t, ...json.data } : t)));
+          return json.data;
+        }
+      } else {
+        console.error('Failed to update test in database:', await res.text());
+      }
+    } catch (err) {
+      console.error('Failed to persist test update to database:', err);
+    }
+    return null;
   };
 
-  const deleteTestPackage = (id: string) => {
+  const deleteTestPackage = async (id: string): Promise<boolean> => {
+    // 1. Optimistic remove
     const updated = tests.filter((t) => t.id !== id);
     setTests(updated);
-    localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(updated));
+    try {
+      localStorage.setItem(STORAGE_KEY_TESTS, JSON.stringify(updated));
+    } catch {}
+
+    // 2. Persist deletion to FastAPI backend & Supabase database
+    try {
+      const res = await fetch(`/api/tests/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('Failed to delete test from database:', err);
+      return false;
+    }
   };
 
   const resetAllDataToDefault = () => {
