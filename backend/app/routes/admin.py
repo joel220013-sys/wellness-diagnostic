@@ -133,10 +133,24 @@ def get_admin_drivers():
     drivers = []
     try:
         query = """
-        SELECT id, name, phone, email, badge_id, designation, created_at 
-        FROM public.profiles 
-        WHERE role = 'driver'::user_role 
-        ORDER BY name ASC;
+        SELECT 
+            p.id, 
+            p.name, 
+            p.phone, 
+            p.email, 
+            p.badge_id, 
+            p.designation, 
+            p.created_at,
+            COALESCE(b.active_count, 0) as assigned_orders_count
+        FROM public.profiles p
+        LEFT JOIN (
+            SELECT assigned_driver_id::text as driver_id, COUNT(*) as active_count
+            FROM public.bookings
+            WHERE status IN ('Assigned', 'Collection Scheduled', 'Sample Collected')
+            GROUP BY assigned_driver_id::text
+        ) b ON b.driver_id = p.id::text
+        WHERE p.role = 'driver'::user_role
+        ORDER BY p.name ASC;
         """
         rows = supabase_db.fetch_all(query)
 
@@ -164,24 +178,13 @@ def get_admin_drivers():
         if rows:
             for r in rows:
                 d_id = str(r["id"])
-                # count active assignments
-                active_count = 0
-                try:
-                    cnt_row = supabase_db.fetch_one(
-                        "SELECT COUNT(*) as count FROM public.bookings WHERE assigned_driver_id::text = %s AND status IN ('Assigned', 'Collection Scheduled', 'Sample Collected');",
-                        (d_id,)
-                    )
-                    active_count = cnt_row.get("count", 0) if cnt_row else 0
-                except:
-                    pass
-
                 drivers.append({
                     "id": d_id,
                     "name": r.get("name") or "Phlebotomist",
                     "phone": r.get("phone") or "+91 98765 00000",
                     "email": r.get("email") or "",
                     "badge_id": r.get("badge_id") or f"WD-PHLEB-{d_id[:4].upper()}",
-                    "assigned_orders_count": active_count,
+                    "assigned_orders_count": int(r.get("assigned_orders_count") or 0),
                     "is_active": True,
                     "vehicle_details": "Davangere Cold-Chain Van",
                     "created_at": str(r.get("created_at") or "")
@@ -245,3 +248,53 @@ def create_admin_driver(payload: Dict[str, Any]):
         "message": f"Successfully registered phlebotomist {name}",
         "data": driver_obj
     }
+
+@router.patch("/drivers/{driver_id}")
+@router.put("/drivers/{driver_id}")
+def update_admin_driver(driver_id: str, payload: Dict[str, Any]):
+    from app.data import supabase_db
+    name = payload.get("name")
+    phone = payload.get("phone")
+    email = payload.get("email")
+    badge_id = payload.get("badge_id")
+    designation = payload.get("designation")
+    
+    set_clauses = []
+    values = []
+    if name is not None:
+        set_clauses.append("name = %s")
+        values.append(name.strip())
+    if phone is not None:
+        set_clauses.append("phone = %s")
+        values.append(phone.strip())
+    if email is not None:
+        set_clauses.append("email = %s")
+        values.append(email.strip().lower())
+    if badge_id is not None:
+        set_clauses.append("badge_id = %s")
+        values.append(badge_id.strip())
+    if designation is not None:
+        set_clauses.append("designation = %s")
+        values.append(designation.strip())
+
+    if set_clauses:
+        set_clauses.append("updated_at = NOW()")
+        values.append(driver_id)
+        values.append(driver_id)
+        query = f"""
+        UPDATE public.profiles 
+        SET {', '.join(set_clauses)} 
+        WHERE id::text = %s OR badge_id = %s
+        RETURNING id, name, phone, email, badge_id, designation;
+        """
+        row = supabase_db.fetch_one(query, tuple(values))
+        if row:
+            return {"success": True, "message": "Driver updated successfully", "data": row}
+
+    return {"success": True, "message": "No fields updated"}
+
+@router.delete("/drivers/{driver_id}")
+def delete_admin_driver(driver_id: str):
+    from app.data import supabase_db
+    supabase_db.execute("DELETE FROM public.profiles WHERE id::text = %s OR badge_id = %s;", (driver_id, driver_id))
+    return {"success": True, "message": f"Driver {driver_id} deleted successfully"}

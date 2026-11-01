@@ -1,27 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
   Plus, 
   Search, 
-  Phone, 
-  Mail, 
-  ShieldCheck, 
   CheckCircle2, 
   Clock, 
-  MapPin,
-  X,
-  AlertCircle,
-  RefreshCw
+  X, 
+  AlertCircle, 
+  RefreshCw,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
+import { DriverProfile } from '@/types';
 
 export default function AdminDriversPage() {
-  const { drivers, bookings, addDriver, syncDrivers } = useData();
+  const { drivers, bookings, addDriver, updateDriver, deleteDriver, syncDrivers } = useData();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<DriverProfile | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Form state
@@ -29,7 +30,52 @@ export default function AdminDriversPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [badgeId, setBadgeId] = useState('');
+  const [designation, setDesignation] = useState('Certified Senior Phlebotomist');
   const [vehicleDetails, setVehicleDetails] = useState('Davangere Cold-Chain Van (4°C Insulated)');
+
+  // Sync fresh driver data from database on page load
+  useEffect(() => {
+    syncDrivers();
+  }, []);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    syncDrivers();
+    setTimeout(() => setIsSyncing(false), 800);
+  };
+
+  const openAddModal = () => {
+    setEditingDriver(null);
+    setName('');
+    setPhone('');
+    setEmail('');
+    setBadgeId('');
+    setDesignation('Certified Senior Phlebotomist');
+    setVehicleDetails('Davangere Cold-Chain Van (4°C Insulated)');
+    setFeedback(null);
+    setShowModal(true);
+  };
+
+  const openEditModal = (driver: DriverProfile) => {
+    setEditingDriver(driver);
+    setName(driver.name || '');
+    setPhone(driver.phone || '');
+    setEmail(driver.email || '');
+    setBadgeId(driver.badge_id || '');
+    setDesignation(driver.designation || 'Certified Senior Phlebotomist');
+    setVehicleDetails(driver.vehicle_details || 'Davangere Cold-Chain Van (4°C Insulated)');
+    setFeedback(null);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (driver: DriverProfile) => {
+    if (confirm(`Are you sure you want to remove phlebotomist ${driver.name}? This will remove them from the active fleet directory.`)) {
+      const res = await deleteDriver(driver.id);
+      if (!res.success) {
+        alert(res.error || 'Failed to remove phlebotomist.');
+      }
+    }
+  };
 
   const filteredDrivers = drivers.filter((d) =>
     (d.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -37,7 +83,7 @@ export default function AdminDriversPage() {
     (d.phone || '').includes(searchQuery)
   );
 
-  const handleRegisterDriver = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
       setFeedback({ type: 'error', message: 'Name and Phone number are required.' });
@@ -47,30 +93,54 @@ export default function AdminDriversPage() {
     setIsSubmitting(true);
     setFeedback(null);
 
-    const generatedBadge = badgeId.trim() || `WD-PHLEB-${Math.floor(100 + Math.random() * 900)}`;
-    const result = await addDriver({
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim() || undefined,
-      badge_id: generatedBadge,
-      vehicle_details: vehicleDetails,
-      designation: 'Certified Senior Phlebotomist',
-    });
+    if (editingDriver) {
+      const result = await updateDriver(editingDriver.id, {
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        badge_id: badgeId.trim() || editingDriver.badge_id,
+        designation: designation.trim() || 'Certified Senior Phlebotomist',
+        vehicle_details: vehicleDetails.trim() || 'Davangere Cold-Chain Van (4°C Insulated)',
+      });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (result.success) {
-      setFeedback({ type: 'success', message: `Phlebotomist ${name} registered successfully!` });
-      setTimeout(() => {
-        setName('');
-        setPhone('');
-        setEmail('');
-        setBadgeId('');
-        setShowAddModal(false);
-        setFeedback(null);
-      }, 1000);
+      if (result.success) {
+        setFeedback({ type: 'success', message: `Phlebotomist ${name} updated successfully!` });
+        setTimeout(() => {
+          setShowModal(false);
+          setEditingDriver(null);
+          setFeedback(null);
+        }, 800);
+      } else {
+        setFeedback({ type: 'error', message: result.error || 'Failed to update phlebotomist.' });
+      }
     } else {
-      setFeedback({ type: 'error', message: result.error || 'Failed to register phlebotomist.' });
+      const generatedBadge = badgeId.trim() || `WD-PHLEB-${Math.floor(100 + Math.random() * 900)}`;
+      const result = await addDriver({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        badge_id: generatedBadge,
+        vehicle_details: vehicleDetails.trim() || 'Davangere Cold-Chain Van (4°C Insulated)',
+        designation: designation.trim() || 'Certified Senior Phlebotomist',
+      });
+
+      setIsSubmitting(false);
+
+      if (result.success) {
+        setFeedback({ type: 'success', message: `Phlebotomist ${name} registered successfully!` });
+        setTimeout(() => {
+          setName('');
+          setPhone('');
+          setEmail('');
+          setBadgeId('');
+          setShowModal(false);
+          setFeedback(null);
+        }, 800);
+      } else {
+        setFeedback({ type: 'error', message: result.error || 'Failed to register phlebotomist.' });
+      }
     }
   };
 
@@ -86,19 +156,17 @@ export default function AdminDriversPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => syncDrivers()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ivory-300 text-botanical-800 hover:bg-ivory-100 font-bold text-xs shadow-soft-sm transition-all"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ivory-300 text-botanical-800 hover:bg-ivory-100 font-bold text-xs shadow-soft-sm transition-all disabled:opacity-50"
             title="Refresh fleet list from Supabase"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Sync Fleet</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-botanical-600' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Fleet'}</span>
           </button>
 
           <button
-            onClick={() => {
-              setFeedback(null);
-              setShowAddModal(true);
-            }}
+            onClick={openAddModal}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -127,22 +195,21 @@ export default function AdminDriversPage() {
           <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
             <Truck className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-botanical-950">No Phlebotomists Listed</h3>
+          <h3 className="text-lg font-bold text-botanical-950">No Phlebotomists Found</h3>
           <p className="text-xs text-botanical-700/80 leading-relaxed">
-            There are currently no phlebotomists registered in the directory. You can load certified staff or register new mobile collection specialists.
+            {searchQuery 
+              ? `No registered phlebotomists match "${searchQuery}". Try a different keyword.` 
+              : 'There are currently no phlebotomists registered in the directory. You can load certified staff or register new mobile collection specialists.'}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
-              onClick={() => syncDrivers()}
+              onClick={handleManualSync}
               className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
             >
               ⚡ Load Certified Phlebotomists
             </button>
             <button
-              onClick={() => {
-                setFeedback(null);
-                setShowAddModal(true);
-              }}
+              onClick={openAddModal}
               className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-900 font-bold text-xs transition-all"
             >
               + Register New Staff
@@ -169,9 +236,26 @@ export default function AdminDriversPage() {
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-xs font-bold text-emerald-800">On Duty</span>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-100 text-sky-900 border border-sky-200">
-                      Badge: {driver.badge_id || 'WD-PHLEB'}
-                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-100 text-sky-900 border border-sky-200">
+                        Badge: {driver.badge_id || 'WD-PHLEB'}
+                      </span>
+                      <button
+                        onClick={() => openEditModal(driver)}
+                        className="p-1 rounded-lg text-botanical-500 hover:text-botanical-900 hover:bg-ivory-100 transition-colors"
+                        title="Edit Phlebotomist"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(driver)}
+                        className="p-1 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="Delete Phlebotomist"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -182,6 +266,9 @@ export default function AdminDriversPage() {
                       <h2 className="text-base font-bold text-botanical-950">{driver.name}</h2>
                       <p className="text-xs text-botanical-700/80">{driver.designation || 'Certified Senior Phlebotomist'}</p>
                       <p className="text-xs text-botanical-900 font-semibold mt-0.5">📞 {driver.phone}</p>
+                      {driver.email && (
+                        <p className="text-[11px] text-botanical-600 font-mono mt-0.5">✉️ {driver.email}</p>
+                      )}
                     </div>
                   </div>
 
@@ -208,17 +295,22 @@ export default function AdminDriversPage() {
         </div>
       )}
 
-      {/* Add Phlebotomist Modal */}
-      {showAddModal && (
+      {/* Add / Edit Phlebotomist Modal */}
+      {showModal && (
         <div className="fixed inset-0 z-50 bg-botanical-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-soft-lg border border-ivory-300">
             <div className="flex items-center justify-between pb-3 border-b border-ivory-200">
               <div className="flex items-center gap-2">
                 <Truck className="w-5 h-5 text-botanical-600" />
-                <h3 className="text-base font-bold text-botanical-950">Register New Phlebotomist</h3>
+                <h3 className="text-base font-bold text-botanical-950">
+                  {editingDriver ? 'Edit Phlebotomist Details' : 'Register New Phlebotomist'}
+                </h3>
               </div>
               <button 
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingDriver(null);
+                }}
                 className="p-1 rounded-lg text-botanical-400 hover:text-botanical-700"
               >
                 <X className="w-5 h-5" />
@@ -242,13 +334,13 @@ export default function AdminDriversPage() {
               </div>
             )}
 
-            <form onSubmit={handleRegisterDriver} className="space-y-3 text-xs">
+            <form onSubmit={handleSubmit} className="space-y-3 text-xs">
               <div>
                 <label className="block font-bold text-botanical-900 mb-1">Full Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Ramesh Kumar"
+                  placeholder="e.g. Uday"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-ivory-300 text-xs text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-500"
@@ -260,7 +352,7 @@ export default function AdminDriversPage() {
                 <input
                   type="text"
                   required
-                  placeholder="+91 98450 12345"
+                  placeholder="+91 91088 28138"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-ivory-300 text-xs text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-500"
@@ -271,7 +363,7 @@ export default function AdminDriversPage() {
                 <label className="block font-bold text-botanical-900 mb-1">Official Email</label>
                 <input
                   type="email"
-                  placeholder="ramesh.phleb@wellness.com"
+                  placeholder="uday.phleb@wellness.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-ivory-300 text-xs text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-500"
@@ -282,10 +374,21 @@ export default function AdminDriversPage() {
                 <label className="block font-bold text-botanical-900 mb-1">Certification Badge ID</label>
                 <input
                   type="text"
-                  placeholder="WD-PHLEB-DVG-01"
+                  placeholder="WD-PHLEB-725"
                   value={badgeId}
                   onChange={(e) => setBadgeId(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-ivory-300 font-mono text-xs text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-botanical-900 mb-1">Professional Designation</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Senior Mobile Phlebotomist"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-ivory-300 text-xs text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-500"
                 />
               </div>
 
@@ -302,7 +405,10 @@ export default function AdminDriversPage() {
               <div className="flex justify-end gap-2 pt-4 border-t border-ivory-200">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingDriver(null);
+                  }}
                   className="px-4 py-2 text-xs font-semibold text-botanical-700 hover:bg-ivory-100 rounded-xl"
                 >
                   Cancel
@@ -312,7 +418,7 @@ export default function AdminDriversPage() {
                   disabled={isSubmitting}
                   className="px-5 py-2 bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-soft transition-all"
                 >
-                  {isSubmitting ? 'Registering...' : 'Save Staff'}
+                  {isSubmitting ? 'Saving...' : editingDriver ? 'Update Phlebotomist' : 'Save Staff'}
                 </button>
               </div>
             </form>

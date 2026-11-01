@@ -36,6 +36,8 @@ interface DataContextType {
     vehicle_details?: string;
     designation?: string;
   }) => Promise<{ success: boolean; data?: DriverProfile; error?: string }>;
+  updateDriver: (driverId: string, data: Partial<DriverProfile>) => Promise<{ success: boolean; data?: DriverProfile; error?: string }>;
+  deleteDriver: (driverId: string) => Promise<{ success: boolean; error?: string }>;
   syncDrivers: () => void;
   updateBookingStatus: (bookingId: string, status: BookingStatus, sampleDetails?: Booking['sample_details']) => void;
   addReportForBooking: (orderId: string, results: LabReportResultItem[], overallRemarks: string) => LabReport;
@@ -194,10 +196,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     // Sync Phlebotomist Drivers from Supabase (Read-only polling)
     const syncDriversInternal = () => {
-      fetch('/api/admin/drivers')
+      fetch(`/api/admin/drivers?_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data && Array.isArray(data.data)) {
+          if (data && Array.isArray(data.data) && data.data.length > 0) {
             setDrivers(data.data);
             try {
               localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(data.data));
@@ -236,22 +238,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const storedTests = localStorage.getItem(STORAGE_KEY_TESTS);
-      if (storedTests) setTests(JSON.parse(storedTests));
+      if (storedTests) setTests((prev) => (prev.length === 0 ? JSON.parse(storedTests) : prev));
 
       const storedPackages = localStorage.getItem(STORAGE_KEY_PACKAGES);
-      if (storedPackages) setPackages(JSON.parse(storedPackages));
+      if (storedPackages) setPackages((prev) => (prev.length === 0 ? JSON.parse(storedPackages) : prev));
 
       const storedBookings = localStorage.getItem(STORAGE_KEY_BOOKINGS);
-      if (storedBookings) setBookings(JSON.parse(storedBookings));
+      if (storedBookings) setBookings((prev) => (prev.length === 0 ? JSON.parse(storedBookings) : prev));
 
       const storedReports = localStorage.getItem(STORAGE_KEY_REPORTS);
-      if (storedReports) setReports(JSON.parse(storedReports));
+      if (storedReports) setReports((prev) => (prev.length === 0 ? JSON.parse(storedReports) : prev));
 
       const storedInvoices = localStorage.getItem(STORAGE_KEY_INVOICES);
-      if (storedInvoices) setInvoices(JSON.parse(storedInvoices));
+      if (storedInvoices) setInvoices((prev) => (prev.length === 0 ? JSON.parse(storedInvoices) : prev));
 
       const storedDrivers = localStorage.getItem(STORAGE_KEY_DRIVERS);
-      if (storedDrivers) setDrivers(JSON.parse(storedDrivers));
+      if (storedDrivers) setDrivers((prev) => (prev.length === 0 ? JSON.parse(storedDrivers) : prev));
 
       const storedCart = localStorage.getItem(STORAGE_KEY_CART);
       if (storedCart) setSelectedTests(JSON.parse(storedCart));
@@ -397,10 +399,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const syncDrivers = () => {
-    fetch('/api/admin/drivers')
+    fetch(`/api/admin/drivers?_t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && Array.isArray(data.data)) {
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
           setDrivers(data.data);
           try {
             localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(data.data));
@@ -434,6 +436,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           } catch {}
           return updated;
         });
+        syncDrivers();
         return { success: true, data: created };
       } else {
         const err = await res.json().catch(() => ({}));
@@ -459,6 +462,55 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return updated;
       });
       return { success: true, data: newDriver };
+    }
+  };
+
+  const updateDriver = async (
+    driverId: string, 
+    updatedFields: Partial<DriverProfile>
+  ): Promise<{ success: boolean; data?: DriverProfile; error?: string }> => {
+    setDrivers((prev) => {
+      const updated = prev.map((d) => (d.id === driverId || d.badge_id === driverId ? { ...d, ...updatedFields } : d));
+      try {
+        localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    try {
+      const res = await fetch(`/api/admin/drivers/${encodeURIComponent(driverId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        syncDrivers();
+        return { success: true, data: json.data };
+      }
+      return { success: false, error: 'Failed to update driver' };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteDriver = async (driverId: string): Promise<{ success: boolean; error?: string }> => {
+    setDrivers((prev) => {
+      const updated = prev.filter((d) => d.id !== driverId && d.badge_id !== driverId);
+      try {
+        localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    try {
+      const res = await fetch(`/api/admin/drivers/${encodeURIComponent(driverId)}`, {
+        method: 'DELETE',
+      });
+      syncDrivers();
+      return { success: res.ok };
+    } catch (err: any) {
+      return { success: false, error: err.message };
     }
   };
 
@@ -700,6 +752,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         createBooking,
         assignDriverToBooking,
         addDriver,
+        updateDriver,
+        deleteDriver,
         syncDrivers,
         updateBookingStatus,
         addReportForBooking,
