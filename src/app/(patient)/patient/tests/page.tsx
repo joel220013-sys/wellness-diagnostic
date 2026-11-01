@@ -414,136 +414,150 @@ export default function PatientTestsPage() {
             return (
               <div
                 key={test.id}
-                className={`bg-white rounded-2xl p-5 border transition-all flex flex-col justify-between hover:shadow-soft ${
+                className={`bg-white rounded-3xl border transition-all flex flex-col justify-between overflow-hidden hover:shadow-soft-lg ${
                   isSelected 
                     ? 'border-botanical-500 ring-2 ring-botanical-500/20 shadow-soft-sm' 
                     : 'border-ivory-300 hover:border-botanical-300'
                 }`}
               >
-                <div className="space-y-3">
-                  {/* Category & Badge Row */}
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-botanical-50 text-botanical-700 border border-botanical-100">
-                      {test.category || 'Clinical Pathology'}
+                {/* Dark Header Banner (Reports in XX Hrs) - Verbatim like Pic 1 */}
+                <div className="bg-botanical-950 text-white px-5 py-2.5 flex items-center justify-between text-xs font-semibold">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-peach-400" />
+                    <span className="font-medium tracking-wide">
+                      {pkgInfo?.reportsIn || (test.turnaround_description ? `Reports In ${test.turnaround_description}` : 'Reports In 24-38 Hrs')}
                     </span>
-                    {discountPct > 0 && (
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-peach-100 text-peach-700 border border-peach-200">
-                        {discountPct}% OFF
-                      </span>
-                    )}
                   </div>
-
-                  {/* Title & Description */}
-                  <div>
-                    <h3 
-                      onClick={() => setOverviewTest(test)}
-                      className="text-base font-bold text-botanical-950 tracking-tight leading-snug cursor-pointer hover:text-botanical-700 transition-colors"
-                    >
-                      {test.name}
-                    </h3>
-                    <p className="text-xs text-botanical-800/75 mt-1 line-clamp-2 leading-relaxed">
-                      {test.description || 'Comprehensive laboratory diagnostic analysis across verified clinical vitals.'}
-                    </p>
-                  </div>
-
-                  {/* Includes Section with Show All Tests Link (Like Pic 1 & Pic 3) */}
-                  <div className="pt-2 border-t border-ivory-100">
-                    <div className="flex items-center justify-between text-xs mb-1.5">
-                      <span className="font-bold text-botanical-950">
-                        Includes {test.parameters_count || 1} Tests
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setOverviewTest(test)}
-                        className="text-xs font-bold text-botanical-600 hover:text-botanical-800 inline-flex items-center gap-0.5 hover:underline"
-                      >
-                        <span>Show All Tests</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Preview bullets like Pic 1 */}
-                    {pkgInfo && pkgInfo.previewBullets && (
-                      <div className="flex flex-wrap gap-1 mt-1 text-[11px] text-botanical-700/80">
-                        {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
-                          <span
-                            key={bIdx}
-                            className="px-2 py-0.5 rounded-md bg-ivory-50 border border-ivory-200 text-[10px] font-medium text-botanical-800"
-                          >
-                            • {bullet}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Parameters & Turnaround Details */}
-                  <div className="pt-2 border-t border-ivory-200 grid grid-cols-2 gap-2 text-[11px] text-botanical-800/80">
-                    <div className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-botanical-600 flex-shrink-0" />
-                      <span className="truncate">{test.parameters_count || 1} Parameters</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-peach-600 flex-shrink-0" />
-                      <span className="truncate">{test.turnaround_description || '8-12 Hours'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Droplet className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
-                      <span className="truncate">{test.sample_type || 'Blood Sample'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                      <span className="truncate font-semibold text-botanical-900">{fastingText}</span>
-                    </div>
-                  </div>
+                  {discountPct > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-peach-500 text-white text-[10px] font-extrabold tracking-tight">
+                      {discountPct}% OFF
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-botanical-200">
+                      {test.category || 'Health Package'}
+                    </span>
+                  )}
                 </div>
 
-                {/* Pricing & Add/Book Buttons */}
-                <div className="mt-5 pt-4 border-t border-ivory-200 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg font-extrabold text-botanical-950">
-                        ₹{Number(test.price).toLocaleString('en-IN')}
-                      </span>
-                      {originalPrice > test.price && (
-                        <span className="text-xs text-botanical-700/50 line-through">
-                          ₹{Math.round(originalPrice).toLocaleString('en-IN')}
+                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    {/* Title */}
+                    <div>
+                      <h3 
+                        onClick={() => setOverviewTest(test)}
+                        className="text-lg font-extrabold text-botanical-950 tracking-tight leading-snug cursor-pointer hover:text-botanical-700 transition-colors"
+                      >
+                        {test.name}
+                      </h3>
+                      <p className="text-xs text-botanical-800/80 mt-1.5 leading-relaxed line-clamp-3">
+                        {pkgInfo?.description || test.description || 'Comprehensive clinical laboratory screening evaluating vital metabolic and organ parameters.'}
+                      </p>
+                    </div>
+
+                    {/* Includes Section with Show All Tests Link (Like Pic 1 & Pic 3) */}
+                    <div className="pt-3 border-t border-ivory-200">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-extrabold text-botanical-950">
+                          Includes {pkgInfo?.parametersCount || test.parameters_count || 1} Tests
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setOverviewTest(test)}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-800 inline-flex items-center gap-0.5 hover:underline"
+                        >
+                          <span>Show All Tests</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Preview bullets like Pic 1 & Pic 3 */}
+                      {pkgInfo && pkgInfo.previewBullets && pkgInfo.previewBullets.length > 0 && (
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mt-1 text-[11px] text-botanical-800 font-medium">
+                          {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
+                            <div key={bIdx} className="flex items-center gap-1.5 truncate">
+                              <span className="text-botanical-400 font-bold">•</span>
+                              <span className="truncate">{bullet}</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <span className="block text-[10px] text-emerald-700 font-semibold">
-                      Free Doorstep Pickup
-                    </span>
+
+                    {/* Fasting & Sample pills row like Pic 1 */}
+                    <div className="pt-3 border-t border-ivory-200 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1">
+                          Fasting
+                        </span>
+                        <span className="px-3 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block">
+                          {pkgInfo?.fasting || fastingText}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1 text-right">
+                          Sample
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {(pkgInfo?.samples || (test.sample_type ? [test.sample_type] : ['Blood'])).map((s, sIdx) => (
+                            <span 
+                              key={sIdx} 
+                              className="px-2.5 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleSelectTest(test)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-soft-sm'
-                          : 'bg-ivory-100 hover:bg-botanical-50 text-botanical-900 border border-ivory-300'
-                      }`}
-                    >
-                      {isSelected ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-700" />
-                          <span>Added</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-3.5 h-3.5 text-botanical-600" />
-                          <span>Add</span>
-                        </>
-                      )}
-                    </button>
+                  {/* Pricing & Add/Book Buttons */}
+                  <div className="pt-4 border-t border-ivory-200 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl font-extrabold text-botanical-950 font-mono">
+                          ₹{Number(test.price).toLocaleString('en-IN')}
+                        </span>
+                        {originalPrice > test.price && (
+                          <span className="text-xs text-botanical-600/60 line-through">
+                            ₹{Math.round(originalPrice).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </div>
+                      <span className="block text-[10px] text-emerald-700 font-bold">
+                        Free Doorstep Pickup
+                      </span>
+                    </div>
 
-                    <button
-                      onClick={() => handleBookNow(test)}
-                      className="px-3.5 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white text-xs font-bold shadow-soft transition-all"
-                    >
-                      Book
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleSelectTest(test)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-soft-sm'
+                            : 'bg-ivory-100 hover:bg-botanical-50 text-botanical-900 border border-ivory-300'
+                        }`}
+                      >
+                        {isSelected ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>Added</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5 text-botanical-600" />
+                            <span>Add</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => handleBookNow(test)}
+                        className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white text-xs font-extrabold shadow-soft transition-all"
+                      >
+                        Book
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

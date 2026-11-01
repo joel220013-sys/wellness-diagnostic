@@ -46,104 +46,128 @@ export default function PackagesPage() {
             return (
               <div
                 key={pkg.id}
-                className="bg-white rounded-3xl p-6 border border-ivory-300 shadow-soft-card hover:shadow-soft flex flex-col justify-between transition-all"
+                className="bg-white rounded-3xl border border-ivory-300 shadow-soft-card hover:shadow-soft flex flex-col justify-between overflow-hidden transition-all"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    {pkg.popular ? (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-peach-100 text-peach-800 border border-peach-200">
-                        RECOMMENDED
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-botanical-50 text-botanical-800 border border-botanical-200">
-                        Health Package
-                      </span>
-                    )}
-                    <span className="text-[10px] font-bold text-botanical-600 bg-ivory-100 px-2 py-0.5 rounded-md">
-                      {pkg.turnaround_description || '24-38 Hrs'}
+                {/* Dark Header Banner (Reports in XX Hrs) - Verbatim like Pic 1 */}
+                <div className="bg-botanical-950 text-white px-5 py-2.5 flex items-center justify-between text-xs font-semibold">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-peach-400" />
+                    <span className="font-medium tracking-wide">
+                      {pkgInfo.reportsIn || pkg.turnaround_description || 'Reports In 24-38 Hrs'}
                     </span>
                   </div>
-
-                  <h3 
-                    onClick={() => setOverviewTest(pkg as any)}
-                    className="font-extrabold text-lg text-botanical-950 cursor-pointer hover:text-botanical-700 transition-colors"
-                  >
-                    {pkg.name}
-                  </h3>
-                  <p className="text-xs text-botanical-800/75 mt-1 leading-relaxed line-clamp-2">
-                    {pkg.description}
-                  </p>
-
-                  {/* Includes Section with Show All Tests Link */}
-                  <div className="my-3 pt-3 border-t border-ivory-100">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-botanical-950">
-                        Includes {pkg.parameters_count || 1} Tests
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setOverviewTest(pkg as any)}
-                        className="text-xs font-bold text-botanical-600 hover:text-botanical-800 inline-flex items-center gap-0.5 hover:underline"
-                      >
-                        <span>Show All Tests</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {pkgInfo.previewBullets && (
-                      <div className="flex flex-wrap gap-1 mt-1 text-[11px]">
-                        {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
-                          <span
-                            key={bIdx}
-                            className="px-2 py-0.5 rounded-md bg-ivory-50 border border-ivory-200 text-[10px] font-medium text-botanical-800"
-                          >
-                            • {bullet}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="my-3 p-3 rounded-2xl bg-ivory-50 border border-ivory-200 text-xs space-y-1">
-                    <div className="flex justify-between text-botanical-700">
-                      <span>Sample Type:</span>
-                      <span className="font-semibold text-botanical-900">{pkg.sample_type || 'Blood & Urine'}</span>
-                    </div>
-                    <div className="flex justify-between text-botanical-700">
-                      <span>Fasting:</span>
-                      <span className="font-semibold text-botanical-900">{fastingText}</span>
-                    </div>
-                  </div>
+                  {pkg.popular ? (
+                    <span className="px-2 py-0.5 rounded-full bg-peach-500 text-white text-[10px] font-extrabold tracking-tight">
+                      RECOMMENDED
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold text-botanical-200">
+                      Health Package
+                    </span>
+                  )}
                 </div>
 
-                <div className="pt-4 border-t border-ivory-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-2xl font-extrabold text-botanical-950 font-mono block">
-                      ₹{pkg.price.toLocaleString('en-IN')}
-                    </span>
-                    {Boolean(pkg.original_price && pkg.original_price > pkg.price) && (
-                      <span className="text-xs text-botanical-600/60 line-through">
-                        ₹{pkg.original_price?.toLocaleString('en-IN')}
-                      </span>
-                    )}
+                <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    {/* Title & Description */}
+                    <div>
+                      <h3 
+                        onClick={() => setOverviewTest(pkg as any)}
+                        className="font-extrabold text-lg sm:text-xl text-botanical-950 cursor-pointer hover:text-botanical-700 transition-colors"
+                      >
+                        {pkg.name}
+                      </h3>
+                      <p className="text-xs text-botanical-800/80 mt-1.5 leading-relaxed line-clamp-3">
+                        {pkgInfo.description || pkg.description}
+                      </p>
+                    </div>
+
+                    {/* Includes Section with Show All Tests Link (Verbatim like Pic 1 & Pic 3) */}
+                    <div className="pt-3 border-t border-ivory-200">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="font-extrabold text-botanical-950">
+                          Includes {pkgInfo.parametersCount || pkg.parameters_count || 1} Tests
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setOverviewTest(pkg as any)}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-800 inline-flex items-center gap-0.5 hover:underline"
+                        >
+                          <span>Show All Tests</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Preview Bullets like Pic 1 & Pic 3 */}
+                      {pkgInfo.previewBullets && pkgInfo.previewBullets.length > 0 && (
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 mt-1 text-[11px] text-botanical-800 font-medium">
+                          {pkgInfo.previewBullets.slice(0, 4).map((bullet, bIdx) => (
+                            <div key={bIdx} className="flex items-center gap-1.5 truncate">
+                              <span className="text-botanical-400 font-bold">•</span>
+                              <span className="truncate">{bullet}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fasting & Sample pills row verbatim like Pic 1 */}
+                    <div className="pt-3 border-t border-ivory-200 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1">
+                          Fasting
+                        </span>
+                        <span className="px-3 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block">
+                          {pkgInfo.fasting || fastingText}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1 text-right">
+                          Sample
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {(pkgInfo.samples || ['Blood', 'Urine']).map((s, sIdx) => (
+                            <span 
+                              key={sIdx}
+                              className="px-2.5 py-1 rounded-full bg-ivory-100 text-botanical-900 font-bold text-xs border border-ivory-300 inline-block"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setOverviewTest(pkg as any)}
-                      className="px-3 py-2 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-900 font-bold text-xs border border-ivory-300 transition-all"
-                    >
-                      Overview
-                    </button>
-                    <button
-                      onClick={() => {
-                        toggleSelectTest(pkg as any);
-                        router.push('/patient/book');
-                      }}
-                      className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
-                    >
-                      Book Now
-                    </button>
+                  <div className="pt-4 border-t border-ivory-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-2xl font-extrabold text-botanical-950 font-mono block">
+                        ₹{pkg.price.toLocaleString('en-IN')}
+                      </span>
+                      {Boolean(pkg.original_price && pkg.original_price > pkg.price) && (
+                        <span className="text-xs text-botanical-600/60 line-through">
+                          ₹{pkg.original_price?.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setOverviewTest(pkg as any)}
+                        className="px-3.5 py-2 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-900 font-bold text-xs border border-ivory-300 transition-all"
+                      >
+                        Overview
+                      </button>
+                      <button
+                        onClick={() => {
+                          toggleSelectTest(pkg as any);
+                          router.push('/patient/book');
+                        }}
+                        className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-extrabold text-xs shadow-soft transition-all"
+                      >
+                        Book Now
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
