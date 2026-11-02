@@ -31,6 +31,7 @@ const DEFAULT_COORDS = { lat: 14.47540, lng: 75.88510 };
 // Popular Davanagere localities for fast 1-click doorstep pin placement
 const DAVANAGERE_LOCALITIES = [
   { name: 'Davanagere Center', lat: 14.4644, lng: 75.9218 },
+  { name: 'Doddabati', lat: 14.5126, lng: 75.8732 },
   { name: 'MCC B Block', lat: 14.4721, lng: 75.9126 },
   { name: 'Vidyanagar', lat: 14.4532, lng: 75.9084 },
   { name: 'PJ Extension', lat: 14.4688, lng: 75.9255 },
@@ -253,7 +254,7 @@ export default function AddressMapPicker({
           // Update local state with rich extracted address
           if (parsed.addressLine1) setAddressLine1(parsed.addressLine1);
           if (parsed.addressLine2) setAddressLine2(parsed.addressLine2);
-          if (parsed.landmark) setLandmark(parsed.landmark);
+          if (parsed.landmark && !landmark) setLandmark(parsed.landmark);
           if (parsed.city) setCity(parsed.city);
           if (parsed.state) setState(parsed.state);
           if (parsed.postalCode) setPostalCode(parsed.postalCode);
@@ -283,10 +284,15 @@ export default function AddressMapPicker({
     }
   };
 
-  // Quick snap to Davanagere center
+  // Quick snap to Davanagere center (clears any erroneous out-of-town fields)
   const handleResetToDavanagere = async () => {
     setIspWarning(null);
     setGeoError(null);
+    setAddressLine1('');
+    setAddressLine2('Davanagere Central');
+    setCity('Davanagere');
+    setState('Karnataka');
+    setPostalCode('577002');
     updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
     await handleReverseGeocode(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
   };
@@ -295,6 +301,11 @@ export default function AddressMapPicker({
   const handleSelectQuickLocality = async (loc: { name: string; lat: number; lng: number }) => {
     setIspWarning(null);
     setGeoError(null);
+    setAddressLine1('');
+    setAddressLine2(loc.name);
+    setCity('Davanagere');
+    setState('Karnataka');
+    setPostalCode('577002');
     updateMapMarker(loc.lat, loc.lng);
     await handleReverseGeocode(loc.lat, loc.lng);
   };
@@ -401,23 +412,27 @@ export default function AddressMapPicker({
           Math.abs(coords.lat - DEFAULT_COORDS.lat) < 0.0001 && 
           Math.abs(coords.lng - DEFAULT_COORDS.lng) < 0.0001;
 
-        if (distance > 15 || isDefaultLocation) {
-          updateMapMarker(lat, lng);
-          await handleReverseGeocode(lat, lng);
-        } else {
-          // If already at the exact spot, gently highlight the pin without jumping the camera
-          if (markerRef.current) {
-            markerRef.current.openPopup();
-          }
-        }
-
-        // If distance from Davanagere is > 40 km, alert that desktop Wi-Fi IP was used (common for Bangalore ISP servers)
+        // Check if broadband router IP is far outside Davanagere (e.g. Bangalore ISP router ~257 km away)
         if (distFromDavanagere > 40000) {
+          // DO NOT jump to Bangalore! Keep the pin securely in Davanagere!
+          updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+          await handleReverseGeocode(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+
           setIspWarning(
-            `Detected location via your broadband provider's gateway (~${Math.round(distFromDavanagere / 1000)} km away). Desktop PCs and laptops lack satellite GPS chips and trace to your ISP's central server. If you are in Davanagere, click "Snap to Davanagere Center" or tap a locality below.`
+            `Your computer's broadband is routing through a Bengaluru ISP server (~${Math.round(distFromDavanagere / 1000)} km away). We automatically kept your pin in Davanagere so your address is not overridden. Use the search bar or tap a Davanagere area below.`
           );
         } else {
           setIspWarning(null);
+          // Inside Davanagere region (e.g. mobile phone GPS or local Wi-Fi)
+          if (distance > 15 || isDefaultLocation) {
+            updateMapMarker(lat, lng);
+            await handleReverseGeocode(lat, lng);
+          } else {
+            // If already at the exact spot, gently highlight the pin without jumping the camera
+            if (markerRef.current) {
+              markerRef.current.openPopup();
+            }
+          }
         }
 
         setIsGeolocating(false);
