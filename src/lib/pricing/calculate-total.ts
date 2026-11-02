@@ -16,14 +16,11 @@ export function calculateTotal(items: Array<{ price: number; quantity?: number }
       ? 0
       : PRICING_RULES.standardCollectionFee;
 
-  const discount =
-    items.length >= 2
-      ? Math.round((subtotal * PRICING_RULES.bundleDiscountPercent) / 100)
-      : 0;
+  const discount = 0; // Permanently removed multi-test bundle discount
 
   const taxAmount = 0; // Clinical pathology healthcare services are exempt from GST
 
-  const totalAmount = Math.max(0, subtotal + collectionFee - discount + taxAmount);
+  const totalAmount = Math.max(0, subtotal + collectionFee + taxAmount);
 
   return {
     subtotal,

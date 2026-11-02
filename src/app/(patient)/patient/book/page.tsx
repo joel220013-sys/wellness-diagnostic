@@ -858,12 +858,6 @@ export default function BookCollectionPage() {
                 <span>Diagnostic Catalog Subtotal:</span>
                 <span className="font-semibold text-botanical-950">₹{pricing.subtotal}</span>
               </div>
-              {pricing.discount > 0 && (
-                <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Multi-Test Bundle Discount (10%):</span>
-                  <span>- ₹{pricing.discount}</span>
-                </div>
-              )}
               <div className="flex justify-between text-botanical-700">
                 <span>Doorstep Collection Fee:</span>
                 {pricing.collectionFee === 0 ? (

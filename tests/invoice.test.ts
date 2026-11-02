@@ -19,7 +19,7 @@ describe('Authoritative Server-Side Pricing & Invoicing (INR ₹)', () => {
     expect(pricing.totalAmount).toBe(1999);
   });
 
-  test('applies 10% multi-test bundle discount for 2 or more tests', () => {
+  test('charges authoritative full price without bundle discount for 2 or more tests', () => {
     // Two tests: ₹600 + ₹400 = ₹1000 subtotal
     const pricing = calculateTotal([
       { price: 600, quantity: 1 },
@@ -27,7 +27,7 @@ describe('Authoritative Server-Side Pricing & Invoicing (INR ₹)', () => {
     ]);
     expect(pricing.subtotal).toBe(1000);
     expect(pricing.collectionFee).toBe(0); // >= 999
-    expect(pricing.discount).toBe(100); // 10% of 1000
-    expect(pricing.totalAmount).toBe(900);
+    expect(pricing.discount).toBe(0); // Permanently removed bundle discount
+    expect(pricing.totalAmount).toBe(1000);
   });
 });

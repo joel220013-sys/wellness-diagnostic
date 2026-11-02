@@ -78,11 +78,11 @@ export function calculateOrderPricing(
   // Policy: Free home collection for orders >= ₹999, else ₹150 collection fee
   const collectionFee = subtotal >= 999 || subtotal === 0 ? 0 : 150;
   
-  // Package bundling discount (10% off when 2+ tests selected)
-  const discount = items.length >= 2 ? Math.round(subtotal * 0.1) : 0;
+  // Permanently removed multi-test bundle discount
+  const discount = 0;
   
   const tax = 0; // Clinical diagnostic healthcare services are GST-exempt
-  const total = Math.max(0, subtotal + collectionFee - discount);
+  const total = Math.max(0, subtotal + collectionFee);
 
   return {
     subtotal,

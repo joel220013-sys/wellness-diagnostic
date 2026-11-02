@@ -19,7 +19,7 @@ export const BRAND = {
 export const PRICING_RULES = {
   freeCollectionThreshold: 999, // INR
   standardCollectionFee: 150,   // INR
-  bundleDiscountPercent: 10,    // 10% for 2+ tests
+  bundleDiscountPercent: 0,     // Permanently removed bundle discount
   taxRate: 0,                   // Clinical pathology is GST exempt
 };
 
