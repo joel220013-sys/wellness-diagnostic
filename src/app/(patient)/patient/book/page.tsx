@@ -26,6 +26,7 @@ import { calculateOrderPricing } from '@/services/pricingService';
 import AddressMapPickerWrapper from '@/components/map/AddressMapPickerWrapper';
 import { AddressInput } from '@/lib/validations';
 import { DiagnosticTest } from '@/types';
+import CategoryPillIcon from '@/components/common/CategoryPillIcon';
 
 const BOOK_CATEGORIES = [
   'All',
@@ -465,22 +466,26 @@ export default function BookCollectionPage() {
               )}
             </div>
 
-            {/* Category horizontal scrolling pills */}
+            {/* Category horizontal scrolling pills with Pictures/Icons */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {BOOK_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setTestCategory(cat)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                    testCategory === cat
-                      ? 'bg-botanical-500 text-white shadow-soft'
-                      : 'bg-white text-botanical-800 border border-ivory-300 hover:bg-ivory-100'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+              {BOOK_CATEGORIES.map((cat) => {
+                const isSelected = testCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setTestCategory(cat)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shadow-soft-xs ${
+                      isSelected
+                        ? 'bg-botanical-500 text-white shadow-soft-sm scale-[1.02]'
+                        : 'bg-white text-botanical-800 border border-ivory-300 hover:bg-ivory-100 hover:border-botanical-300'
+                    }`}
+                  >
+                    <CategoryPillIcon category={cat} isSelected={isSelected} />
+                    <span>{cat}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

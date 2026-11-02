@@ -27,6 +27,7 @@ import { DiagnosticTest } from '@/types';
 import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
 import { getPackageDetails } from '@/data/package-details';
 import MobileBottomCartBar from '@/components/cart/MobileBottomCartBar';
+import CategoryPillIcon from '@/components/common/CategoryPillIcon';
 
 export default function PatientTestsPage() {
   const router = useRouter();
@@ -385,21 +386,25 @@ export default function PatientTestsPage() {
           </div>
         </div>
 
-        {/* Category Pills */}
+        {/* Category Pills with Pictures/Icons */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-botanical-500 text-white shadow-soft-sm'
-                  : 'bg-ivory-100 text-botanical-800 hover:bg-ivory-200 border border-ivory-300'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shadow-soft-xs ${
+                  isSelected
+                    ? 'bg-botanical-500 text-white shadow-soft-sm scale-[1.02]'
+                    : 'bg-ivory-100 text-botanical-800 hover:bg-ivory-200 border border-ivory-300 hover:border-botanical-300'
+                }`}
+              >
+                <CategoryPillIcon category={cat} isSelected={isSelected} />
+                <span>{cat}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
