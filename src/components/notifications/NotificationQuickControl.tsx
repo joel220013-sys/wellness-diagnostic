@@ -10,6 +10,7 @@ import {
   Sparkles,
   Smartphone
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { 
   playOrderChime, 
   requestNotificationPermission, 
@@ -18,20 +19,31 @@ import {
   setSoundAlertsEnabled,
   triggerOrderNotification
 } from '@/lib/notificationService';
+import { registerPushDevice } from '@/lib/pushSubscriptionService';
 
 export default function NotificationQuickControl() {
+  const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [testTriggered, setTestTriggered] = useState(false);
 
   useEffect(() => {
-    setPermission(getNotificationPermissionState());
+    const currentPerm = getNotificationPermissionState();
+    setPermission(currentPerm);
     setSoundEnabled(isSoundAlertsEnabled());
-  }, []);
+
+    // Auto-register device if permission is already granted on this phone/browser
+    if (currentPerm === 'granted') {
+      registerPushDevice({ userId: user?.id, role: user?.role }).catch(() => {});
+    }
+  }, [user]);
 
   const handleRequestPermission = async () => {
     const res = await requestNotificationPermission();
     setPermission(res);
+    if (res === 'granted') {
+      await registerPushDevice({ userId: user?.id, role: user?.role });
+    }
   };
 
   const handleToggleSound = () => {
@@ -43,16 +55,37 @@ export default function NotificationQuickControl() {
     }
   };
 
-  const handleTestChime = () => {
+  const handleTestChime = async () => {
     setTestTriggered(true);
+
+    // 1. Local chime test
     triggerOrderNotification({
       id: `test_${Date.now()}`,
       reference: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
-      patientName: 'Diagnostic Sample Patient',
-      totalAmount: 1300,
-      testName: 'Vitamin D & Lipid Profile',
-      timeSlot: '07:30 AM – 09:00 AM'
+      patientName: 'Mobile Screen Alert Test',
+      totalAmount: 1499,
+      testName: 'Aarogyam Profile Test',
+      timeSlot: 'Immediate Test'
     }, { broadcast: false, force: true });
+
+    // 2. Cloud Web Push dispatch to physical phone screens
+    try {
+      await fetch('/api/push/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: `test_${Date.now()}`,
+          reference: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+          patientName: 'Staff Mobile Verification',
+          phone: '+91 98111 22334',
+          totalAmount: 1499,
+          testName: 'Mobile Screen Push Notification',
+          timeSlot: 'Immediate Dispatch Test',
+          targetUrl: '/admin/orders',
+        }),
+      });
+    } catch {}
+
     setTimeout(() => setTestTriggered(false), 2500);
   };
 

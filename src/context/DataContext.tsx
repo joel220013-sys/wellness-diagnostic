@@ -421,6 +421,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
+    // Dispatch real Cloud Web Push to Admin & Phlebotomist mobile phone screens
+    try {
+      fetch('/api/push/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: newBooking.id,
+          reference: newBooking.booking_reference,
+          patientName: newBooking.patient_name,
+          phone: newBooking.patient_phone,
+          totalAmount: newBooking.total_amount,
+          testName: (newBooking.tests && newBooking.tests.length > 0)
+            ? newBooking.tests[0].name
+            : (newBooking.items?.[0]?.item_name || 'Health Diagnostic Checkup'),
+          timeSlot: newBooking.scheduled_slot,
+          targetUrl: '/admin/orders',
+        }),
+      }).catch(() => {});
+    } catch {}
+
     clearSelectedTests();
     return newBooking;
   };
