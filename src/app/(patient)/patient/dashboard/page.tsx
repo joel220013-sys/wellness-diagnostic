@@ -32,6 +32,7 @@ import InvoiceModal from '@/components/invoices/InvoiceModal';
 import { LabReport, Invoice, Booking, DiagnosticTest } from '@/types';
 import PackageOverviewDrawer from '@/components/packages/PackageOverviewDrawer';
 import MobileBottomCartBar from '@/components/cart/MobileBottomCartBar';
+import PromoBannerCarousel from '@/components/home/PromoBannerCarousel';
 
 export default function PatientDashboardPage() {
   const { user, refreshCurrentUser } = useAuth();
@@ -224,6 +225,14 @@ export default function PatientDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Special Health Package Offers Carousel (Thyrocare Offers with Peeking Animation) */}
+      <PromoBannerCarousel
+        title="Special Health Package Offers"
+        badge="Special Offers"
+        subtitle="Full body health checkup profiles at discounted special offer pricing with doorstep collection"
+        viewAllHref="/patient/tests"
+      />
 
       {/* Quick Stat Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">

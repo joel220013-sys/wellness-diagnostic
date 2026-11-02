@@ -178,21 +178,27 @@ export default function PackageOverviewDrawer({
                 Tests included in this package <span className="text-botanical-600">{totalCount} Tests</span>
               </h3>
               
-              {/* Optional Flat vs Grouped toggle */}
+              {/* Flat vs Grouped By Organ toggle with Vivid Orange Selection */}
               {groupedProfiles.length > 1 && (
-                <div className="inline-flex rounded-lg bg-ivory-100 p-0.5 border border-ivory-300 text-[10px] font-bold">
+                <div className="inline-flex rounded-xl bg-orange-50 p-1 border border-orange-200 text-xs font-bold shadow-soft-xs">
                   <button
+                    type="button"
                     onClick={() => setViewMode('flat')}
-                    className={`px-2 py-0.5 rounded-md transition-all ${
-                      viewMode === 'flat' ? 'bg-white shadow-soft-xs text-botanical-950' : 'text-botanical-600'
+                    className={`px-3 py-1 rounded-lg transition-all duration-200 ${
+                      viewMode === 'flat' 
+                        ? 'bg-orange-500 text-white shadow-md font-extrabold scale-[1.02]' 
+                        : 'text-orange-950 hover:text-orange-600 font-semibold hover:bg-orange-100/60'
                     }`}
                   >
                     All Tests
                   </button>
                   <button
+                    type="button"
                     onClick={() => setViewMode('grouped')}
-                    className={`px-2 py-0.5 rounded-md transition-all ${
-                      viewMode === 'grouped' ? 'bg-white shadow-soft-xs text-botanical-950' : 'text-botanical-600'
+                    className={`px-3 py-1 rounded-lg transition-all duration-200 ${
+                      viewMode === 'grouped' 
+                        ? 'bg-orange-500 text-white shadow-md font-extrabold scale-[1.02]' 
+                        : 'text-orange-950 hover:text-orange-600 font-semibold hover:bg-orange-100/60'
                     }`}
                   >
                     By Organ ({groupedProfiles.length})

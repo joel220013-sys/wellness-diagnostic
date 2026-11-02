@@ -3,76 +3,88 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
-interface BannerItem {
+export interface BannerItem {
   id: string;
   title: string;
   src: string;
   alt: string;
   href: string;
-  badge: string;
-  offer: string;
-  testsCount: string;
-  price1: string;
-  price2: string;
+  badge?: string;
+  offer?: string;
+  testsCount?: string;
+  price1?: string;
+  price2?: string;
 }
 
-const BANNERS: BannerItem[] = [
+export const SPECIAL_OFFER_BANNERS: BannerItem[] = [
   {
-    id: 'aarogyam-x',
-    title: 'Aarogyam X With UTSH',
-    src: '/banners/banner-aarogyam-x.png',
-    alt: 'Diwali Special Buy 1 Get 1 FREE - Aarogyam X With UTSH (139 Tests)',
-    href: '/packages',
-    badge: 'Diwali Special',
-    offer: 'Buy 1 Get 1 FREE',
-    testsCount: '139 Tests',
-    price1: '₹5,524',
-    price2: '₹8,499',
+    id: 'women-basic-profile',
+    title: 'Women Basic Profile With UTSH',
+    src: '/banners/banner-women-basic-profile.jpg',
+    alt: 'Women Basic Profile With UTSH (73 Parameters) - Offer Price ₹1,599 (MRP ₹3,400)',
+    href: '/patient/tests',
+    badge: 'Special Offer',
+    offer: 'Special Offer Price',
+    testsCount: '73 Parameters',
+    price1: '₹1,599',
+    price2: '₹3,400',
+  },
+  {
+    id: 'aarogyam-c-plus',
+    title: 'Aarogyam C Plus Profile With UTSH',
+    src: '/banners/banner-aarogyam-c-plus.jpg',
+    alt: 'Aarogyam C Plus Profile With UTSH (97 Parameters) - Special Offer Price ₹1,599 (MRP ₹3,265)',
+    href: '/patient/tests',
+    badge: 'Special Offer',
+    offer: 'Special Offer Price',
+    testsCount: '97 Parameters',
+    price1: '₹1,599',
+    price2: '₹3,265',
+  },
+  {
+    id: 'aarogyam-c-pro',
+    title: 'Aarogyam C Pro Package',
+    src: '/banners/banner-aarogyam-c-pro.jpg',
+    alt: 'Aarogyam C Pro Package (71 Parameters) - Special Offer Price ₹1,399 (MRP ₹2,999)',
+    href: '/patient/tests',
+    badge: 'Special Offer',
+    offer: 'Special Offer Price',
+    testsCount: '71 Parameters',
+    price1: '₹1,399',
+    price2: '₹2,999',
+  },
+  {
+    id: 'aarogyam-d-pro',
+    title: 'Aarogyam D Pro With UTSH',
+    src: '/banners/banner-aarogyam-d-pro.jpg',
+    alt: 'Aarogyam D Pro With UTSH (86 Parameters) - Special Offer Price ₹2,199 (MRP ₹4,499)',
+    href: '/patient/tests',
+    badge: 'Special Offer',
+    offer: 'Special Offer Price',
+    testsCount: '86 Parameters',
+    price1: '₹2,199',
+    price2: '₹4,499',
   },
   {
     id: 'healthy-2026',
     title: 'Healthy 2026 Package',
     src: '/banners/banner-healthy-2026.png',
-    alt: 'Diwali Special Buy 1 Get 1 FREE - Healthy 2026 Package (106 Tests)',
-    href: '/packages',
-    badge: 'Diwali Special',
-    offer: 'Buy 1 Get 1 FREE',
+    alt: 'Healthy 2026 Package (106 Tests) - Special Offer Price ₹1,759',
+    href: '/patient/tests',
+    badge: 'Seasonal Special',
+    offer: 'Special Offer',
     testsCount: '106 Tests',
     price1: '₹1,759',
     price2: '₹3,000',
   },
   {
-    id: 'aarogyam-xl',
-    title: 'Aarogyam XL With UTSH',
-    src: '/banners/banner-aarogyam-xl.png',
-    alt: 'Diwali Special Buy 1 Get 1 FREE - Aarogyam XL With UTSH (150 Tests)',
-    href: '/packages',
-    badge: 'Diwali Special',
-    offer: 'Buy 1 Get 1 FREE',
-    testsCount: '150 Tests',
-    price1: '₹6,499',
-    price2: '₹9,999',
-  },
-  {
-    id: 'healthy-2026-repeat',
-    title: 'Healthy 2026 Package',
-    src: '/banners/banner-healthy-2026.png',
-    alt: 'Diwali Special Buy 1 Get 1 FREE - Healthy 2026 Package (106 Tests)',
-    href: '/packages',
-    badge: 'Diwali Special',
-    offer: 'Buy 1 Get 1 FREE',
-    testsCount: '106 Tests',
-    price1: '₹1,759',
-    price2: '₹3,000',
-  },
-  {
-    id: 'aarogyam-x-repeat',
+    id: 'aarogyam-x',
     title: 'Aarogyam X With UTSH',
     src: '/banners/banner-aarogyam-x.png',
     alt: 'Diwali Special Buy 1 Get 1 FREE - Aarogyam X With UTSH (139 Tests)',
-    href: '/packages',
+    href: '/patient/tests',
     badge: 'Diwali Special',
     offer: 'Buy 1 Get 1 FREE',
     testsCount: '139 Tests',
@@ -81,14 +93,29 @@ const BANNERS: BannerItem[] = [
   },
 ];
 
-export default function PromoBannerCarousel() {
-  // Start at index 1 (2/5) just like in the user's reference picture!
-  const [currentIndex, setCurrentIndex] = useState(1);
+interface PromoBannerCarouselProps {
+  banners?: BannerItem[];
+  title?: string;
+  badge?: string;
+  subtitle?: string;
+  viewAllHref?: string;
+}
+
+export default function PromoBannerCarousel({
+  banners = SPECIAL_OFFER_BANNERS,
+  title,
+  badge,
+  subtitle,
+  viewAllHref = '/patient/tests',
+}: PromoBannerCarouselProps = {}) {
+  // Start at index 0 or 1
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  const total = BANNERS.length;
+  const activeBanners = banners && banners.length > 0 ? banners : SPECIAL_OFFER_BANNERS;
+  const total = activeBanners.length;
 
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % total);
@@ -134,7 +161,7 @@ export default function PromoBannerCarousel() {
 
   return (
     <section
-      className="relative w-full my-6 sm:my-10 select-none overflow-hidden"
+      className="relative w-full my-4 sm:my-8 select-none overflow-hidden"
       aria-label="Thyrocare Special Health Package Offers"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -142,6 +169,37 @@ export default function PromoBannerCarousel() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Optional Top Section Header */}
+      {(title || badge) && (
+        <div className="max-w-7xl mx-auto px-4 mb-3 flex items-center justify-between gap-4">
+          <div>
+            {badge && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-orange-100 text-orange-900 border border-orange-200 mb-1.5 shadow-soft-xs">
+                <Sparkles className="w-3.5 h-3.5 text-orange-600" />
+                <span>{badge}</span>
+              </span>
+            )}
+            {title && (
+              <h2 className="text-xl sm:text-2xl font-extrabold text-botanical-950 tracking-tight">
+                {title}
+              </h2>
+            )}
+            {subtitle && (
+              <p className="text-xs sm:text-sm text-botanical-700/80 mt-0.5">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <Link
+            href={viewAllHref}
+            className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline underline-offset-4 flex items-center gap-1 flex-shrink-0"
+          >
+            <span>View All Packages</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* Outer wrapper with edge shadow/fade and arrows */}
       <div className="relative max-w-7xl mx-auto px-2 sm:px-4">
         
@@ -166,17 +224,14 @@ export default function PromoBannerCarousel() {
         </button>
 
         {/* Multi-Card Peeking Carousel Track */}
-        <div className="w-full overflow-hidden py-3">
+        <div className="w-full overflow-hidden py-2 sm:py-3">
           <div
             className="flex items-center transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
             style={{
-              // Center the current card:
-              // On desktop: card width is 62%, gap is 3%, center offset is (100 - 62)/2 = 19%
-              // Formula: calc(19% - (index * 65%))
               transform: `translateX(calc(var(--carousel-offset) - (${currentIndex} * var(--carousel-step))))`,
             }}
           >
-            {BANNERS.map((banner, index) => {
+            {activeBanners.map((banner, index) => {
               const isActive = index === currentIndex;
               return (
                 <div
@@ -190,17 +245,17 @@ export default function PromoBannerCarousel() {
                     href={banner.href}
                     className={`group relative block w-full rounded-2xl sm:rounded-3xl overflow-hidden border transition-all duration-500 ${
                       isActive
-                        ? 'border-red-200/70 shadow-soft-xl scale-100 opacity-100 ring-2 ring-red-400/20'
+                        ? 'border-orange-300 shadow-soft-xl scale-100 opacity-100 ring-2 ring-orange-400/30'
                         : 'border-gray-200/60 shadow-soft-sm scale-[0.94] opacity-80 hover:opacity-95'
                     }`}
                   >
-                    <div className="relative w-full aspect-[1048/482] bg-amber-50/50">
+                    <div className="relative w-full aspect-[16/9.5] sm:aspect-[16/9.2] bg-amber-50/50">
                       <Image
                         src={banner.src}
                         alt={banner.alt}
                         fill
-                        priority={index === 1}
-                        sizes="(max-width: 640px) 88vw, (max-width: 1024px) 72vw, 750px"
+                        priority={index === 0 || index === 1}
+                        sizes="(max-width: 640px) 88vw, (max-width: 1024px) 72vw, 780px"
                         className="object-cover rounded-2xl sm:rounded-3xl transition-transform duration-300 group-hover:scale-[1.01]"
                       />
                     </div>
@@ -220,13 +275,13 @@ export default function PromoBannerCarousel() {
 
           {/* Dots Indicator with animated active pill */}
           <div className="flex items-center gap-1.5">
-            {BANNERS.map((_, idx) => (
+            {activeBanners.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => goToSlide(idx)}
                 className={`transition-all duration-300 rounded-full h-1.5 focus:outline-none ${
                   idx === currentIndex
-                    ? 'w-7 bg-slate-700'
+                    ? 'w-7 bg-orange-500'
                     : 'w-2 bg-slate-300 hover:bg-slate-400'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
