@@ -25,8 +25,20 @@ import { parseNominatimAddress, ParsedAddress } from '@/lib/geoAddress';
 export type { ParsedAddress };
 
 
-// Default initial coordinates: Davanagere / Karnataka / Central (or Delhi NCR fallback)
+// Default initial coordinates: Davanagere / Karnataka
 const DEFAULT_COORDS = { lat: 14.47540, lng: 75.88510 };
+
+// Popular Davanagere localities for fast 1-click doorstep pin placement
+const DAVANAGERE_LOCALITIES = [
+  { name: 'Davanagere Center', lat: 14.4644, lng: 75.9218 },
+  { name: 'MCC B Block', lat: 14.4721, lng: 75.9126 },
+  { name: 'Vidyanagar', lat: 14.4532, lng: 75.9084 },
+  { name: 'PJ Extension', lat: 14.4688, lng: 75.9255 },
+  { name: 'SS Layout', lat: 14.4501, lng: 75.9189 },
+  { name: 'Kuvempu Nagar', lat: 14.4820, lng: 75.9110 },
+  { name: 'Hadadi Road', lat: 14.4602, lng: 75.9015 },
+  { name: 'Dental College Area', lat: 14.4447, lng: 75.9168 },
+];
 
 /**
  * Calculates straight-line distance in meters between two GPS coordinates (Haversine formula).
@@ -65,6 +77,7 @@ export default function AddressMapPicker({
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [ispWarning, setIspWarning] = useState<string | null>(null);
   const [isConfirmedFeedback, setIsConfirmedFeedback] = useState(false);
 
   const [reverseGeocodedText, setReverseGeocodedText] = useState(
@@ -270,58 +283,90 @@ export default function AddressMapPicker({
     }
   };
 
-  // Search Address with Geocoding and auto-population
+  // Quick snap to Davanagere center
+  const handleResetToDavanagere = async () => {
+    setIspWarning(null);
+    setGeoError(null);
+    updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+    await handleReverseGeocode(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+  };
+
+  // Quick snap to selected Davanagere neighborhood
+  const handleSelectQuickLocality = async (loc: { name: string; lat: number; lng: number }) => {
+    setIspWarning(null);
+    setGeoError(null);
+    updateMapMarker(loc.lat, loc.lng);
+    await handleReverseGeocode(loc.lat, loc.lng);
+  };
+
+  // Search Address with Geocoding and auto-population (biased to Davanagere / Karnataka)
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
     setGeoError(null);
+    setIspWarning(null);
 
     try {
-      const res = await fetch(
+      const q = searchQuery.trim();
+      const hasCity = /davanagere|davangere|bangalore|bengaluru|hubli|shivamogga|karnataka/i.test(q);
+      const queryWithCity = hasCity ? q : `${q}, Davanagere, Karnataka`;
+
+      // 1. Search with Davanagere viewbox priority & India countrycode
+      let res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery
-        )}&addressdetails=1&limit=1`,
+          queryWithCity
+        )}&countrycodes=in&viewbox=75.7,14.6,76.1,14.3&bounded=0&addressdetails=1&limit=5`,
         { headers: { 'User-Agent': 'WellnessDiagnosticApp/1.0' } }
       );
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          const item = data[0];
-          const lat = parseFloat(item.lat);
-          const lng = parseFloat(item.lon);
-          updateMapMarker(lat, lng);
-          setReverseGeocodedText(item.display_name);
+      let data = res.ok ? await res.json() : [];
 
-          const parsed = parseNominatimAddress(item);
+      // 2. Fallback to general Karnataka search if queryWithCity had 0 matches
+      if ((!data || data.length === 0) && !hasCity) {
+        res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            `${q}, Karnataka, India`
+          )}&countrycodes=in&addressdetails=1&limit=5`,
+          { headers: { 'User-Agent': 'WellnessDiagnosticApp/1.0' } }
+        );
+        data = res.ok ? await res.json() : [];
+      }
 
-          if (parsed.addressLine1) setAddressLine1(parsed.addressLine1);
-          if (parsed.addressLine2) setAddressLine2(parsed.addressLine2);
-          if (parsed.landmark) setLandmark(parsed.landmark);
-          if (parsed.city) setCity(parsed.city);
-          if (parsed.state) setState(parsed.state);
-          if (parsed.postalCode) setPostalCode(parsed.postalCode);
+      if (data && data.length > 0) {
+        const item = data[0];
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon);
+        updateMapMarker(lat, lng);
+        setReverseGeocodedText(item.display_name);
 
-          onConfirmAddress({
-            label,
-            recipient_name: recipientName || initialAddress?.recipient_name || '',
-            recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
-            address_line_1: parsed.addressLine1 || addressLine1,
-            address_line_2: parsed.addressLine2 || addressLine2 || undefined,
-            landmark: parsed.landmark || landmark || undefined,
-            city: parsed.city || city,
-            state: parsed.state || state || undefined,
-            postal_code: parsed.postalCode || postalCode,
-            latitude: lat,
-            longitude: lng,
-            access_instructions: accessInstructions || undefined,
-            is_default: isDefault,
-          });
-        } else {
-          setGeoError('Location not found. Please try another search term or click directly on the map.');
-        }
+        const parsed = parseNominatimAddress(item);
+
+        if (parsed.addressLine1) setAddressLine1(parsed.addressLine1);
+        if (parsed.addressLine2) setAddressLine2(parsed.addressLine2);
+        if (parsed.landmark) setLandmark(parsed.landmark);
+        if (parsed.city) setCity(parsed.city);
+        if (parsed.state) setState(parsed.state);
+        if (parsed.postalCode) setPostalCode(parsed.postalCode);
+
+        onConfirmAddress({
+          label,
+          recipient_name: recipientName || initialAddress?.recipient_name || '',
+          recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
+          address_line_1: parsed.addressLine1 || addressLine1,
+          address_line_2: parsed.addressLine2 || addressLine2 || undefined,
+          landmark: parsed.landmark || landmark || undefined,
+          city: parsed.city || city,
+          state: parsed.state || state || undefined,
+          postal_code: parsed.postalCode || postalCode,
+          latitude: lat,
+          longitude: lng,
+          access_instructions: accessInstructions || undefined,
+          is_default: isDefault,
+        });
+      } else {
+        setGeoError('Location not found. Please try another search term or click directly on the map.');
       }
     } catch {
       setGeoError('Unable to reach geocoding service. Please click on the map to place your pin.');
@@ -330,7 +375,7 @@ export default function AddressMapPicker({
     }
   };
 
-  // Use Browser Geolocation with Anti-Jitter Filter and 60-Second Position Cache
+  // Use Browser Geolocation with Anti-Jitter Filter and Desktop ISP Gateway Detection
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       setGeoError('Geolocation is not supported by your browser.');
@@ -341,11 +386,13 @@ export default function AddressMapPicker({
 
     setIsGeolocating(true);
     setGeoError(null);
+    setIspWarning(null);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+        const distFromDavanagere = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, lat, lng);
 
         // Anti-jitter check: If newly read position is within 15 meters of existing pin,
         // keep pin steady to prevent annoying jumps caused by Wi-Fi tower signal fluctuations
@@ -363,6 +410,16 @@ export default function AddressMapPicker({
             markerRef.current.openPopup();
           }
         }
+
+        // If distance from Davanagere is > 40 km, alert that desktop Wi-Fi IP was used (common for Bangalore ISP servers)
+        if (distFromDavanagere > 40000) {
+          setIspWarning(
+            `Detected location via your broadband provider's gateway (~${Math.round(distFromDavanagere / 1000)} km away). Desktop PCs and laptops lack satellite GPS chips and trace to your ISP's central server. If you are in Davanagere, click "Snap to Davanagere Center" or tap a locality below.`
+          );
+        } else {
+          setIspWarning(null);
+        }
+
         setIsGeolocating(false);
       },
       (error) => {
@@ -416,20 +473,33 @@ export default function AddressMapPicker({
           </h3>
         </div>
 
-        {/* Quick Location Action */}
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          disabled={isGeolocating}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-botanical-50 text-botanical-700 hover:bg-botanical-100 border border-botanical-200 text-xs font-bold transition-all shadow-soft-sm disabled:opacity-50"
-        >
-          {isGeolocating ? (
-            <Loader2 className="w-4 h-4 animate-spin text-botanical-600" />
-          ) : (
-            <Navigation className="w-4 h-4 text-botanical-600" />
-          )}
-          <span>Use My Current Location</span>
-        </button>
+        {/* Quick Location Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleResetToDavanagere}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-peach-50 text-botanical-950 hover:bg-peach-100 border border-peach-200 text-xs font-bold transition-all shadow-soft-xs"
+            title="Reset pin to Davanagere city center"
+          >
+            <MapPin className="w-3.5 h-3.5 text-peach-600" />
+            <span>Davanagere Center</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={isGeolocating}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-botanical-50 text-botanical-700 hover:bg-botanical-100 border border-botanical-200 text-xs font-bold transition-all shadow-soft-sm disabled:opacity-50"
+            title="Detect GPS location (Mobile phones provide high accuracy; PC/laptops use Wi-Fi IP)"
+          >
+            {isGeolocating ? (
+              <Loader2 className="w-4 h-4 animate-spin text-botanical-600" />
+            ) : (
+              <Navigation className="w-4 h-4 text-botanical-600" />
+            )}
+            <span>Use My Current Location</span>
+          </button>
+        </div>
       </div>
 
       {/* Responsive Desktop 2-Column Split: Map on Left (7 cols), Form on Right (5 cols) */}
@@ -460,12 +530,61 @@ export default function AddressMapPicker({
               </button>
             </form>
 
+            {/* ISP Broadband Gateway Warning Banner */}
+            {ispWarning && (
+              <div className="mt-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2 animate-in slide-in-from-top duration-200">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">
+                    <strong>Broadband / Wi-Fi Provider Location Detected:</strong> {ispWarning}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 pl-6">
+                  <button
+                    type="button"
+                    onClick={handleResetToDavanagere}
+                    className="px-3 py-1 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft-xs flex items-center gap-1.5 transition-all"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>Snap to Davanagere Center</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIspWarning(null)}
+                    className="px-2.5 py-1 text-xs text-amber-800 hover:underline font-semibold"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
+
             {geoError && (
-              <div className="mt-2.5 p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <div className="mt-2.5 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                 <span>{geoError}</span>
               </div>
             )}
+
+            {/* Quick Davanagere Neighborhood Chips */}
+            <div className="mt-2.5 pt-2 border-t border-ivory-200/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1.5">
+                Quick-Pick Davanagere Areas:
+              </span>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {DAVANAGERE_LOCALITIES.map((loc) => (
+                  <button
+                    key={loc.name}
+                    type="button"
+                    onClick={() => handleSelectQuickLocality(loc)}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ivory-100 hover:bg-ivory-200 border border-ivory-300 text-botanical-900 whitespace-nowrap transition-colors flex items-center gap-1 hover:border-botanical-400 active:scale-95"
+                  >
+                    <MapPin className="w-3 h-3 text-peach-500" />
+                    <span>{loc.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Leaflet Interactive Map Canvas */}
