@@ -79,30 +79,6 @@ export const SPECIAL_OFFER_BANNERS: BannerItem[] = [
     price1: '₹2,199',
     price2: '₹4,499',
   },
-  {
-    id: 'healthy-2026',
-    title: 'Healthy 2026 Package',
-    src: '/banners/banner-healthy-2026.png',
-    alt: 'Healthy 2026 Package (106 Tests) - Special Offer Price ₹1,759',
-    href: '/patient/tests',
-    badge: 'Seasonal Special',
-    offer: 'Special Offer',
-    testsCount: '106 Tests',
-    price1: '₹1,759',
-    price2: '₹3,000',
-  },
-  {
-    id: 'aarogyam-x',
-    title: 'Aarogyam X With UTSH',
-    src: '/banners/banner-aarogyam-x.png',
-    alt: 'Diwali Special Buy 1 Get 1 FREE - Aarogyam X With UTSH (139 Tests)',
-    href: '/patient/tests',
-    badge: 'Diwali Special',
-    offer: 'Buy 1 Get 1 FREE',
-    testsCount: '139 Tests',
-    price1: '₹5,524',
-    price2: '₹8,499',
-  },
 ];
 
 interface PromoBannerCarouselProps {
