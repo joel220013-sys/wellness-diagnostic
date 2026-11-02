@@ -107,12 +107,31 @@ export default function LabReportModal({ report, onClose }: LabReportModalProps)
         {/* Modal Content: ONLY SHOW WHAT WAS UPLOADED */}
         {hasUploadedPdf ? (
           <div className="flex-1 w-full bg-slate-900 flex flex-col relative overflow-hidden">
-            <iframe
-              src={`${report.download_url!}#toolbar=1`}
+            <object
+              data={`${report.download_url!}#toolbar=1`}
+              type="application/pdf"
               className="w-full flex-1 h-full border-0 min-h-[500px]"
-              title={`Laboratory Report ${reportNum}`}
-            />
-            {/* Mobile Fallback Bar */}
+            >
+              <iframe
+                src={`${report.download_url!}#toolbar=1`}
+                className="w-full flex-1 h-full border-0 min-h-[500px]"
+                title={`Laboratory Report ${reportNum}`}
+              >
+                <div className="p-8 text-center text-white space-y-4 my-auto">
+                  <p className="text-sm">Click below to open the official laboratory report PDF:</p>
+                  <a
+                    href={report.download_url!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-bold text-xs"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Open PDF Report</span>
+                  </a>
+                </div>
+              </iframe>
+            </object>
+            {/* Fallback Bar */}
             <div className="no-print px-4 py-2.5 bg-botanical-900 text-ivory-100 text-xs flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-botanical-800">
               <span className="text-[11px] text-ivory-300">
                 Official signed pathology report uploaded by laboratory

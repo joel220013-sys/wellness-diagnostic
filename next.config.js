@@ -63,6 +63,8 @@ const nextConfig = {
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' data: https://fonts.gstatic.com",
               "connect-src 'self' https://wellness-diagnostic-backend.onrender.com http://localhost:8000 http://127.0.0.1:8000 https://*.supabase.co https://*.tile.openstreetmap.org https://nominatim.openstreetmap.org",
+              "frame-src 'self' blob: data: https: https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.cloudflare.com",
+              "object-src 'self' blob: data: https: https://*.r2.cloudflarestorage.com https://*.r2.dev",
               "frame-ancestors 'self'",
             ].join('; '),
           },

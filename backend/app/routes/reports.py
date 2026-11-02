@@ -2,7 +2,7 @@ import uuid
 import json
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Form
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from typing import List, Dict, Any, Optional
 from app.data.store import DB
 from app.data import supabase_db
@@ -303,3 +303,47 @@ def download_report(report_id: str):
             return RedirectResponse(url=url)
 
     raise HTTPException(status_code=404, detail="Report file not found")
+
+@router.get("/{report_id}/pdf")
+def view_report_pdf(report_id: str):
+    """
+    Directly streams the verified pathology PDF bytes from Cloudflare R2
+    with inline headers for frictionless embedding without cross-origin blocking.
+    """
+    row = supabase_db.fetch_one(
+        "SELECT file_path, report_number FROM public.reports WHERE id::text = %s OR report_number = %s",
+        (report_id, report_id)
+    )
+    file_path = row.get("file_path") if row else None
+
+    if not file_path:
+        for r in DB.get("reports", []):
+            if r.get("id") == report_id or r.get("report_number") == report_id:
+                file_path = r.get("file_path")
+                break
+
+    if file_path:
+        s3 = r2_storage.get_s3_client()
+        if s3:
+            try:
+                s3_obj = s3.get_object(Bucket=r2_storage.R2_BUCKET_NAME, Key=file_path)
+                pdf_bytes = s3_obj["Body"].read()
+                filename = file_path.split("/")[-1]
+                return Response(
+                    content=pdf_bytes,
+                    media_type="application/pdf",
+                    headers={
+                        "Content-Disposition": f'inline; filename="{filename}"',
+                        "Content-Type": "application/pdf",
+                        "Cache-Control": "public, max-age=3600"
+                    }
+                )
+            except Exception as e:
+                print(f"[R2 get_object error] {e}")
+
+        # Fallback to presigned URL
+        url = r2_storage.generate_download_url(file_path, expires_in=86400)
+        if url:
+            return RedirectResponse(url=url)
+
+    raise HTTPException(status_code=404, detail="PDF report not found")
