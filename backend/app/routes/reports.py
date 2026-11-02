@@ -40,19 +40,34 @@ def _format_db_report(r: Dict[str, Any]) -> Dict[str, Any]:
         else:
             created_str = str(r.get("created_at"))
 
+    items = r.get("booking_items")
+    test_title = r.get("test_name") or "Diagnostic Laboratory Report"
+    if isinstance(items, str):
+        try:
+            items = json.loads(items)
+        except Exception:
+            items = []
+    if isinstance(items, list) and len(items) > 0 and isinstance(items[0], dict):
+        test_title = items[0].get("item_name") or items[0].get("name") or test_title
+
     return {
         "id": str(r.get("id")),
         "report_number": r.get("report_number") or f"WD-REP-{str(r.get('id'))[:6].upper()}",
         "booking_id": str(r.get("booking_id")) if r.get("booking_id") else None,
         "patient_id": str(r.get("patient_id")) if r.get("patient_id") else None,
+        "patient_name": r.get("patient_name") or "Patient",
+        "patient_phone": r.get("patient_phone") or "",
+        "booking_reference": r.get("booking_reference") or "",
+        "test_name": test_title,
         "file_path": file_path,
         "download_url": download_url,
         "status": r.get("status") or "Released",
         "results": results,
         "overall_remarks": r.get("overall_remarks") or "",
         "doctor_name": r.get("doctor_name") or "Chief Pathologist, MD",
-        "lab_technician": r.get("lab_technician") or "Robert Thorne, B.Sc MLT",
+        "lab_technician": r.get("lab_technician") or "Senior Laboratory Technician",
         "created_at": created_str,
+        "released_at": created_str[:10],
         "storage_provider": "cloudflare_r2" if file_path else "local"
     }
 
@@ -60,12 +75,19 @@ def _format_db_report(r: Dict[str, Any]) -> Dict[str, Any]:
 def get_reports(patient_id: Optional[str] = Query(None)):
     db_reports = []
     try:
-        query = "SELECT id, report_number, booking_id, patient_id, file_path, status, results, overall_remarks, doctor_name, lab_technician, created_at FROM public.reports"
+        query = """
+            SELECT 
+                r.id, r.report_number, r.booking_id, r.patient_id, r.file_path, r.status, 
+                r.results, r.overall_remarks, r.doctor_name, r.lab_technician, r.created_at,
+                b.patient_name, b.patient_phone, b.order_number as booking_reference, b.items as booking_items
+            FROM public.reports r
+            LEFT JOIN public.bookings b ON b.id::text = r.booking_id::text
+        """
         params: List[Any] = []
         if patient_id:
-            query += " WHERE patient_id::text = %s OR patient_id = %s"
+            query += " WHERE r.patient_id::text = %s OR r.patient_id = %s"
             params = [patient_id, to_uuid(patient_id)]
-        query += " ORDER BY created_at DESC;"
+        query += " ORDER BY r.created_at DESC;"
         
         rows = supabase_db.fetch_all(query, tuple(params))
         if rows:
