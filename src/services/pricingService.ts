@@ -11,19 +11,67 @@ export interface PricingCalculation {
   }>;
 }
 
+function parseNumericPrice(val: any): number {
+  if (typeof val === 'number') {
+    return isNaN(val) ? 0 : val;
+  }
+  if (typeof val === 'string') {
+    const cleaned = parseFloat(val.replace(/[^0-9.]/g, ''));
+    return isNaN(cleaned) ? 0 : cleaned;
+  }
+  return 0;
+}
+
 export function calculateOrderPricing(
-  testIds: string[], 
+  itemsOrIds: Array<any>, 
   availableItems?: Array<{ id: string; name: string; price: number }>
 ): PricingCalculation {
   const catalog = availableItems || [];
-  const items = testIds
-    .map((id) => catalog.find((pkg) => pkg.id === id))
-    .filter((pkg): pkg is NonNullable<typeof pkg> => Boolean(pkg))
-    .map((pkg) => ({
-      id: pkg.id,
-      name: pkg.name,
-      price: pkg.price,
-    }));
+  let items: Array<{ id: string; name: string; price: number }> = [];
+
+  if (Array.isArray(itemsOrIds)) {
+    items = itemsOrIds
+      .map((item) => {
+        // 1. If it's already an object with id/name/price (e.g. DiagnosticTest from selectedTests)
+        if (item && typeof item === 'object') {
+          const testId = String(item.id || item.test_id || '');
+          const testName = String(item.name || item.item_name || 'Diagnostic Test');
+          const testPrice = parseNumericPrice(item.price ?? item.unit_price ?? item.original_price);
+          
+          if (testPrice > 0) {
+            return { id: testId, name: testName, price: testPrice };
+          }
+          const found = catalog.find((pkg) => 
+            pkg.id === testId || 
+            (pkg.name && testName && pkg.name.toLowerCase().trim() === testName.toLowerCase().trim())
+          );
+          return {
+            id: testId,
+            name: found?.name || testName,
+            price: parseNumericPrice(found?.price ?? testPrice),
+          };
+        }
+
+        // 2. If it's a string testId or testName
+        if (typeof item === 'string') {
+          const cleanItem = item.trim().toLowerCase();
+          const found = catalog.find((pkg) => 
+            pkg.id === item || 
+            pkg.id?.toLowerCase() === cleanItem || 
+            (pkg.name && pkg.name.toLowerCase().trim() === cleanItem)
+          );
+          if (found) {
+            return {
+              id: found.id,
+              name: found.name,
+              price: parseNumericPrice(found.price),
+            };
+          }
+        }
+        return null;
+      })
+      .filter((pkg): pkg is NonNullable<typeof pkg> => Boolean(pkg));
+  }
 
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
 

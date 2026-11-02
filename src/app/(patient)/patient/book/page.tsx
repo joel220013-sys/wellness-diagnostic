@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -245,8 +245,10 @@ export default function BookCollectionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccessRef, setBookingSuccessRef] = useState<string | null>(null);
 
-  // Authoritative Pricing calculation
-  const pricing = calculateOrderPricing(selectedTests.map((t) => t.id));
+  // Authoritative Pricing calculation (ensures live calculation from selected cart items & catalog)
+  const pricing = useMemo(() => {
+    return calculateOrderPricing(selectedTests, tests);
+  }, [selectedTests, tests]);
 
   // Step 1: Validations
   const canProceedStep1 = selectedTests.length > 0;
@@ -274,7 +276,14 @@ export default function BookCollectionPage() {
         scheduled_date: selectedDate,
         scheduled_slot: selectedSlot,
         address_snapshot: confirmedAddress,
-        items: pricing.items.map((it) => ({
+        items: (pricing.items.length > 0
+          ? pricing.items
+          : selectedTests.map((t) => ({
+              id: t.id,
+              name: t.name,
+              price: Number(t.price) || 0,
+            }))
+        ).map((it) => ({
           test_id: it.id,
           item_name: it.name,
           unit_price: it.price,
@@ -826,7 +835,14 @@ export default function BookCollectionPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ivory-100">
-                  {pricing.items.map((item) => (
+                  {(pricing.items.length > 0
+                    ? pricing.items
+                    : selectedTests.map((t) => ({
+                        id: t.id,
+                        name: t.name,
+                        price: Number(t.price) || 0,
+                      }))
+                  ).map((item) => (
                     <tr key={item.id}>
                       <td className="p-3 font-semibold text-botanical-950">{item.name}</td>
                       <td className="p-3 text-right font-bold text-botanical-950">₹{item.price}</td>
