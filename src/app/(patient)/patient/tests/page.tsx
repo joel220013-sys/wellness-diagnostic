@@ -256,7 +256,7 @@ export default function PatientTestsPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-24 lg:pb-12">
       {/* Top Header Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1.5">
@@ -312,9 +312,9 @@ export default function PatientTestsPage() {
         </div>
       )}
 
-      {/* Floating Cart Indicator (if tests selected) */}
+      {/* Floating Cart Indicator on Desktop (Mobile uses MobileBottomCartBar) */}
       {selectedTests.length > 0 && (
-        <div className="sticky top-20 z-20 bg-gradient-to-r from-botanical-900 to-botanical-950 text-white p-4 rounded-2xl shadow-soft-lg border border-botanical-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="hidden lg:flex sticky top-20 z-20 bg-gradient-to-r from-botanical-900 to-botanical-950 text-white p-4 rounded-2xl shadow-soft-lg border border-botanical-800 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-peach-400 text-botanical-950 flex items-center justify-center font-bold">
               <ShoppingBag className="w-5 h-5" />
@@ -329,7 +329,7 @@ export default function PatientTestsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-wrap">
+          <div className="flex items-center gap-2.5 w-auto justify-end">
             <button
               onClick={() => setIsCartOpen(true)}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-xs font-bold text-ivory-100 transition-colors flex items-center gap-1.5"
@@ -347,7 +347,7 @@ export default function PatientTestsPage() {
               href="/patient/book"
               className="px-5 py-2 rounded-xl bg-peach-400 hover:bg-peach-300 text-botanical-950 font-bold text-xs shadow-soft transition-all flex items-center gap-2 hover:-translate-y-0.5"
             >
-              <span>Schedule Phlebotomist</span>
+              <span>Schedule</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

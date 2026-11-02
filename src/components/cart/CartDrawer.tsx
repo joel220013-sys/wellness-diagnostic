@@ -237,7 +237,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               onClick={handleProceedToBooking}
               className="w-full py-3 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white font-extrabold text-sm shadow-soft transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
             >
-              <span>Schedule Phlebotomist Appointment</span>
+              <span>Schedule</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 

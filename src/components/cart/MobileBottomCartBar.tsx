@@ -46,7 +46,7 @@ export default function MobileBottomCartBar() {
           onClick={() => router.push('/patient/book')}
           className="px-3.5 py-2 rounded-xl bg-peach-400 hover:bg-peach-300 active:bg-peach-500 text-botanical-950 text-xs font-extrabold shadow-soft flex items-center gap-1 transition-all"
         >
-          <span>Book</span>
+          <span>Schedule</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
