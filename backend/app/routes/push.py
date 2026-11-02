@@ -53,3 +53,4 @@ def get_subscriptions():
         "count": len(subs),
         "subscriptions": subs
     }
+

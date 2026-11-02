@@ -15,12 +15,13 @@ import {
 import { useData } from '@/context/DataContext';
 import { LabReport } from '@/types';
 import LabReportModal from '@/components/reports/LabReportModal';
-import Link from 'next/link';
+import UploadReportModal from '@/components/reports/UploadReportModal';
 
 export default function AdminReportsPage() {
   const { reports } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   const filteredReports = reports.filter((r) =>
     r.report_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -38,13 +39,13 @@ export default function AdminReportsPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin/orders"
+        <button
+          onClick={() => setIsUploadModalOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm shadow-soft transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Upload Report for Order</span>
-        </Link>
+        </button>
       </div>
 
       {/* Search Toolbar */}
@@ -117,13 +118,19 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
-      {/* Lab Report Modal */}
+      {/* Lab Report View Modal */}
       {activeReport && (
         <LabReportModal
           report={activeReport}
           onClose={() => setActiveReport(null)}
         />
       )}
+
+      {/* Upload Lab Report Modal */}
+      <UploadReportModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+      />
     </div>
   );
 }

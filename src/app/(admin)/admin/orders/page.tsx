@@ -18,11 +18,13 @@ import {
   Eye,
   RefreshCw,
   Plus,
-  X
+  X,
+  FileUp
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
 import NotificationQuickControl from '@/components/notifications/NotificationQuickControl';
+import UploadReportModal from '@/components/reports/UploadReportModal';
 
 export default function AdminOrdersPage() {
   const { bookings, drivers, syncDrivers, syncBookings, addDriver, updateBookingStatus, assignDriverToBooking } = useData();
@@ -54,6 +56,9 @@ export default function AdminOrdersPage() {
   const [quickBadge, setQuickBadge] = useState('');
   const [quickLoading, setQuickLoading] = useState(false);
   const [assignmentToast, setAssignmentToast] = useState<string | null>(null);
+
+  // Upload report modal state
+  const [uploadModalBookingId, setUploadModalBookingId] = useState<string | null>(null);
 
   const filteredBookings = bookings.filter((b) => {
     const ref = b.booking_reference || (b as any).order_number || '';
@@ -331,6 +336,14 @@ export default function AdminOrdersPage() {
                       <option value="Cancelled">Cancelled</option>
                     </select>
 
+                    <button
+                      onClick={() => setUploadModalBookingId(booking.id)}
+                      className="inline-flex items-center gap-1 p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-colors"
+                      title="Upload Lab Report for Patient"
+                    >
+                      <FileUp className="w-3.5 h-3.5" />
+                    </button>
+
                     <Link
                       href={`/admin/orders/${booking.id}`}
                       className="inline-flex items-center gap-1 p-1.5 rounded-lg bg-ivory-100 hover:bg-ivory-200 text-botanical-800"
@@ -495,6 +508,13 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Upload Lab Report Modal */}
+      <UploadReportModal
+        isOpen={Boolean(uploadModalBookingId)}
+        onClose={() => setUploadModalBookingId(null)}
+        preselectedBookingId={uploadModalBookingId || undefined}
+      />
     </div>
   );
 }
