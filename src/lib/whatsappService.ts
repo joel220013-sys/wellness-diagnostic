@@ -103,7 +103,34 @@ export async function sendWhatsAppNotification(order: OrderWhatsAppPayload): Pro
     }
   }
 
-  // 3. If Meta Cloud API is configured
+  // 3. If Green-API (Free Developer Instance) is configured
+  const greenId = process.env.GREEN_API_ID_INSTANCE;
+  const greenToken = process.env.GREEN_API_TOKEN_INSTANCE;
+
+  if (greenId && greenToken) {
+    try {
+      const cleanTarget = phone.replace(/[^0-9]/g, '');
+      const chatId = cleanTarget.endsWith('@c.us') ? cleanTarget : `${cleanTarget}@c.us`;
+      const url = `https://api.green-api.com/waInstance${greenId}/sendMessage/${greenToken}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId,
+          message: text,
+        }),
+      });
+
+      if (res.ok) {
+        return { success: true, message: 'WhatsApp alert dispatched via Green-API' };
+      }
+    } catch (err: any) {
+      console.warn('[WhatsApp] Green-API error:', err.message);
+    }
+  }
+
+  // 4. If Meta Cloud API is configured
   const metaToken = process.env.META_WHATSAPP_TOKEN;
   const metaPhoneId = process.env.META_PHONE_NUMBER_ID;
 
@@ -136,3 +163,4 @@ export async function sendWhatsAppNotification(order: OrderWhatsAppPayload): Pro
     message: 'WhatsApp automated API requires an API key (CallMeBot, Twilio, or Meta Cloud API)',
   };
 }
+

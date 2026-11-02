@@ -26,6 +26,9 @@ export default function NotificationQuickControl() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [testTriggered, setTestTriggered] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const currentPerm = getNotificationPermissionState();
@@ -34,15 +37,23 @@ export default function NotificationQuickControl() {
 
     // Auto-register device if permission is already granted on this phone/browser
     if (currentPerm === 'granted') {
-      registerPushDevice({ userId: user?.id, role: user?.role }).catch(() => {});
+      registerPushDevice({ userId: user?.id, role: user?.role })
+        .then((ok) => setIsSubscribed(ok))
+        .catch(() => {});
     }
   }, [user]);
 
   const handleRequestPermission = async () => {
-    const res = await requestNotificationPermission();
-    setPermission(res);
-    if (res === 'granted') {
-      await registerPushDevice({ userId: user?.id, role: user?.role });
+    setIsRegistering(true);
+    try {
+      const res = await requestNotificationPermission();
+      setPermission(res);
+      if (res === 'granted') {
+        const ok = await registerPushDevice({ userId: user?.id, role: user?.role });
+        setIsSubscribed(ok);
+      }
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -57,6 +68,7 @@ export default function NotificationQuickControl() {
 
   const handleTestChime = async () => {
     setTestTriggered(true);
+    setTestStatus('Sending Alert...');
 
     // 1. Local chime test
     triggerOrderNotification({
@@ -70,7 +82,7 @@ export default function NotificationQuickControl() {
 
     // 2. Cloud Web Push dispatch to physical phone screens
     try {
-      await fetch('/api/push/notify', {
+      const res = await fetch('/api/push/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -84,9 +96,20 @@ export default function NotificationQuickControl() {
           targetUrl: '/admin/orders',
         }),
       });
-    } catch {}
+      const data = await res.json();
+      if (data.sentCount > 0) {
+        setTestStatus(`Alert Sent to ${data.sentCount} Phone(s) ✓`);
+      } else {
+        setTestStatus('No Phone Enrolled Yet');
+      }
+    } catch {
+      setTestStatus('Chime Played');
+    }
 
-    setTimeout(() => setTestTriggered(false), 2500);
+    setTimeout(() => {
+      setTestTriggered(false);
+      setTestStatus(null);
+    }, 3000);
   };
 
   return (
@@ -118,16 +141,17 @@ export default function NotificationQuickControl() {
       {permission === 'granted' ? (
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold bg-sky-50 text-sky-900 border border-sky-200">
           <Smartphone className="w-3.5 h-3.5 text-sky-600" />
-          <span>Screen Push: Enabled ✓</span>
+          <span>Screen Push: {isSubscribed ? 'Mobile Registered ✓' : 'Enabled ✓'}</span>
         </span>
       ) : (
         <button
           onClick={handleRequestPermission}
+          disabled={isRegistering}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-soft-xs"
           title="Enable lock-screen & desktop push notifications"
         >
-          <BellRing className="w-3.5 h-3.5 animate-pulse" />
-          <span>Enable Desktop & Mobile Push</span>
+          <BellRing className={`w-3.5 h-3.5 ${isRegistering ? 'animate-spin' : 'animate-pulse'}`} />
+          <span>{isRegistering ? 'Registering Device...' : 'Enable Desktop & Mobile Push'}</span>
         </button>
       )}
 
@@ -139,7 +163,7 @@ export default function NotificationQuickControl() {
         title="Test the ringtone sound and screen alert right now"
       >
         <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-        <span>{testTriggered ? 'Ringing Chime...' : 'Test Alert Sound'}</span>
+        <span>{testStatus || 'Test Alert Sound'}</span>
       </button>
     </div>
   );

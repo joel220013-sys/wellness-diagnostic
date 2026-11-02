@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from app.routes import tests, packages, addresses, bookings, admin, driver, reports, invoices, geocode, auth
+from app.routes import tests, packages, addresses, bookings, admin, driver, reports, invoices, geocode, auth, push
 
 IS_PROD = os.environ.get("ENVIRONMENT", "").lower() == "production" or os.environ.get("RENDER", "").lower() == "true"
 
@@ -124,6 +124,7 @@ app.include_router(driver.router)
 app.include_router(reports.router)
 app.include_router(invoices.router)
 app.include_router(geocode.router)
+app.include_router(push.router)
 
 @app.api_route("/ping", methods=["GET", "HEAD"])
 @app.api_route("/api/ping", methods=["GET", "HEAD"])
