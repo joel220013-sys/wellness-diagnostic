@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -56,22 +56,6 @@ const COLLECTION_SLOTS = [
   '10:30 AM – 11:00 AM (Morning)',
   '11:00 AM – 11:30 AM (Late Morning)',
   '11:30 AM – 12:00 PM (Late Morning)',
-  '12:00 PM – 12:30 PM (Afternoon)',
-  '12:30 PM – 01:00 PM (Afternoon)',
-  '01:00 PM – 01:30 PM (Afternoon)',
-  '01:30 PM – 02:00 PM (Afternoon)',
-  '02:00 PM – 02:30 PM (Afternoon)',
-  '02:30 PM – 03:00 PM (Afternoon)',
-  '03:00 PM – 03:30 PM (Afternoon)',
-  '03:30 PM – 04:00 PM (Afternoon)',
-  '04:00 PM – 04:30 PM (Evening Collection)',
-  '04:30 PM – 05:00 PM (Evening Collection)',
-  '05:00 PM – 05:30 PM (Evening Collection)',
-  '05:30 PM – 06:00 PM (Evening Collection)',
-  '06:00 PM – 06:30 PM (Late Evening)',
-  '06:30 PM – 07:00 PM (Late Evening)',
-  '07:00 PM – 07:30 PM (Late Evening)',
-  '07:30 PM – 08:00 PM (Late Evening)',
 ];
 
 export default function BookCollectionPage() {
@@ -110,22 +94,8 @@ export default function BookCollectionPage() {
     return tomorrow.toISOString().split('T')[0];
   });
   const [selectedSlot, setSelectedSlot] = useState<string>(COLLECTION_SLOTS[2]);
-  const [slotPeriod, setSlotPeriod] = useState<'all' | 'morning' | 'afternoon' | 'evening'>('all');
   const [testSearch, setTestSearch] = useState('');
   const [testCategory, setTestCategory] = useState('All');
-
-  const visibleSlots = useMemo(() => {
-    if (slotPeriod === 'morning') {
-      return COLLECTION_SLOTS.filter((s) => s.includes('AM'));
-    }
-    if (slotPeriod === 'afternoon') {
-      return COLLECTION_SLOTS.filter((s) => s.includes('Afternoon'));
-    }
-    if (slotPeriod === 'evening') {
-      return COLLECTION_SLOTS.filter((s) => s.includes('Evening'));
-    }
-    return COLLECTION_SLOTS;
-  }, [slotPeriod]);
 
   const filteredTests = tests.filter((t) => {
     const q = testSearch.trim().toLowerCase();
@@ -680,36 +650,17 @@ export default function BookCollectionPage() {
             </div>
 
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-botanical-900">
-                  Select Available Time Slot (Half-Hour Intervals)
+                  Select Available Time Slot (06:00 AM – 12:00 PM)
                 </label>
-                {/* Period quick filter tabs */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {[
-                    { id: 'all', label: 'All (28)' },
-                    { id: 'morning', label: 'Morning (6 AM - 12 PM)' },
-                    { id: 'afternoon', label: 'Afternoon (12 PM - 4 PM)' },
-                    { id: 'evening', label: 'Evening (4 PM - 8 PM)' },
-                  ].map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setSlotPeriod(p.id as any)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-colors ${
-                        slotPeriod === p.id
-                          ? 'bg-botanical-500 text-white shadow-soft-xs'
-                          : 'bg-ivory-100 text-botanical-800 hover:bg-ivory-200 border border-ivory-300'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
+                <span className="text-[11px] font-semibold text-botanical-600 bg-botanical-50 px-2.5 py-0.5 rounded-full border border-botanical-200 self-start sm:self-auto">
+                  Half-Hour Fasting & Morning Slots
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
-                {visibleSlots.map((slot) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {COLLECTION_SLOTS.map((slot) => (
                   <button
                     key={slot}
                     type="button"
