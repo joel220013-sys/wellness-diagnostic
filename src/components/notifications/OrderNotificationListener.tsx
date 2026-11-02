@@ -19,6 +19,8 @@ import {
   triggerOrderNotification, 
   registerServiceWorker, 
   listenForOrderAlerts,
+  markOrderAsSeen,
+  isOrderAlreadySeen,
   OrderNotificationPayload
 } from '@/lib/notificationService';
 
@@ -45,8 +47,10 @@ export default function OrderNotificationListener() {
 
     const cleanup = listenForOrderAlerts((order) => {
       seenBookingIdsRef.current.add(order.id);
+      markOrderAsSeen(order.id);
       setActiveAlert(order);
-      triggerOrderNotification(order);
+      // Trigger local sound & notification without re-broadcasting back to BroadcastChannel!
+      triggerOrderNotification(order, { broadcast: false });
     });
 
     return cleanup;
@@ -56,38 +60,60 @@ export default function OrderNotificationListener() {
   useEffect(() => {
     if (!bookings || bookings.length === 0) return;
 
-    // On initial mount, seed all existing booking IDs so we don't alert on past history
+    // On initial mount, seed all existing booking IDs so we NEVER alert on past history
     if (isInitialLoadRef.current) {
-      bookings.forEach((b) => seenBookingIdsRef.current.add(b.id));
+      bookings.forEach((b) => {
+        seenBookingIdsRef.current.add(b.id);
+        markOrderAsSeen(b.id);
+      });
       isInitialLoadRef.current = false;
       return;
     }
 
     // Only alert if current role is admin or driver
     if (user?.role !== 'admin' && user?.role !== 'driver') {
-      bookings.forEach((b) => seenBookingIdsRef.current.add(b.id));
+      bookings.forEach((b) => {
+        seenBookingIdsRef.current.add(b.id);
+        markOrderAsSeen(b.id);
+      });
       return;
     }
 
     // Check for any newly arrived booking
+    const now = Date.now();
     for (const b of bookings) {
-      if (!seenBookingIdsRef.current.has(b.id)) {
+      if (seenBookingIdsRef.current.has(b.id) || isOrderAlreadySeen(b.id)) {
         seenBookingIdsRef.current.add(b.id);
-
-        const payload: OrderNotificationPayload = {
-          id: b.id,
-          reference: b.booking_reference,
-          patientName: b.patient_name,
-          phone: b.patient_phone,
-          totalAmount: b.total_amount,
-          testName: b.tests?.[0]?.name || b.items?.[0]?.item_name || 'Health Diagnostic Checkup',
-          timeSlot: b.scheduled_slot
-        };
-
-        setActiveAlert(payload);
-        triggerOrderNotification(payload);
-        break; // Alert the latest one
+        continue;
       }
+
+      // Check creation timestamp: only alert on orders placed in the last 2 minutes
+      const createdTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      const isRecent = createdTime > 0 && (now - createdTime < 2 * 60 * 1000);
+
+      // If it is an older historical order, mark it as seen silently
+      if (!isRecent) {
+        seenBookingIdsRef.current.add(b.id);
+        markOrderAsSeen(b.id);
+        continue;
+      }
+
+      seenBookingIdsRef.current.add(b.id);
+      markOrderAsSeen(b.id);
+
+      const payload: OrderNotificationPayload = {
+        id: b.id,
+        reference: b.booking_reference,
+        patientName: b.patient_name,
+        phone: b.patient_phone,
+        totalAmount: b.total_amount,
+        testName: b.tests?.[0]?.name || b.items?.[0]?.item_name || 'Health Diagnostic Checkup',
+        timeSlot: b.scheduled_slot
+      };
+
+      setActiveAlert(payload);
+      triggerOrderNotification(payload, { broadcast: true });
+      break; // Alert only one at a time to prevent alert storms
     }
   }, [bookings, user]);
 

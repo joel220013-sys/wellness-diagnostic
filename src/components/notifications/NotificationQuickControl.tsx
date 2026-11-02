@@ -32,15 +32,6 @@ export default function NotificationQuickControl() {
   const handleRequestPermission = async () => {
     const res = await requestNotificationPermission();
     setPermission(res);
-    if (res === 'granted') {
-      triggerOrderNotification({
-        id: 'test_demo',
-        reference: 'TEST-DEMO',
-        patientName: 'Notification Verification',
-        totalAmount: 2995,
-        testName: 'Aarogyam C Pro With Utsh'
-      });
-    }
   };
 
   const handleToggleSound = () => {
@@ -56,12 +47,12 @@ export default function NotificationQuickControl() {
     setTestTriggered(true);
     triggerOrderNotification({
       id: `test_${Date.now()}`,
-      reference: `WD-${Math.floor(1000 + Math.random() * 9000)}`,
+      reference: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
       patientName: 'Diagnostic Sample Patient',
       totalAmount: 1300,
       testName: 'Vitamin D & Lipid Profile',
       timeSlot: '07:30 AM – 09:00 AM'
-    });
+    }, { broadcast: false, force: true });
     setTimeout(() => setTestTriggered(false), 2500);
   };
 

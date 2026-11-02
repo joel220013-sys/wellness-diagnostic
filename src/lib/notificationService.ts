@@ -15,9 +15,46 @@ export interface OrderNotificationPayload {
 }
 
 const STORAGE_KEY_SOUND = 'wellness_order_chime_enabled';
+const STORAGE_KEY_SEEN_ORDERS = 'wellness_notified_orders_v2';
 const BROADCAST_CHANNEL_NAME = 'wellness_order_notifications';
 
+const CLIENT_TAB_ID = typeof window !== 'undefined' 
+  ? `${Date.now()}_${Math.random().toString(36).substring(2, 9)}` 
+  : 'server';
+
 let globalAudioCtx: AudioContext | null = null;
+let lastAlertTime = 0;
+const MIN_ALERT_INTERVAL_MS = 2500; // Minimum interval between audible chimes
+
+/**
+ * Persistent deduplication: tracks which order IDs have already triggered an alert
+ */
+export function getSeenOrderIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SEEN_ORDERS);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function markOrderAsSeen(orderId: string): void {
+  if (typeof window === 'undefined' || !orderId) return;
+  try {
+    const seen = getSeenOrderIds();
+    seen.add(orderId);
+    const arr = Array.from(seen).slice(-200); // Retain last 200 orders to keep storage light
+    localStorage.setItem(STORAGE_KEY_SEEN_ORDERS, JSON.stringify(arr));
+  } catch {}
+}
+
+export function isOrderAlreadySeen(orderId: string): boolean {
+  if (!orderId) return true;
+  return getSeenOrderIds().has(orderId);
+}
 
 /**
  * Initializes or resumes the Web Audio context after a user interaction
@@ -161,22 +198,48 @@ export function isSoundAlertsEnabled(): boolean {
 /**
  * Trigger an OS-level push notification + chime sound for an order
  */
-export async function triggerOrderNotification(order: OrderNotificationPayload): Promise<void> {
-  if (typeof window === 'undefined') return;
+export async function triggerOrderNotification(
+  order: OrderNotificationPayload,
+  options?: { broadcast?: boolean; force?: boolean }
+): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  const now = Date.now();
+  const shouldBroadcast = options?.broadcast !== false;
+  const isForce = options?.force === true;
+
+  // Deduplication check: drop duplicate alert for the same order ID immediately
+  if (!isForce && isOrderAlreadySeen(order.id)) {
+    return false;
+  }
+
+  // Anti-spam throttling: enforce at least MIN_ALERT_INTERVAL_MS between audible chimes
+  if (!isForce && (now - lastAlertTime < MIN_ALERT_INTERVAL_MS)) {
+    return false;
+  }
+
+  lastAlertTime = now;
+  markOrderAsSeen(order.id);
 
   // 1. Play the audio chime
   playOrderChime();
 
-  // 2. Broadcast to other open tabs in real-time
-  try {
-    const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
-    channel.postMessage({ type: 'NEW_ORDER_ALERT', order });
-    channel.close();
-  } catch {}
+  // 2. Broadcast to other open tabs in real-time (with senderTabId to prevent echo loop)
+  if (shouldBroadcast) {
+    try {
+      const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      channel.postMessage({ 
+        type: 'NEW_ORDER_ALERT', 
+        order,
+        senderTabId: CLIENT_TAB_ID 
+      });
+      channel.close();
+    } catch {}
+  }
 
   // 3. Show native OS notification banner on screen / phone lock-screen
   if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
+    return true;
   }
 
   const title = `🔔 New Order Placed: #${order.reference}`;
@@ -192,11 +255,11 @@ export async function triggerOrderNotification(order: OrderNotificationPayload):
           icon: '/logo-192.png',
           badge: '/logo-48.png',
           tag: `wellness-order-${order.id}`,
-          renotify: true,
-          requireInteraction: true,
+          renotify: false, // Prevent OS notification spamming
+          requireInteraction: false,
           data: { url: targetUrl }
         } as any);
-        return;
+        return true;
       }
     }
 
@@ -213,6 +276,7 @@ export async function triggerOrderNotification(order: OrderNotificationPayload):
   } catch (err) {
     console.warn('[NotificationService] Show notification error:', err);
   }
+  return true;
 }
 
 /**
@@ -225,8 +289,13 @@ export function listenForOrderAlerts(callback: (order: OrderNotificationPayload)
 
   const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
   channel.onmessage = (event) => {
+    // Ignore message originating from the same tab to avoid self-echoes
+    if (event.data?.senderTabId === CLIENT_TAB_ID) return;
+
     if (event.data?.type === 'NEW_ORDER_ALERT' && event.data.order) {
-      callback(event.data.order);
+      const order = event.data.order;
+      if (isOrderAlreadySeen(order.id)) return;
+      callback(order);
     }
   };
 
