@@ -19,3 +19,4 @@ try {
 }
 
 export { webPush, vapidPublicKey };
+

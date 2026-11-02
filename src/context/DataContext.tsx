@@ -441,6 +441,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }).catch(() => {});
     } catch {}
 
+    // Dispatch WhatsApp Notification to Admin (+91 7899514777)
+    try {
+      fetch('/api/whatsapp/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: newBooking.id,
+          reference: newBooking.booking_reference,
+          patientName: newBooking.patient_name,
+          phone: newBooking.patient_phone,
+          totalAmount: newBooking.total_amount,
+          testName: (newBooking.tests && newBooking.tests.length > 0)
+            ? newBooking.tests[0].name
+            : (newBooking.items?.[0]?.item_name || 'Health Diagnostic Checkup'),
+          timeSlot: newBooking.scheduled_slot,
+          address: newBooking.address_snapshot?.address_line_1
+            ? `${newBooking.address_snapshot.address_line_1}, ${newBooking.address_snapshot.city || 'Davanagere'}`
+            : undefined,
+          latitude: newBooking.address_snapshot?.latitude,
+          longitude: newBooking.address_snapshot?.longitude,
+        }),
+      }).catch(() => {});
+    } catch {}
+
     clearSelectedTests();
     return newBooking;
   };

@@ -23,6 +23,7 @@ import {
   isOrderAlreadySeen,
   OrderNotificationPayload
 } from '@/lib/notificationService';
+import { getWhatsAppDirectUrl } from '@/lib/whatsappService';
 
 export default function OrderNotificationListener() {
   const { user } = useAuth();
@@ -181,6 +182,23 @@ export default function OrderNotificationListener() {
             <span>Open Order</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
+          <a
+            href={getWhatsAppDirectUrl({
+              orderId: activeAlert.id,
+              reference: activeAlert.reference,
+              patientName: activeAlert.patientName,
+              phone: activeAlert.phone || '',
+              totalAmount: activeAlert.totalAmount,
+              testName: activeAlert.testName || 'Diagnostic Package',
+              timeSlot: activeAlert.timeSlot || 'Scheduled Home Collection'
+            }, '917899514777')}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open WhatsApp Alert for +91 7899514777"
+            className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors"
+          >
+            <span>WhatsApp</span>
+          </a>
           <button
             onClick={() => playOrderChime()}
             title="Replay Chime Sound"

@@ -62,3 +62,4 @@ export async function registerPushDevice(userInfo?: { userId?: string; role?: st
     return false;
   }
 }
+
