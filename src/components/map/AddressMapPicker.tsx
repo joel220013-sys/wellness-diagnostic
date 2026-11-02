@@ -412,14 +412,15 @@ export default function AddressMapPicker({
           Math.abs(coords.lat - DEFAULT_COORDS.lat) < 0.0001 && 
           Math.abs(coords.lng - DEFAULT_COORDS.lng) < 0.0001;
 
-        // Check if broadband router IP is far outside Davanagere (e.g. Bangalore ISP router ~257 km away)
+        // Check if broadband router IP is far outside Davanagere (e.g. ISP server / VPN hundreds of km away)
         if (distFromDavanagere > 40000) {
-          // DO NOT jump to Bangalore! Keep the pin securely in Davanagere!
+          // DO NOT jump away! Keep the pin securely in Davanagere!
           updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
           await handleReverseGeocode(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
 
+          const distanceKm = Math.round(distFromDavanagere / 1000);
           setIspWarning(
-            `Your computer's broadband is routing through a Bengaluru ISP server (~${Math.round(distFromDavanagere / 1000)} km away). We automatically kept your pin in Davanagere so your address is not overridden. Use the search bar or tap a Davanagere area below.`
+            `Your computer's internet connection is routing through a remote ISP server (~${distanceKm} km away). Desktop PCs and laptops lack satellite GPS chips and trace to your provider's datacenter. We automatically kept your pin in Davanagere so your address is not overridden. Use the search bar or tap a Davanagere locality below.`
           );
         } else {
           setIspWarning(null);
