@@ -242,7 +242,8 @@ export async function triggerOrderNotification(
     return true;
   }
 
-  const title = `🔔 New Order Placed: #${order.reference}`;
+  const cleanRef = order.reference || order.id;
+  const title = `🔔 New Order Placed: #${cleanRef}`;
   const body = `Patient: ${order.patientName || 'New Patient'} • ₹${order.totalAmount || 0} • ${order.testName || 'Diagnostic Package'}\nSlot: ${order.timeSlot || 'Scheduled Home Collection'}`;
   const targetUrl = `/admin/orders`;
 
@@ -254,9 +255,10 @@ export async function triggerOrderNotification(
           body,
           icon: '/logo-192.png',
           badge: '/logo-48.png',
-          tag: `wellness-order-${order.id}`,
-          renotify: false, // Prevent OS notification spamming
-          requireInteraction: false,
+          tag: `wellness-order-${cleanRef}`,
+          renotify: true, // Trigger OS alert and chime for each order
+          requireInteraction: true, // Keep notification pinned on desktop & phone lock-screen until acknowledged
+          vibrate: [300, 100, 300, 100, 300],
           data: { url: targetUrl }
         } as any);
         return true;
@@ -267,8 +269,10 @@ export async function triggerOrderNotification(
     const n = new Notification(title, {
       body,
       icon: '/logo-192.png',
-      tag: `wellness-order-${order.id}`
-    });
+      badge: '/logo-48.png',
+      tag: `wellness-order-${cleanRef}`,
+      requireInteraction: true,
+    } as any);
     n.onclick = () => {
       window.focus();
       window.location.href = targetUrl;

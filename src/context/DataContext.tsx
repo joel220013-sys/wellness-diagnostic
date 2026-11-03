@@ -403,6 +403,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
 
     // Broadcast alert across tabs immediately for instant audio chime & push notification
+    const firstTest = (newBooking.tests && newBooking.tests.length > 0)
+      ? newBooking.tests[0].name
+      : (newBooking.items?.[0]?.item_name || 'Diagnostic Health Checkup');
+    const totalTestsCount = (newBooking.tests?.length || newBooking.items?.length || 1);
+    const resolvedTestName = totalTestsCount > 1 ? `${firstTest} (+${totalTestsCount - 1} more)` : firstTest;
+    const resolvedSlot = newBooking.scheduled_slot || 'Immediate Home Collection';
+
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const channel = new BroadcastChannel('wellness_order_notifications');
@@ -414,10 +421,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             patientName: newBooking.patient_name,
             phone: newBooking.patient_phone,
             totalAmount: newBooking.total_amount,
-            testName: (newBooking.tests && newBooking.tests.length > 0)
-              ? newBooking.tests[0].name
-              : (newBooking.items?.[0]?.item_name || 'Health Diagnostic Checkup'),
-            timeSlot: newBooking.scheduled_slot
+            testName: resolvedTestName,
+            timeSlot: resolvedSlot
           }
         });
         channel.close();
@@ -435,10 +440,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           patientName: newBooking.patient_name,
           phone: newBooking.patient_phone,
           totalAmount: newBooking.total_amount,
-          testName: (newBooking.tests && newBooking.tests.length > 0)
-            ? newBooking.tests[0].name
-            : (newBooking.items?.[0]?.item_name || 'Health Diagnostic Checkup'),
-          timeSlot: newBooking.scheduled_slot,
+          testName: resolvedTestName,
+          timeSlot: resolvedSlot,
           targetUrl: '/admin/orders',
         }),
       }).catch(() => {});

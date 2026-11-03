@@ -209,6 +209,27 @@ def create_booking(payload: BookingCreateInput):
         "created_at": datetime.utcnow().isoformat() + "Z"
     })
 
+    # Dispatch Push Notification via Next.js WebPush if available
+    try:
+        t_name = payload.items[0].item_name if (payload.items and len(payload.items) > 0) else "Diagnostic Health Checkup"
+        if payload.items and len(payload.items) > 1:
+            t_name = f"{t_name} (+{len(payload.items) - 1} more)"
+        push_body = {
+            "orderId": booking_id,
+            "reference": ref,
+            "patientName": payload.patient_name,
+            "phone": payload.patient_phone,
+            "totalAmount": float(payload.total_amount),
+            "testName": t_name,
+            "timeSlot": payload.scheduled_slot or "Immediate Test",
+            "targetUrl": "/admin/orders"
+        }
+        import httpx
+        with httpx.Client(timeout=1.5) as client:
+            client.post("http://127.0.0.1:3000/api/push/notify", json=push_body)
+    except Exception:
+        pass
+
     return {
         "success": True,
         "message": "Home blood collection booked successfully",

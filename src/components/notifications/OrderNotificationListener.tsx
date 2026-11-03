@@ -36,10 +36,15 @@ export default function OrderNotificationListener() {
   const seenBookingIdsRef = useRef<Set<string>>(new Set());
   const isInitialLoadRef = useRef(true);
 
-  // Initialize service worker on mount
+  // Initialize service worker on mount & ensure push subscription is active if granted
   useEffect(() => {
     registerServiceWorker();
-  }, []);
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      import('@/lib/pushSubscriptionService').then(({ registerPushDevice }) => {
+        registerPushDevice({ userId: user?.id, role: user?.role }).catch(() => {});
+      });
+    }
+  }, [user]);
 
   // Listen to BroadcastChannel for real-time same-browser cross-tab events
   useEffect(() => {

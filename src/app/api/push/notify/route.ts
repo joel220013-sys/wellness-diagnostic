@@ -34,13 +34,23 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const cleanRef = reference || orderId || 'NEW';
     const payload = JSON.stringify({
-      title: `🔔 New Patient Order: #${reference || orderId || 'NEW'}`,
-      body: `Patient: ${patientName || 'New Patient'} (${phone || 'N/A'}) • ₹${totalAmount || 0}\nTest: ${testName || 'Diagnostic Package'}\nSlot: ${timeSlot || 'Scheduled Home Collection'}`,
+      title: `🔔 New Order Placed: #${cleanRef}`,
+      body: `Patient: ${patientName || 'New Patient'} • ₹${totalAmount || 0} • ${testName || 'Diagnostic Package'}\nSlot: ${timeSlot || 'Scheduled Home Collection'}`,
       icon: '/logo-192.png',
       badge: '/logo-48.png',
-      tag: `wellness-order-${orderId || Date.now()}`,
+      tag: `wellness-order-${cleanRef}`,
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [300, 100, 300, 100, 300],
       url: targetUrl,
+      data: {
+        url: targetUrl,
+        reference: cleanRef,
+        patientName,
+        totalAmount,
+      }
     });
 
     let sentCount = 0;

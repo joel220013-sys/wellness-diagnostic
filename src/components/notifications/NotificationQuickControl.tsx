@@ -88,11 +88,11 @@ export default function NotificationQuickControl() {
         body: JSON.stringify({
           orderId: `test_${Date.now()}`,
           reference: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
-          patientName: 'Staff Mobile Verification',
+          patientName: 'Mobile Screen Alert Test',
           phone: '+91 98111 22334',
           totalAmount: 1499,
-          testName: 'Mobile Screen Push Notification',
-          timeSlot: 'Immediate Dispatch Test',
+          testName: 'Aarogyam Profile Test',
+          timeSlot: 'Immediate Test',
           targetUrl: '/admin/orders',
         }),
       });
