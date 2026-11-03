@@ -3,7 +3,7 @@ export const BRAND = {
   tagline: 'Precision Blood Diagnostics & Doorstep Phlebotomy Care',
   phone: '1800-419-WELL',
   email: 'support@wellnessdiagnostic.com',
-  address: 'Sector 14 Diagnostic Hub, Connaught Place, New Delhi 110001',
+  address: 'Prakash Paradise, Bus Stop, 2343/A, 7th Cross Rd, near Park, Teachers Colony, Vidyanagar, Davangere, Karnataka 577005',
   currency: '₹',
   currencyCode: 'INR',
   timezone: 'Asia/Kolkata',
@@ -16,11 +16,20 @@ export const BRAND = {
   },
 };
 
+export const LAB_LOCATION = {
+  name: 'Wellness Diagnostic Center',
+  address: 'Prakash Paradise, Bus Stop, 2343/A, 7th Cross Rd, near Park, Teachers Colony, Vidyanagar, Davangere, Karnataka 577005',
+  latitude: 14.4408576,
+  longitude: 75.9332864,
+  freeDeliveryRadiusKm: 2.5,
+  deliveryChargeAboveRadius: 50, // INR: +₹50 delivery charge when distance > 2.5 km
+};
+
 export const PRICING_RULES = {
-  freeCollectionThreshold: 999, // INR
-  standardCollectionFee: 150,   // INR
-  bundleDiscountPercent: 0,     // Permanently removed bundle discount
-  taxRate: 0,                   // Clinical pathology is GST exempt
+  freeDeliveryRadiusKm: 2.5,
+  deliveryChargeAboveRadius: 50, // INR
+  bundleDiscountPercent: 0,      // Permanently removed bundle discount
+  taxRate: 0,                    // Clinical pathology is GST exempt
 };
 
 export const TIME_SLOTS = [

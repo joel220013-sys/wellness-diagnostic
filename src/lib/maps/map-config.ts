@@ -1,6 +1,6 @@
 export const MAP_CONFIG = {
-  defaultCenter: [28.4595, 77.0266] as [number, number], // Delhi NCR / Gurugram
-  defaultZoom: 13,
+  defaultCenter: [14.4408576, 75.9332864] as [number, number], // Wellness Diagnostic Center, Vidyanagar, Davangere
+  defaultZoom: 14,
   minZoom: 5,
   maxZoom: 18,
   tileUrl:

@@ -10,7 +10,11 @@ export async function createBookingService(input: BookingCreateInput): Promise<{
   error?: string;
 }> {
   try {
-    const pricing = calculateOrderPricing(input.test_ids);
+    const pricing = calculateOrderPricing(
+      input.test_ids,
+      undefined,
+      input.address ? { latitude: input.address.latitude, longitude: input.address.longitude } : undefined
+    );
 
     const booking_reference = `WD-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const bookingId = `ord_${Date.now()}`;

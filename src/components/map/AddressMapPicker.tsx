@@ -25,15 +25,17 @@ import { parseNominatimAddress, ParsedAddress } from '@/lib/geoAddress';
 export type { ParsedAddress };
 
 
-// Default initial coordinates: Davanagere / Karnataka
-const DEFAULT_COORDS = { lat: 14.47540, lng: 75.88510 };
+// Default lab center: Wellness Diagnostic Center, Vidyanagar, Davangere
+export const LAB_COORDS = { lat: 14.4408576, lng: 75.9332864 };
+const DEFAULT_COORDS = LAB_COORDS;
 
 // Popular Davanagere localities for fast 1-click doorstep pin placement
 const DAVANAGERE_LOCALITIES = [
-  { name: 'Davanagere Center', lat: 14.4644, lng: 75.9218 },
-  { name: 'Doddabati', lat: 14.5126, lng: 75.8732 },
-  { name: 'MCC B Block', lat: 14.4721, lng: 75.9126 },
+  { name: 'Wellness Diagnostic (Lab)', lat: 14.44086, lng: 75.93329 },
   { name: 'Vidyanagar', lat: 14.4532, lng: 75.9084 },
+  { name: 'Teachers Colony', lat: 14.4415, lng: 75.9320 },
+  { name: 'Davanagere Center', lat: 14.4644, lng: 75.9218 },
+  { name: 'MCC B Block', lat: 14.4721, lng: 75.9126 },
   { name: 'PJ Extension', lat: 14.4688, lng: 75.9255 },
   { name: 'SS Layout', lat: 14.4501, lng: 75.9189 },
   { name: 'Kuvempu Nagar', lat: 14.4820, lng: 75.9110 },
@@ -612,6 +614,25 @@ export default function AddressMapPicker({
               <span className="font-bold text-botanical-600">GPS:</span> {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
             </div>
 
+            {/* Floating distance and delivery fee badge */}
+            {(() => {
+              const labDistM = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, coords.lat, coords.lng);
+              const labDistKm = Number((labDistM / 1000).toFixed(1));
+              const isFree = labDistKm <= 2.5;
+              return (
+                <div className="absolute bottom-3 right-3 z-[1000] bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-ivory-300 shadow-soft-sm text-[10px] sm:text-[11px] font-bold flex items-center gap-1.5">
+                  <span className="text-botanical-700">{labDistKm} km from Lab</span>
+                  <span className={`px-1.5 py-0.5 rounded-lg border text-[10px] font-extrabold ${
+                    isFree 
+                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
+                      : 'text-amber-800 bg-amber-50 border-amber-200'
+                  }`}>
+                    {isFree ? 'FREE Collection' : '+₹50 Delivery Fee'}
+                  </span>
+                </div>
+              );
+            })()}
+
             {/* Floating instructions badge */}
             <div className="absolute top-3 left-3 z-[1000] bg-botanical-900/90 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-soft text-[11px] flex items-center gap-1.5">
               <Info className="w-3 h-3 text-peach-300" />
@@ -619,18 +640,39 @@ export default function AddressMapPicker({
             </div>
           </div>
 
-          {/* Selected Location Banner */}
-          <div className="p-3 bg-botanical-50/70 border-t border-botanical-100 flex items-start gap-2.5">
-            <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <span className="text-[10px] font-bold text-botanical-700 uppercase tracking-wider block">
-                Selected Map Location
-              </span>
-              <p className="text-xs font-semibold text-botanical-950 truncate">
-                {isReverseGeocoding ? 'Detecting address details...' : reverseGeocodedText}
-              </p>
-            </div>
-          </div>
+          {/* Selected Location Banner with live Distance & Delivery Fee pill */}
+          {(() => {
+            const labDistM = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, coords.lat, coords.lng);
+            const labDistKm = Number((labDistM / 1000).toFixed(1));
+            const isFree = labDistKm <= 2.5;
+            return (
+              <div className="p-3 bg-botanical-50/70 border-t border-botanical-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-bold text-botanical-700 uppercase tracking-wider block">
+                      Selected Map Location
+                    </span>
+                    <p className="text-xs font-semibold text-botanical-950 truncate">
+                      {isReverseGeocoding ? 'Detecting address details...' : reverseGeocodedText}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 self-start sm:self-auto">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+                    isFree 
+                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
+                      : 'bg-amber-100 text-amber-900 border-amber-300'
+                  }`}>
+                    {isFree 
+                      ? `✓ FREE Home Collection (${labDistKm} km from Lab)` 
+                      : `+₹50 Delivery Fee (${labDistKm} km from Lab)`}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Column: Address Details Form */}

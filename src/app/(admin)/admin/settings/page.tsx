@@ -14,13 +14,13 @@ import {
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
-  const [labName, setLabName] = useState('Wellness Diagnostic Central Pathology Hub');
-  const [labAddress, setLabAddress] = useState('Sector 14 Diagnostic Hub, Connaught Place, New Delhi 110001');
+  const [labName, setLabName] = useState('Wellness Diagnostic Center');
+  const [labAddress, setLabAddress] = useState('Prakash Paradise, Bus Stop, 2343/A, 7th Cross Rd, near Park, Teachers Colony, Vidyanagar, Davangere, Karnataka 577005');
   const [labPhone, setLabPhone] = useState('1800-419-WELL (Toll Free)');
   const [labEmail, setLabEmail] = useState('support@wellnessdiagnostic.com');
   const [nablCode, setNablCode] = useState('NABL-MC-2026-9041');
-  const [freeThreshold, setFreeThreshold] = useState('999');
-  const [collectionFee, setCollectionFee] = useState('150');
+  const [freeRadiusKm, setFreeRadiusKm] = useState('2.5');
+  const [deliveryCharge, setDeliveryCharge] = useState('50');
   const [slotCapacity, setSlotCapacity] = useState('25');
   const [operatingHours, setOperatingHours] = useState('06:00 AM – 08:00 PM Daily');
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -52,34 +52,40 @@ export default function AdminSettingsPage() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-4">
           <div className="flex items-center gap-2.5 pb-2 border-b border-ivory-200">
             <DollarSign className="w-5 h-5 text-botanical-600" />
-            <h2 className="text-base font-bold text-botanical-950">Doorstep Collection Pricing Rules (INR)</h2>
+            <h2 className="text-base font-bold text-botanical-950">GPS Distance-Based Doorstep Delivery Rules</h2>
+          </div>
+
+          <div className="p-3 bg-botanical-50/60 rounded-xl border border-botanical-200 text-xs text-botanical-800 space-y-1">
+            <p className="font-bold text-botanical-950">Central Laboratory GPS Anchor:</p>
+            <p className="text-[11px] text-botanical-700">{labAddress} (14.44086° N, 75.93329° E)</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
               <label className="block font-bold text-botanical-900 mb-1">
-                Free Collection Minimum Cart Threshold (₹)
+                Free Delivery Radius from Lab (km)
               </label>
               <input
                 type="number"
-                value={freeThreshold}
-                onChange={(e) => setFreeThreshold(e.target.value)}
+                step="0.1"
+                value={freeRadiusKm}
+                onChange={(e) => setFreeRadiusKm(e.target.value)}
                 className="w-full p-2.5 rounded-xl border border-ivory-300 font-bold text-sm text-botanical-950"
               />
-              <p className="text-[11px] text-botanical-700/70 mt-1">Orders at or above this amount receive free home sample collection.</p>
+              <p className="text-[11px] text-botanical-700/70 mt-1">Patients whose home collection address is within this radius receive 100% FREE collection.</p>
             </div>
 
             <div>
               <label className="block font-bold text-botanical-900 mb-1">
-                Standard Home Collection Fee (₹)
+                Delivery Charge Above Radius (₹)
               </label>
               <input
                 type="number"
-                value={collectionFee}
-                onChange={(e) => setCollectionFee(e.target.value)}
+                value={deliveryCharge}
+                onChange={(e) => setDeliveryCharge(e.target.value)}
                 className="w-full p-2.5 rounded-xl border border-ivory-300 font-bold text-sm text-botanical-950"
               />
-              <p className="text-[11px] text-botanical-700/70 mt-1">Charged when the order subtotal is below the free threshold.</p>
+              <p className="text-[11px] text-botanical-700/70 mt-1">Added to the order total when the patient&apos;s doorstep exceeds {freeRadiusKm} km from the lab.</p>
             </div>
           </div>
         </div>

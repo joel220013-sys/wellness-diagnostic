@@ -244,10 +244,13 @@ export default function BookCollectionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccessRef, setBookingSuccessRef] = useState<string | null>(null);
 
-  // Authoritative Pricing calculation (ensures live calculation from selected cart items & catalog)
+  // Authoritative Pricing calculation with distance-based delivery fee
   const pricing = useMemo(() => {
-    return calculateOrderPricing(selectedTests, tests);
-  }, [selectedTests, tests]);
+    const coords = confirmedAddress.latitude && confirmedAddress.longitude
+      ? { latitude: confirmedAddress.latitude, longitude: confirmedAddress.longitude }
+      : undefined;
+    return calculateOrderPricing(selectedTests, tests, coords);
+  }, [selectedTests, tests, confirmedAddress.latitude, confirmedAddress.longitude]);
 
   // Step 1: Validations
   const canProceedStep1 = selectedTests.length > 0;
@@ -581,9 +584,13 @@ export default function BookCollectionPage() {
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-extrabold text-botanical-950">₹{pricing.total}</span>
                 {pricing.collectionFee === 0 ? (
-                  <span className="text-xs font-bold text-emerald-700">Free Doorstep Collection</span>
+                  <span className="text-xs font-bold text-emerald-700">
+                    Free Doorstep Collection {pricing.distanceKm !== null ? `(${pricing.distanceKm} km)` : '(≤ 2.5 km)'}
+                  </span>
                 ) : (
-                  <span className="text-xs text-botanical-700/80">+ ₹150 Home Collection Fee</span>
+                  <span className="text-xs text-botanical-700/80">
+                    + ₹50 Delivery Fee {pricing.distanceKm !== null ? `(${pricing.distanceKm} km • > 2.5 km)` : ''}
+                  </span>
                 )}
               </div>
             </div>
@@ -886,9 +893,13 @@ export default function BookCollectionPage() {
               <div className="flex justify-between text-botanical-700">
                 <span>Doorstep Collection Fee:</span>
                 {pricing.collectionFee === 0 ? (
-                  <span className="font-bold text-emerald-700">FREE (Orders ≥ ₹999)</span>
+                  <span className="font-bold text-emerald-700">
+                    FREE {pricing.distanceKm !== null ? `(${pricing.distanceKm} km from Lab • ≤ 2.5 km)` : '(Within 2.5 km of Lab)'}
+                  </span>
                 ) : (
-                  <span className="font-semibold text-botanical-950">₹{pricing.collectionFee}</span>
+                  <span className="font-bold text-botanical-950">
+                    + ₹{pricing.collectionFee} {pricing.distanceKm !== null ? `(${pricing.distanceKm} km from Lab • > 2.5 km)` : '(Above 2.5 km from Lab)'}
+                  </span>
                 )}
               </div>
               <div className="flex justify-between text-botanical-700">
@@ -920,6 +931,14 @@ export default function BookCollectionPage() {
                 <p><strong>Address:</strong> {confirmedAddress.address_line_1}</p>
                 <p><strong>Locality:</strong> {confirmedAddress.locality}, {confirmedAddress.city} - {confirmedAddress.postal_code}</p>
                 <p><strong>Coordinates:</strong> {confirmedAddress.latitude?.toFixed(4)}, {confirmedAddress.longitude?.toFixed(4)}</p>
+                {pricing.distanceKm !== null && (
+                  <p className="pt-1 text-[11px] font-bold">
+                    <span className="text-botanical-800">Distance from Lab: </span>
+                    <span className={pricing.collectionFee === 0 ? 'text-emerald-700' : 'text-amber-800'}>
+                      {pricing.distanceKm} km ({pricing.collectionFee === 0 ? 'FREE Doorstep Collection' : '+₹50 Delivery Charge'})
+                    </span>
+                  </p>
+                )}
                 {confirmedAddress.landmark && <p><strong>Landmark:</strong> {confirmedAddress.landmark}</p>}
               </div>
             </div>
