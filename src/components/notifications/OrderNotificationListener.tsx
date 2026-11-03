@@ -21,6 +21,7 @@ import {
   listenForOrderAlerts,
   markOrderAsSeen,
   isOrderAlreadySeen,
+  isMasterAlertsEnabled,
   OrderNotificationPayload
 } from '@/lib/notificationService';
 import { getWhatsAppDirectUrl } from '@/lib/whatsappService';
@@ -54,6 +55,7 @@ export default function OrderNotificationListener() {
     const cleanup = listenForOrderAlerts((order) => {
       seenBookingIdsRef.current.add(order.id);
       markOrderAsSeen(order.id);
+      if (!isMasterAlertsEnabled()) return;
       setActiveAlert(order);
       // Trigger local sound & notification without re-broadcasting back to BroadcastChannel!
       triggerOrderNotification(order, { broadcast: false });
@@ -116,6 +118,10 @@ export default function OrderNotificationListener() {
         testName: b.tests?.[0]?.name || b.items?.[0]?.item_name || 'Health Diagnostic Checkup',
         timeSlot: b.scheduled_slot
       };
+
+      if (!isMasterAlertsEnabled()) {
+        continue;
+      }
 
       setActiveAlert(payload);
       triggerOrderNotification(payload, { broadcast: true });

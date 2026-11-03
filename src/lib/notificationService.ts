@@ -14,6 +14,7 @@ export interface OrderNotificationPayload {
   timeSlot?: string;
 }
 
+const STORAGE_KEY_MASTER_ALERTS = 'wellness_alerts_master_enabled';
 const STORAGE_KEY_SOUND = 'wellness_order_chime_enabled';
 const STORAGE_KEY_SEEN_ORDERS = 'wellness_notified_orders_v2';
 const BROADCAST_CHANNEL_NAME = 'wellness_order_notifications';
@@ -196,6 +197,25 @@ export function isSoundAlertsEnabled(): boolean {
 }
 
 /**
+ * Set master order alerts enabled/disabled (affects all chimes and screen alerts)
+ */
+export function setMasterAlertsEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY_MASTER_ALERTS, enabled ? 'true' : 'false');
+  if (enabled) {
+    getAudioContext();
+  }
+}
+
+/**
+ * Get whether master order alerts are currently enabled (defaults to true)
+ */
+export function isMasterAlertsEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem(STORAGE_KEY_MASTER_ALERTS) !== 'false';
+}
+
+/**
  * Trigger an OS-level push notification + chime sound for an order
  */
 export async function triggerOrderNotification(
@@ -207,6 +227,11 @@ export async function triggerOrderNotification(
   const now = Date.now();
   const shouldBroadcast = options?.broadcast !== false;
   const isForce = options?.force === true;
+
+  // Check master alerts toggle: if disabled, silence unless forcefully triggered by test button
+  if (!isForce && !isMasterAlertsEnabled()) {
+    return false;
+  }
 
   // Deduplication check: drop duplicate alert for the same order ID immediately
   if (!isForce && isOrderAlreadySeen(order.id)) {

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
-import NotificationQuickControl from '@/components/notifications/NotificationQuickControl';
+import OrderAlertBanner from '@/components/notifications/OrderAlertBanner';
 import UploadReportModal from '@/components/reports/UploadReportModal';
 import DayFilterControl from '@/components/admin/DayFilterControl';
 import { 
@@ -205,22 +205,8 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Live Order Audio & Push Alert Controls */}
-      <div className="bg-white/80 backdrop-blur p-3.5 sm:p-4 rounded-2xl border border-ivory-300 shadow-soft-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-          </span>
-          <span className="text-xs font-bold text-botanical-950">
-            Real-Time Order Listener Active
-          </span>
-          <span className="text-[11px] text-botanical-700/70 hidden md:inline">
-            • Chime rings & screen notifications pop up when patients book
-          </span>
-        </div>
-        <NotificationQuickControl />
-      </div>
+      {/* Live Order Audio & Push Alert Banner with Master and Chime ON/OFF Toggles */}
+      <OrderAlertBanner />
 
       {/* Primary Date Filter Bar */}
       <DayFilterControl

@@ -150,24 +150,42 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
           {(portalRole === 'admin' || portalRole === 'driver') && (
             <button
               onClick={toggleSound}
-              className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 select-none active:scale-95 ${
                 soundEnabled
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                  : 'bg-ivory-100 text-botanical-600 border-ivory-300 hover:bg-ivory-200'
+                  ? 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 shadow-soft-xs'
+                  : 'bg-ivory-100 text-botanical-700 border-ivory-300 hover:bg-ivory-200'
               }`}
-              title={soundEnabled ? 'Order sound alert is ON (click to mute)' : 'Order sound alert is OFF (click to unmute)'}
+              title={soundEnabled ? 'Click to toggle order chime sound OFF' : 'Click to toggle order chime sound ON'}
+              role="switch"
+              aria-checked={soundEnabled}
             >
               {soundEnabled ? (
-                <>
-                  <Volume2 className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden xl:inline text-[11px]">Chime ON</span>
-                </>
+                <Volume2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
               ) : (
-                <>
-                  <VolumeX className="w-4 h-4 text-botanical-500" />
-                  <span className="hidden xl:inline text-[11px]">Muted</span>
-                </>
+                <VolumeX className="w-3.5 h-3.5 text-botanical-500 flex-shrink-0" />
               )}
+              <span className="hidden sm:inline text-[11px]">Chime</span>
+              
+              {/* Sliding toggle switch pill */}
+              <span
+                className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+                  soundEnabled ? 'bg-emerald-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ${
+                    soundEnabled ? 'translate-x-3' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+
+              <span
+                className={`text-[10px] font-extrabold uppercase ${
+                  soundEnabled ? 'text-emerald-700' : 'text-botanical-600'
+                }`}
+              >
+                {soundEnabled ? 'ON' : 'OFF'}
+              </span>
             </button>
           )}
 
