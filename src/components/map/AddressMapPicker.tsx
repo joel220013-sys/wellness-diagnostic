@@ -614,25 +614,6 @@ export default function AddressMapPicker({
               <span className="font-bold text-botanical-600">GPS:</span> {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
             </div>
 
-            {/* Floating distance and delivery fee badge */}
-            {(() => {
-              const labDistM = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, coords.lat, coords.lng);
-              const labDistKm = Number((labDistM / 1000).toFixed(1));
-              const isFree = labDistKm <= 2.5;
-              return (
-                <div className="absolute bottom-3 right-3 z-[1000] bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-ivory-300 shadow-soft-sm text-[10px] sm:text-[11px] font-bold flex items-center gap-1.5">
-                  <span className="text-botanical-700">{labDistKm} km from Lab</span>
-                  <span className={`px-1.5 py-0.5 rounded-lg border text-[10px] font-extrabold ${
-                    isFree 
-                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200' 
-                      : 'text-amber-800 bg-amber-50 border-amber-200'
-                  }`}>
-                    {isFree ? 'FREE Collection' : '+₹50 Delivery Fee'}
-                  </span>
-                </div>
-              );
-            })()}
-
             {/* Floating instructions badge */}
             <div className="absolute top-3 left-3 z-[1000] bg-botanical-900/90 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-soft text-[11px] flex items-center gap-1.5">
               <Info className="w-3 h-3 text-peach-300" />
@@ -640,39 +621,26 @@ export default function AddressMapPicker({
             </div>
           </div>
 
-          {/* Selected Location Banner with live Distance & Delivery Fee pill */}
-          {(() => {
-            const labDistM = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, coords.lat, coords.lng);
-            const labDistKm = Number((labDistM / 1000).toFixed(1));
-            const isFree = labDistKm <= 2.5;
-            return (
-              <div className="p-3 bg-botanical-50/70 border-t border-botanical-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold text-botanical-700 uppercase tracking-wider block">
-                      Selected Map Location
-                    </span>
-                    <p className="text-xs font-semibold text-botanical-950 truncate">
-                      {isReverseGeocoding ? 'Detecting address details...' : reverseGeocodedText}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0 self-start sm:self-auto">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
-                    isFree 
-                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
-                      : 'bg-amber-100 text-amber-900 border-amber-300'
-                  }`}>
-                    {isFree 
-                      ? `✓ FREE Home Collection (${labDistKm} km from Lab)` 
-                      : `+₹50 Delivery Fee (${labDistKm} km from Lab)`}
-                  </span>
-                </div>
+          {/* Selected Location Banner with standard Doorstep Sample Collection pill */}
+          <div className="p-3 bg-botanical-50/70 border-t border-botanical-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold text-botanical-700 uppercase tracking-wider block">
+                  Selected Map Location
+                </span>
+                <p className="text-xs font-semibold text-botanical-950 truncate">
+                  {isReverseGeocoding ? 'Detecting address details...' : reverseGeocodedText}
+                </p>
               </div>
-            );
-          })()}
+            </div>
+
+            <div className="flex-shrink-0 self-start sm:self-auto">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-botanical-100 text-botanical-900 border border-botanical-200">
+                ₹50 Doorstep Collection Fee
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Address Details Form */}

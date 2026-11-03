@@ -21,15 +21,12 @@ export const LAB_LOCATION = {
   address: 'Prakash Paradise, Bus Stop, 2343/A, 7th Cross Rd, near Park, Teachers Colony, Vidyanagar, Davangere, Karnataka 577005',
   latitude: 14.4408576,
   longitude: 75.9332864,
-  freeDeliveryRadiusKm: 2.5,
-  deliveryChargeAboveRadius: 50, // INR: +₹50 delivery charge when distance > 2.5 km
 };
 
 export const PRICING_RULES = {
-  freeDeliveryRadiusKm: 2.5,
-  deliveryChargeAboveRadius: 50, // INR
-  bundleDiscountPercent: 0,      // Permanently removed bundle discount
-  taxRate: 0,                    // Clinical pathology is GST exempt
+  standardDeliveryFee: 50,  // INR: Flat ₹50 home sample collection & delivery charge
+  bundleDiscountPercent: 0, // Permanently removed bundle discount
+  taxRate: 0,               // Clinical pathology is GST exempt
 };
 
 export const TIME_SLOTS = [

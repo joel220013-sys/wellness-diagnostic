@@ -1,4 +1,4 @@
-import { LAB_LOCATION, PRICING_RULES } from '@/lib/constants';
+import { PRICING_RULES } from '@/lib/constants';
 
 export interface PricingCalculation {
   subtotal: number;
@@ -95,44 +95,9 @@ export function calculateOrderPricing(
 
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
 
-  // Distance-Based Home Delivery Policy:
-  // Center: Wellness Diagnostic Center (Vidyanagar, Davangere: 14.44086, 75.93329)
-  // <= 2.5 km: ₹0 (FREE Home Collection)
-  // > 2.5 km: +₹50 Doorstep Delivery Fee
-  let distanceKm: number | null = null;
-  let isFreeDelivery = true;
-  let collectionFee = 0;
-  let deliveryLabel = 'FREE (Within 2.5 km of Lab)';
-
-  if (
-    patientCoords && 
-    typeof patientCoords.latitude === 'number' && 
-    typeof patientCoords.longitude === 'number' &&
-    !isNaN(patientCoords.latitude) && 
-    !isNaN(patientCoords.longitude)
-  ) {
-    distanceKm = calculateDistanceKm(
-      LAB_LOCATION.latitude,
-      LAB_LOCATION.longitude,
-      patientCoords.latitude,
-      patientCoords.longitude
-    );
-
-    if (distanceKm > PRICING_RULES.freeDeliveryRadiusKm) {
-      isFreeDelivery = false;
-      collectionFee = subtotal === 0 ? 0 : PRICING_RULES.deliveryChargeAboveRadius;
-      deliveryLabel = `₹${collectionFee} (${distanceKm} km from Lab • > 2.5 km)`;
-    } else {
-      isFreeDelivery = true;
-      collectionFee = 0;
-      deliveryLabel = `FREE (${distanceKm} km from Lab • ≤ 2.5 km)`;
-    }
-  } else {
-    // If coords not yet chosen in flow, default to free within 2.5 km
-    collectionFee = 0;
-    isFreeDelivery = true;
-    deliveryLabel = 'FREE within 2.5 km (+₹50 if > 2.5 km)';
-  }
+  // Policy: Flat standard ₹50 Doorstep Collection Fee for home collections
+  const collectionFee = subtotal > 0 ? (PRICING_RULES.standardDeliveryFee || 50) : 0;
+  const deliveryLabel = collectionFee > 0 ? '₹50 Standard Home Collection' : '₹0';
   
   // Permanently removed multi-test bundle discount
   const discount = 0;
@@ -146,8 +111,8 @@ export function calculateOrderPricing(
     discount,
     tax,
     total,
-    distanceKm,
-    isFreeDelivery,
+    distanceKm: null,
+    isFreeDelivery: false,
     deliveryLabel,
     items,
   };

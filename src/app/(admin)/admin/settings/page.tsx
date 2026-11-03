@@ -19,8 +19,7 @@ export default function AdminSettingsPage() {
   const [labPhone, setLabPhone] = useState('1800-419-WELL (Toll Free)');
   const [labEmail, setLabEmail] = useState('support@wellnessdiagnostic.com');
   const [nablCode, setNablCode] = useState('NABL-MC-2026-9041');
-  const [freeRadiusKm, setFreeRadiusKm] = useState('2.5');
-  const [deliveryCharge, setDeliveryCharge] = useState('50');
+  const [collectionFee, setCollectionFee] = useState('50');
   const [slotCapacity, setSlotCapacity] = useState('25');
   const [operatingHours, setOperatingHours] = useState('06:00 AM – 08:00 PM Daily');
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -52,41 +51,27 @@ export default function AdminSettingsPage() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-4">
           <div className="flex items-center gap-2.5 pb-2 border-b border-ivory-200">
             <DollarSign className="w-5 h-5 text-botanical-600" />
-            <h2 className="text-base font-bold text-botanical-950">GPS Distance-Based Doorstep Delivery Rules</h2>
+            <h2 className="text-base font-bold text-botanical-950">Doorstep Collection & Delivery Pricing (INR)</h2>
           </div>
 
           <div className="p-3 bg-botanical-50/60 rounded-xl border border-botanical-200 text-xs text-botanical-800 space-y-1">
-            <p className="font-bold text-botanical-950">Central Laboratory GPS Anchor:</p>
-            <p className="text-[11px] text-botanical-700">{labAddress} (14.44086° N, 75.93329° E)</p>
+            <p className="font-bold text-botanical-950">Central Laboratory Facility:</p>
+            <p className="text-[11px] text-botanical-700">{labAddress}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-bold text-botanical-900 mb-1">
-                Free Delivery Radius from Lab (km)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={freeRadiusKm}
-                onChange={(e) => setFreeRadiusKm(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-ivory-300 font-bold text-sm text-botanical-950"
-              />
-              <p className="text-[11px] text-botanical-700/70 mt-1">Patients whose home collection address is within this radius receive 100% FREE collection.</p>
-            </div>
-
-            <div>
-              <label className="block font-bold text-botanical-900 mb-1">
-                Delivery Charge Above Radius (₹)
-              </label>
-              <input
-                type="number"
-                value={deliveryCharge}
-                onChange={(e) => setDeliveryCharge(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-ivory-300 font-bold text-sm text-botanical-950"
-              />
-              <p className="text-[11px] text-botanical-700/70 mt-1">Added to the order total when the patient&apos;s doorstep exceeds {freeRadiusKm} km from the lab.</p>
-            </div>
+          <div className="max-w-md text-xs space-y-1">
+            <label className="block font-bold text-botanical-900 mb-1">
+              Standard Home Sample Collection Fee (₹)
+            </label>
+            <input
+              type="number"
+              value={collectionFee}
+              onChange={(e) => setCollectionFee(e.target.value)}
+              className="w-full p-2.5 rounded-xl border border-ivory-300 font-bold text-sm text-botanical-950"
+            />
+            <p className="text-[11px] text-botanical-700/70 mt-1">
+              Flat delivery/collection charge applied to all home phlebotomy visits across Davangere.
+            </p>
           </div>
         </div>
 
