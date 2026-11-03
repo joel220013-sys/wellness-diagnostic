@@ -55,7 +55,7 @@ def _format_db_booking(r: Dict[str, Any]) -> Dict[str, Any]:
         "patient_phone": r.get("patient_phone") or "",
         "scheduled_date": str(r.get("scheduled_date") or r.get("collection_date") or ""),
         "scheduled_slot": r.get("scheduled_slot") or r.get("time_slot") or "07:30 AM – 09:00 AM",
-        "status": r.get("status") or "Confirmed",
+        "status": r.get("status") or "Pending",
         "total_amount": float(r.get("total_amount") or 0),
         "subtotal": float(r.get("subtotal") or r.get("total_amount") or 0),
         "collection_fee": float(r.get("collection_fee") or 0),
@@ -132,7 +132,7 @@ def create_booking(payload: BookingCreateInput):
     new_booking.update({
         "id": booking_id,
         "booking_reference": ref,
-        "status": "Confirmed",
+        "status": "Pending",
         "payment_status": "Pending",
         "created_at": datetime.utcnow().isoformat() + "Z"
     })
@@ -172,7 +172,7 @@ def create_booking(payload: BookingCreateInput):
             payload.scheduled_slot,
             payload.scheduled_date,
             payload.scheduled_slot,
-            "Confirmed",
+            "Pending",
             float(payload.total_amount),
             float(payload.subtotal),
             float(payload.collection_fee),

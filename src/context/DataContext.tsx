@@ -313,7 +313,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       ...bookingData,
       id: `ord_${timestamp}`,
       booking_reference,
-      status: 'assigned',
+      status: 'Pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

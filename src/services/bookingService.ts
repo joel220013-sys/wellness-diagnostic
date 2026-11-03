@@ -36,7 +36,7 @@ export async function createBookingService(input: BookingCreateInput): Promise<{
       patient_email: sanitizeEmail(input.patient_email),
       patient_age: input.patient_age,
       patient_gender: input.patient_gender,
-      status: 'assigned',
+      status: 'Pending',
       scheduled_date: input.collection_date,
       scheduled_slot: input.time_slot,
       address_snapshot: addressSnapshot,

@@ -129,6 +129,16 @@ export default function AdminOrderDetailPage() {
         </Link>
 
         <div className="flex items-center gap-2">
+          {String(booking.status || '').toLowerCase() === 'pending' && (
+            <button
+              onClick={() => handleStatusChange('Confirmed')}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-soft-sm transition-all flex items-center gap-1.5 active:scale-95"
+              title="Click to confirm this pending order"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Confirm Order</span>
+            </button>
+          )}
           <span className="text-xs font-bold text-botanical-700">Change Status:</span>
           <select
             value={booking.status}

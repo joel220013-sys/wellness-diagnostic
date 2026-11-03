@@ -40,9 +40,9 @@ export default function AdminDashboardPage() {
 
   // Metrics dynamically derived from the active day's orders
   const totalActiveOrders = activeBookings.length;
-  const pendingConfirmation = activeBookings.filter((b) => b.status === 'Pending').length;
-  const assignedJobs = activeBookings.filter((b) => ['Assigned', 'Collection Scheduled'].includes(b.status)).length;
-  const collectionsCompleted = activeBookings.filter((b) => ['Sample Collected', 'Processing', 'Report Ready'].includes(b.status)).length;
+  const pendingConfirmation = activeBookings.filter((b) => String(b.status || '').toLowerCase() === 'pending').length;
+  const assignedJobs = activeBookings.filter((b) => ['assigned', 'collection scheduled', 'collection_scheduled'].includes(String(b.status || '').toLowerCase())).length;
+  const collectionsCompleted = activeBookings.filter((b) => ['sample collected', 'sample_collected', 'processing', 'report ready', 'report_ready'].includes(String(b.status || '').toLowerCase())).length;
   const reportsReady = dayFilterMode === 'ALL'
     ? reports.length
     : reports.filter((r) => activeBookings.some((b) => b.id === r.booking_id || b.booking_reference === r.booking_reference)).length;
@@ -251,7 +251,15 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="p-3 font-bold text-botanical-950">₹{booking.total_amount}</td>
                     <td className="p-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-ivory-200 text-botanical-800 border border-ivory-300">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                        String(booking.status || '').toLowerCase() === 'pending'
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                          : String(booking.status || '').toLowerCase() === 'confirmed'
+                          ? 'bg-teal-100 text-teal-900 border-teal-300'
+                          : String(booking.status || '').toLowerCase() === 'assigned'
+                          ? 'bg-blue-100 text-blue-900 border-blue-300'
+                          : 'bg-ivory-200 text-botanical-800 border-ivory-300'
+                      }`}>
                         {booking.status}
                       </span>
                     </td>
