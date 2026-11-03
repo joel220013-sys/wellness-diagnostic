@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Plus,
   X,
-  FileUp
+  FileUp,
+  FileText
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
@@ -92,10 +93,27 @@ export default function AdminOrdersPage() {
     return matchesSearch && matchesStatus && matchesDriver;
   });
 
+  // Split into Active Orders (in-progress) vs Completed Orders (Report Ready)
+  const isCompletedOrder = (b: (typeof bookings)[0]) => {
+    const s = String(b.status || '').toLowerCase();
+    return s === 'report ready' || s === 'report_ready';
+  };
+
+  const activeOrders = filteredBookings.filter((b) => !isCompletedOrder(b));
+  const completedOrders = filteredBookings.filter((b) => isCompletedOrder(b));
+
+  // View mode tab state: 'ALL_SECTIONS' (show both), 'ACTIVE_ONLY', 'COMPLETED_ONLY'
+  const [ordersViewMode, setOrdersViewMode] = useState<'ALL_SECTIONS' | 'ACTIVE_ONLY' | 'COMPLETED_ONLY'>('ALL_SECTIONS');
+
   const handleStatusChange = (bookingId: string, newStatus: BookingStatus) => {
     updateBookingStatus(bookingId, newStatus);
-    setAssignmentToast(`Order status updated to "${newStatus}"`);
-    setTimeout(() => setAssignmentToast(null), 3000);
+    const s = String(newStatus).toLowerCase();
+    if (s === 'report ready' || s === 'report_ready') {
+      setAssignmentToast(`Order marked "Report Ready" and moved to Completed Orders ✓`);
+    } else {
+      setAssignmentToast(`Order status updated to "${newStatus}"`);
+    }
+    setTimeout(() => setAssignmentToast(null), 3500);
   };
 
   const openAssignModal = (bookingId: string) => {
@@ -172,6 +190,124 @@ export default function AdminOrdersPage() {
       default:
         return 'bg-ivory-100 text-botanical-800 border-ivory-300';
     }
+  };
+
+  const renderOrderRow = (booking: (typeof bookings)[0], isCompletedView = false) => {
+    const isPending = String(booking.status || '').toLowerCase() === 'pending';
+    const isReportReady = String(booking.status || '').toLowerCase().includes('report');
+
+    return (
+      <tr 
+        key={booking.id} 
+        className={`transition-colors ${
+          isCompletedView 
+            ? 'hover:bg-emerald-50/60 bg-emerald-50/15' 
+            : 'hover:bg-ivory-50/60'
+        }`}
+      >
+        <td className="p-3.5 font-bold text-botanical-950">
+          <div className="flex items-center gap-1.5">
+            {isReportReady && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />}
+            <span>#{booking.booking_reference}</span>
+          </div>
+        </td>
+
+        <td className="p-3.5">
+          <p className="font-bold text-botanical-950">{booking.patient_name}</p>
+          <p className="text-[11px] text-botanical-700/80">{booking.patient_phone}</p>
+        </td>
+
+        <td className="p-3.5 text-botanical-800">
+          <p className="font-semibold">{booking.scheduled_date}</p>
+          <p className="text-[11px] text-botanical-600">{booking.scheduled_slot}</p>
+        </td>
+
+        <td className="p-3.5 text-botanical-800 truncate max-w-[180px]">
+          {booking.address_snapshot?.locality || booking.address_snapshot?.address_line_1 || 'Davangere'}, {booking.address_snapshot?.city || 'Davangere'}
+        </td>
+
+        <td className="p-3.5">
+          {booking.driver_name || booking.assigned_driver_name ? (
+            <div className="inline-flex items-center gap-1.5 font-semibold text-sky-900 bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-200">
+              <Truck className="w-3.5 h-3.5 text-sky-700" />
+              <span>{booking.driver_name || booking.assigned_driver_name}</span>
+              <button
+                onClick={() => openAssignModal(booking.id)}
+                className="ml-1 text-[10px] text-sky-700 hover:underline font-bold"
+                title="Change phlebotomist"
+              >
+                Change
+              </button>
+            </div>
+          ) : isPending ? (
+            <button
+              onClick={() => handleStatusChange(booking.id, 'Confirmed')}
+              className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-soft-xs transition-all flex items-center gap-1 active:scale-95"
+              title="Click to confirm this pending order"
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              <span>Confirm Order</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => openAssignModal(booking.id)}
+              className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Assign Phlebotomist</span>
+            </button>
+          )}
+        </td>
+
+        <td className="p-3.5 font-extrabold text-botanical-950">
+          ₹{booking.total_amount}
+        </td>
+
+        <td className="p-3.5">
+          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap inline-flex items-center gap-1 ${getStatusBadge(booking.status)}`}>
+            {isReportReady && <CheckCircle2 className="w-3 h-3 text-emerald-600 flex-shrink-0" />}
+            <span>{booking.status}</span>
+          </span>
+        </td>
+
+        <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+          <select
+            value={booking.status}
+            onChange={(e) => handleStatusChange(booking.id, e.target.value as BookingStatus)}
+            className="px-2 py-1 rounded-lg border border-ivory-300 text-[11px] font-semibold bg-white text-botanical-950"
+          >
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Collection Scheduled">Collection Scheduled</option>
+            <option value="Sample Collected">Sample Collected</option>
+            <option value="Processing">Processing</option>
+            <option value="Report Ready">Report Ready</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+
+          <button
+            onClick={() => setUploadModalBookingId(booking.id)}
+            className={`inline-flex items-center gap-1 p-1.5 rounded-lg transition-colors ${
+              isReportReady 
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-soft-xs' 
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
+            }`}
+            title="Upload / Manage Lab Report PDF"
+          >
+            <FileUp className="w-3.5 h-3.5" />
+          </button>
+
+          <Link
+            href={`/admin/orders/${booking.id}`}
+            className="inline-flex items-center gap-1 p-1.5 rounded-lg bg-ivory-100 hover:bg-ivory-200 text-botanical-800"
+            title="Inspect order details"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </Link>
+        </td>
+      </tr>
+    );
   };
 
   return (
@@ -270,160 +406,192 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-3xl border border-ivory-300 shadow-soft-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-ivory-100 text-botanical-800 font-bold uppercase tracking-wider border-b border-ivory-200">
-              <tr>
-                <th className="p-3.5">Order Ref</th>
-                <th className="p-3.5">Patient Details</th>
-                <th className="p-3.5">Collection Slot</th>
-                <th className="p-3.5">Location</th>
-                <th className="p-3.5">Assigned Phlebotomist</th>
-                <th className="p-3.5">Amount (₹)</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            {filteredBookings.length === 0 ? (
-              <tbody>
-                <tr>
-                  <td colSpan={8} className="p-12 text-center">
-                    <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-ivory-200 text-botanical-700 flex items-center justify-center mx-auto">
-                        <Calendar className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-sm font-bold text-botanical-950">
-                        No orders found for this view
-                      </h3>
-                      <p className="text-xs text-botanical-700/80">
-                        {dayFilterMode === 'TODAY'
-                          ? 'No home blood collection appointments or bookings scheduled for today yet.'
-                          : 'There are no patient orders matching the chosen date or search criteria.'}
-                      </p>
-                      {dayFilterMode !== 'TODAY' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDayFilterMode('TODAY');
-                            setStatusFilter('ALL');
-                            setDriverFilter('ALL');
-                            setSearchQuery('');
-                          }}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
-                        >
-                          <span>Return to Today&apos;s Orders</span>
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            ) : (
-              <tbody className="divide-y divide-ivory-100">
-                {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-ivory-50/60 transition-colors">
-                  <td className="p-3.5 font-bold text-botanical-950">
-                    #{booking.booking_reference}
-                  </td>
-
-                  <td className="p-3.5">
-                    <p className="font-bold text-botanical-950">{booking.patient_name}</p>
-                    <p className="text-[11px] text-botanical-700/80">{booking.patient_phone}</p>
-                  </td>
-
-                  <td className="p-3.5 text-botanical-800">
-                    <p className="font-semibold">{booking.scheduled_date}</p>
-                    <p className="text-[11px] text-botanical-600">{booking.scheduled_slot}</p>
-                  </td>
-
-                  <td className="p-3.5 text-botanical-800 truncate max-w-[180px]">
-                    {booking.address_snapshot?.locality || booking.address_snapshot?.address_line_1 || 'Davangere'}, {booking.address_snapshot?.city || 'Davangere'}
-                  </td>
-
-                  <td className="p-3.5">
-                    {booking.driver_name || booking.assigned_driver_name ? (
-                      <div className="inline-flex items-center gap-1.5 font-semibold text-sky-900 bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-200">
-                        <Truck className="w-3.5 h-3.5 text-sky-700" />
-                        <span>{booking.driver_name || booking.assigned_driver_name}</span>
-                        <button
-                          onClick={() => openAssignModal(booking.id)}
-                          className="ml-1 text-[10px] text-sky-700 hover:underline font-bold"
-                          title="Change driver"
-                        >
-                          Change
-                        </button>
-                      </div>
-                    ) : String(booking.status || '').toLowerCase() === 'pending' ? (
-                      <button
-                        onClick={() => handleStatusChange(booking.id, 'Confirmed')}
-                        className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-soft-xs transition-all flex items-center gap-1 active:scale-95"
-                        title="Click to confirm this pending order"
-                      >
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Confirm Order</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => openAssignModal(booking.id)}
-                        className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors flex items-center gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Assign Phlebotomist</span>
-                      </button>
-                    )}
-                  </td>
-
-                  <td className="p-3.5 font-extrabold text-botanical-950">
-                    ₹{booking.total_amount}
-                  </td>
-
-                  <td className="p-3.5">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadge(booking.status)}`}>
-                      {booking.status}
-                    </span>
-                  </td>
-
-                  <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                    <select
-                      value={booking.status}
-                      onChange={(e) => handleStatusChange(booking.id, e.target.value as BookingStatus)}
-                      className="px-2 py-1 rounded-lg border border-ivory-300 text-[11px] font-semibold bg-white text-botanical-950"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Confirmed">Confirmed</option>
-                      <option value="Assigned">Assigned</option>
-                      <option value="Collection Scheduled">Collection Scheduled</option>
-                      <option value="Sample Collected">Sample Collected</option>
-                      <option value="Processing">Processing</option>
-                      <option value="Report Ready">Report Ready</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-
-                    <button
-                      onClick={() => setUploadModalBookingId(booking.id)}
-                      className="inline-flex items-center gap-1 p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-colors"
-                      title="Upload Lab Report for Patient"
-                    >
-                      <FileUp className="w-3.5 h-3.5" />
-                    </button>
-
-                    <Link
-                      href={`/admin/orders/${booking.id}`}
-                      className="inline-flex items-center gap-1 p-1.5 rounded-lg bg-ivory-100 hover:bg-ivory-200 text-botanical-800"
-                      title="Inspect order details"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              </tbody>
-            )}
-          </table>
+      {/* Section View Tabs Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 p-1 bg-ivory-200/80 rounded-2xl border border-ivory-300 text-xs font-bold w-fit">
+          <button
+            type="button"
+            onClick={() => setOrdersViewMode('ALL_SECTIONS')}
+            className={`px-3.5 py-1.5 rounded-xl transition-all ${
+              ordersViewMode === 'ALL_SECTIONS'
+                ? 'bg-botanical-500 text-white shadow-soft-xs'
+                : 'text-botanical-800 hover:bg-ivory-100'
+            }`}
+          >
+            All Sections ({filteredBookings.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setOrdersViewMode('ACTIVE_ONLY')}
+            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+              ordersViewMode === 'ACTIVE_ONLY'
+                ? 'bg-botanical-500 text-white shadow-soft-xs'
+                : 'text-botanical-800 hover:bg-ivory-100'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>In-Progress ({activeOrders.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOrdersViewMode('COMPLETED_ONLY')}
+            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+              ordersViewMode === 'COMPLETED_ONLY'
+                ? 'bg-emerald-600 text-white shadow-soft-xs'
+                : 'text-emerald-900 hover:bg-emerald-50'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Completed Orders ({completedOrders.length})</span>
+          </button>
         </div>
+
+        <p className="text-xs text-botanical-700/80">
+          • Orders marked &quot;Report Ready&quot; automatically move to the Completed section.
+        </p>
       </div>
+
+      {/* When 0 total bookings for this day/filter */}
+      {filteredBookings.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-ivory-300 shadow-soft-sm p-12 text-center">
+          <div className="max-w-sm mx-auto space-y-3">
+            <div className="w-12 h-12 rounded-full bg-ivory-200 text-botanical-700 flex items-center justify-center mx-auto">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-botanical-950">
+              No orders found for this view
+            </h3>
+            <p className="text-xs text-botanical-700/80">
+              {dayFilterMode === 'TODAY'
+                ? 'No home blood collection appointments or bookings scheduled for today yet.'
+                : 'There are no patient orders matching the chosen date or search criteria.'}
+            </p>
+            {dayFilterMode !== 'TODAY' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDayFilterMode('TODAY');
+                  setStatusFilter('ALL');
+                  setDriverFilter('ALL');
+                  setSearchQuery('');
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+              >
+                <span>Return to Today&apos;s Orders</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* SECTION 1: Active In-Progress Orders */}
+          {(ordersViewMode === 'ALL_SECTIONS' || ordersViewMode === 'ACTIVE_ONLY') && (
+            <div className="bg-white rounded-3xl border border-ivory-300 shadow-soft-sm overflow-hidden">
+              <div className="p-4 sm:p-5 bg-ivory-50/70 border-b border-ivory-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-amber-100 text-amber-800">
+                    <Clock className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold text-botanical-950">
+                      Active Orders In-Progress ({activeOrders.length})
+                    </h2>
+                    <p className="text-[11px] text-botanical-700/80">
+                      Orders requiring confirmation, phlebotomy dispatch, or laboratory processing
+                    </p>
+                  </div>
+                </div>
+
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300 self-start sm:self-auto">
+                  {activeOrders.length} In-Progress
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-ivory-100/80 text-botanical-800 font-bold uppercase tracking-wider border-b border-ivory-200">
+                    <tr>
+                      <th className="p-3.5">Order Ref</th>
+                      <th className="p-3.5">Patient Details</th>
+                      <th className="p-3.5">Collection Slot</th>
+                      <th className="p-3.5">Location</th>
+                      <th className="p-3.5">Assigned Phlebotomist</th>
+                      <th className="p-3.5">Amount (₹)</th>
+                      <th className="p-3.5">Status</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ivory-100">
+                    {activeOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-xs text-botanical-700/80 bg-ivory-50/50">
+                          ✓ All active orders on this view have been processed and moved to Completed Orders below!
+                        </td>
+                      </tr>
+                    ) : (
+                      activeOrders.map((booking) => renderOrderRow(booking, false))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 2: Completed Orders (Report Ready) */}
+          {(ordersViewMode === 'ALL_SECTIONS' || ordersViewMode === 'COMPLETED_ONLY') && (
+            <div className="bg-white rounded-3xl border-2 border-emerald-300 shadow-soft-sm overflow-hidden">
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-50 via-emerald-100/30 to-white border-b border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-soft-xs">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold text-emerald-950">
+                      Completed Orders — Report Ready ({completedOrders.length})
+                    </h2>
+                    <p className="text-[11px] text-emerald-800/80">
+                      Diagnostic tests verified and reports published for patients
+                    </p>
+                  </div>
+                </div>
+
+                <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1 self-start sm:self-auto">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>{completedOrders.length} Completed</span>
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-emerald-50/60 text-emerald-950 font-bold uppercase tracking-wider border-b border-emerald-200">
+                    <tr>
+                      <th className="p-3.5">Order Ref</th>
+                      <th className="p-3.5">Patient Details</th>
+                      <th className="p-3.5">Collection Slot</th>
+                      <th className="p-3.5">Location</th>
+                      <th className="p-3.5">Phlebotomist</th>
+                      <th className="p-3.5">Amount (₹)</th>
+                      <th className="p-3.5">Status</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-100/60">
+                    {completedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-xs text-botanical-700/80 bg-emerald-50/20">
+                          No orders marked as &quot;Report Ready&quot; on this view yet. Once you set an order to &quot;Report Ready&quot;, it will automatically move here.
+                        </td>
+                      </tr>
+                    ) : (
+                      completedOrders.map((booking) => renderOrderRow(booking, true))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Driver Assignment Modal */}
       {assigningBookingId && (
