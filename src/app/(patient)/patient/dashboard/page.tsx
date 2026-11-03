@@ -23,7 +23,9 @@ import {
   FlaskConical,
   Plus,
   Check,
-  Settings
+  Settings,
+  Truck,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -39,6 +41,7 @@ export default function PatientDashboardPage() {
   const { 
     tests,
     bookings, 
+    drivers,
     reports, 
     invoices, 
     selectedTests, 
@@ -369,6 +372,54 @@ export default function PatientDashboardPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Assigned Phlebotomist details for patient */}
+                  {(() => {
+                    const assignedDriver = (drivers || []).find((d) => 
+                      (booking.driver_id && d.id === booking.driver_id) || 
+                      (booking.assigned_driver_id && d.id === booking.assigned_driver_id) ||
+                      (booking.driver_name && d.name.toLowerCase() === booking.driver_name.toLowerCase())
+                    );
+                    const driverName = assignedDriver?.name || booking.driver_name || booking.assigned_driver_name;
+                    const driverPhone = assignedDriver?.phone || booking.driver_phone;
+
+                    if (!driverName) return null;
+
+                    return (
+                      <div className="mb-2 p-2.5 bg-gradient-to-r from-sky-50 to-white rounded-xl border border-sky-200 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-sky-600 text-white flex-shrink-0 shadow-soft-xs">
+                            <Truck className="w-3.5 h-3.5" />
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-sky-950">
+                                Phlebotomist: {driverName}
+                              </span>
+                              {assignedDriver?.badge_id && (
+                                <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-white border border-sky-200 text-sky-900 font-bold">
+                                  #{assignedDriver.badge_id}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-sky-800">
+                              {assignedDriver?.vehicle_details || 'Mobile Phlebotomy Unit'} • Cold Chain Verified
+                            </p>
+                          </div>
+                        </div>
+
+                        {driverPhone && (
+                          <a
+                            href={`tel:${driverPhone}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shadow-soft-xs transition-colors"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>Call</span>
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Phlebotomist & Address Details */}
                   <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-botanical-800/80 gap-2 border-t border-ivory-100">

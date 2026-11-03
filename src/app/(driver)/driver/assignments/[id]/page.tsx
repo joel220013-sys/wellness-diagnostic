@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
+import { TestTube2, FlaskConical, DollarSign, AlertTriangle } from 'lucide-react';
 
 const DynamicDriverMap = dynamic(() => import('@/components/map/DriverDirectionsMap'), {
   ssr: false,
@@ -38,7 +39,7 @@ export default function DriverAssignmentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { bookings, updateBookingStatus } = useData();
+  const { bookings, tests, updateBookingStatus } = useData();
 
   const bookingId = params.id as string;
   const booking = bookings.find((b) => b.id === bookingId || b.booking_reference === bookingId);
@@ -98,6 +99,45 @@ export default function DriverAssignmentDetailPage() {
     setShowFailModal(false);
     alert('Collection marked as Failed with operational reason.');
   };
+
+  // Enriched diagnostic test clinical specifications for Phlebotomist
+  const appointmentTests = (booking.items && booking.items.length > 0)
+    ? booking.items.map((it) => {
+        const match = tests.find(
+          (t) => t.id === it.test_id || t.id === it.id || t.name.toLowerCase() === (it.item_name || '').toLowerCase()
+        );
+        return {
+          name: it.item_name,
+          price: it.line_total || it.unit_price,
+          sampleType: match?.sample_type || 'Venous Blood (EDTA Lavender & Serum Gel Gold Top)',
+          fasting: match?.fasting_required ? `Mandatory (${match.fasting_hours || 10}h overnight)` : 'No Fasting Required (Random)',
+          isFasting: Boolean(match?.fasting_required),
+          category: match?.category || 'Clinical Pathology',
+          instructions: match?.preparation_instructions || 'Standard sterile venipuncture protocol. Invert tubes gently.',
+          parametersCount: match?.parameters_count || (Array.isArray(match?.parameters_list) ? match.parameters_list.length : null)
+        };
+      })
+    : (booking.tests && booking.tests.length > 0)
+    ? booking.tests.map((t) => ({
+        name: t.name,
+        price: t.price,
+        sampleType: t.sample_type || 'Venous Blood (EDTA Lavender & Serum Gel Gold Top)',
+        fasting: t.fasting_required ? `Mandatory (${t.fasting_hours || 10}h overnight)` : 'No Fasting Required (Random)',
+        isFasting: Boolean(t.fasting_required),
+        category: t.category || 'Clinical Pathology',
+        instructions: t.preparation_instructions || 'Standard sterile venipuncture protocol. Invert tubes gently.',
+        parametersCount: t.parameters_count || (Array.isArray(t.parameters_list) ? t.parameters_list.length : null)
+      }))
+    : [{
+        name: 'Diagnostic Blood Profile',
+        price: booking.total_amount,
+        sampleType: 'Venous Blood (EDTA Lavender & Serum Gel Gold Top)',
+        fasting: 'Verify Fasting on Arrival',
+        isFasting: false,
+        category: 'General Pathology',
+        instructions: 'Standard sterile venipuncture protocol.',
+        parametersCount: null
+      }];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
@@ -171,23 +211,106 @@ export default function DriverAssignmentDetailPage() {
           </div>
         </div>
 
-        {/* Required Blood Tubes & Tests */}
-        <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-botanical-900">
-            Pathology Tests Required for this Appointment:
-          </p>
-          <div className="divide-y divide-ivory-100 border border-ivory-200 rounded-2xl overflow-hidden">
-            {(booking.items || []).map((it, idx) => (
-              <div key={idx} className="p-3 bg-white flex items-center justify-between text-xs">
-                <div>
-                  <p className="font-bold text-botanical-950">{it.item_name}</p>
-                  <p className="text-[11px] text-botanical-700/80">Tube: EDTA Lavender & Serum Gel Gold Top</p>
+        {/* Required Blood Tubes & Clinical Test Details for Phlebotomist */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TestTube2 className="w-4 h-4 text-botanical-600" />
+              <p className="text-xs font-bold uppercase tracking-wider text-botanical-950">
+                Pathology Tests to Draw ({appointmentTests.length} Items):
+              </p>
+            </div>
+            <span className="text-[11px] text-botanical-700 font-semibold">
+              Verify Vacutainer Specs Before Venipuncture
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {appointmentTests.map((t, idx) => (
+              <div 
+                key={idx} 
+                className="p-4 rounded-2xl bg-white border border-ivory-300 shadow-soft-xs space-y-2"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-ivory-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-5 h-5 rounded-full bg-botanical-100 text-botanical-800 text-[11px] font-extrabold flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <h3 className="text-sm font-bold text-botanical-950">{t.name}</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-ivory-100 text-botanical-800 border border-ivory-200">
+                      {t.category}
+                    </span>
+                  </div>
+
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border self-start sm:self-auto ${
+                    t.isFasting 
+                      ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  }`}>
+                    {t.isFasting ? '⚠️ Fasting Required' : '✓ No Fasting Needed'}
+                  </span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-ivory-100 text-botanical-800">
-                  Fasting Verified
-                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="space-y-1 bg-ivory-50/60 p-2.5 rounded-xl border border-ivory-200">
+                    <p className="text-[11px] font-bold text-botanical-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500" />
+                      <span>Required Sample & Tube Type:</span>
+                    </p>
+                    <p className="text-botanical-800 font-semibold pl-3.5">{t.sampleType}</p>
+                    {t.parametersCount && (
+                      <p className="text-[10px] text-botanical-600 pl-3.5">
+                        Parameters: <strong>{t.parametersCount} Biomarkers Tested</strong>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1 bg-ivory-50/60 p-2.5 rounded-xl border border-ivory-200">
+                    <p className="text-[11px] font-bold text-botanical-900 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-botanical-600" />
+                      <span>Patient Fasting & Dietary Protocol:</span>
+                    </p>
+                    <p className="text-botanical-800 pl-4">{t.fasting}</p>
+                    <p className="text-[10px] text-botanical-600 italic pl-4">
+                      Instruction: {t.instructions}
+                    </p>
+                  </div>
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* Doorstep Payment / Cash Collection Directive */}
+          <div className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            booking.payment_status === 'Paid'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+              : 'bg-amber-50 border-amber-300 text-amber-950'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <div className={`p-2 rounded-xl text-white ${
+                booking.payment_status === 'Paid' ? 'bg-emerald-600' : 'bg-amber-600'
+              }`}>
+                <DollarSign className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">
+                  Order Bill Total: ₹{booking.total_amount}
+                </p>
+                <p className="text-[11px] opacity-90">
+                  {booking.payment_status === 'Paid'
+                    ? 'Payment collected online. DO NOT charge the patient at doorstep.'
+                    : 'Payment is Unpaid (Cash on Collection). Collect exact ₹' + booking.total_amount + ' before handing receipt.'}
+                </p>
+              </div>
+            </div>
+
+            <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase border self-start sm:self-auto ${
+              booking.payment_status === 'Paid'
+                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                : 'bg-amber-200 text-amber-900 border-amber-400'
+            }`}>
+              {booking.payment_status === 'Paid' ? '✓ Prepaid Online' : '💵 Collect Cash'}
+            </span>
           </div>
         </div>
 

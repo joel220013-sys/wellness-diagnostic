@@ -130,18 +130,34 @@ export default function DriverAssignmentsPage() {
                   </div>
                 </div>
 
-                {/* Tests to be drawn */}
-                <div className="pt-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-botanical-900 mb-1">
-                    Samples / Tubes to Draw:
-                  </p>
+                {/* Enriched Diagnostic Tests & Payment Guidance for Driver */}
+                <div className="pt-2 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold uppercase tracking-wider text-botanical-900">
+                      Tests to Draw ({(job.items?.length || job.tests?.length || 1)}):
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                      job.payment_status === 'Paid'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-amber-100 text-amber-900 border-amber-300'
+                    }`}>
+                      {job.payment_status === 'Paid' ? '✓ Prepaid Online' : `💵 Collect ₹${job.total_amount} Cash`}
+                    </span>
+                  </div>
+
                   <div className="flex flex-wrap gap-1.5">
-                    {(job.items || []).map((it, idx) => (
+                    {(job.items && job.items.length > 0 
+                      ? job.items.map((i) => i.item_name) 
+                      : (job.tests && job.tests.length > 0 
+                        ? job.tests.map((t) => t.name) 
+                        : ['Diagnostic Test Profile'])
+                    ).map((testName, idx) => (
                       <span
                         key={idx}
-                        className="px-2.5 py-1 rounded-xl bg-ivory-100 text-[11px] font-bold text-botanical-950 border border-ivory-200"
+                        className="px-2.5 py-1 rounded-xl bg-ivory-100 text-[11px] font-bold text-botanical-950 border border-ivory-300/80 flex items-center gap-1.5 shadow-soft-xs"
                       >
-                        🩸 {it.item_name}
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0" />
+                        <span>{testName}</span>
                       </span>
                     ))}
                   </div>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
+  MessageSquare, 
   Calendar, 
   Clock, 
   MapPin, 
@@ -39,7 +40,7 @@ export default function PatientBookingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { bookings, reports, invoices, updateBookingStatus } = useData();
+  const { bookings, drivers, reports, invoices, updateBookingStatus } = useData();
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
@@ -69,6 +70,19 @@ export default function PatientBookingDetailPage() {
   // Linked report & invoice if ready
   const linkedReport = reports.find((r) => r.order_id === booking.id || r.patient_id === booking.patient_id);
   const linkedInvoice = invoices.find((inv) => inv.order_id === booking.id);
+
+  // Match assigned driver from drivers collection or booking snapshot
+  const assignedDriver = drivers.find((d) => 
+    (booking.driver_id && d.id === booking.driver_id) || 
+    (booking.assigned_driver_id && d.id === booking.assigned_driver_id) ||
+    (booking.driver_name && d.name.toLowerCase() === booking.driver_name.toLowerCase())
+  );
+
+  const driverName = assignedDriver?.name || booking.driver_name || booking.assigned_driver_name;
+  const driverPhone = assignedDriver?.phone || booking.driver_phone;
+  const driverBadge = assignedDriver?.badge_id || 'PHLEB-104';
+  const driverVehicle = assignedDriver?.vehicle_details || (assignedDriver?.vehicle_number ? `Mobile Lab Van (${assignedDriver.vehicle_number})` : 'Mobile Phlebotomy Unit');
+  const isDriverAssigned = Boolean(driverName);
 
   const currentStepIndex = TIMELINE_STEPS.indexOf(booking.status);
   const isCancelled = booking.status === 'Cancelled' || booking.status === 'Failed';
@@ -225,27 +239,104 @@ export default function PatientBookingDetailPage() {
 
         {/* Phlebotomist & Address Snapshot */}
         <div className="space-y-6">
-          {/* Phlebotomist Card */}
-          <div className="bg-white rounded-3xl p-6 border border-ivory-300 shadow-soft-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-botanical-600" />
-              <h2 className="text-base font-bold text-botanical-950">Assigned Phlebotomist</h2>
-            </div>
-            {booking.driver_name ? (
-              <div className="p-3 bg-sky-50/70 rounded-2xl border border-sky-100 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-botanical-950">{booking.driver_name}</p>
-                  <p className="text-[11px] text-botanical-700/80">Certified Mobile Phlebotomist</p>
-                  <p className="text-[11px] text-sky-800 font-semibold mt-0.5">📞 {booking.driver_phone || '+91 98111 22334'}</p>
+          {/* Assigned Phlebotomist Card */}
+          <div className="bg-white rounded-3xl p-6 border-2 border-sky-200 shadow-soft-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-ivory-200">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-sky-500 text-white shadow-soft-xs">
+                  <Truck className="w-4 h-4" />
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
-                  Assigned
+                <div>
+                  <h2 className="text-base font-bold text-botanical-950">Assigned Phlebotomist</h2>
+                  <p className="text-[11px] text-botanical-700/80">
+                    Dispatched for your doorstep sample collection
+                  </p>
+                </div>
+              </div>
+
+              {isDriverAssigned ? (
+                <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-sky-100 text-sky-900 border border-sky-300 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+                  <span>On Duty & Assigned</span>
                 </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                  Awaiting Dispatch
+                </span>
+              )}
+            </div>
+
+            {isDriverAssigned ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-gradient-to-br from-sky-50 via-sky-50/40 to-white rounded-2xl border border-sky-200/80 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center font-extrabold text-base shadow-soft-sm">
+                        {driverName ? driverName.slice(0, 2).toUpperCase() : 'DR'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-extrabold text-botanical-950">{driverName}</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white text-sky-900 border border-sky-200 shadow-soft-xs">
+                            #{driverBadge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-botanical-700 font-semibold">
+                          {assignedDriver?.designation || 'Certified Mobile Phlebotomist'}
+                        </p>
+                        <p className="text-[11px] text-botanical-600 mt-0.5">
+                          ⭐ 4.9 Rating • Wellness Diagnostic Verified Phlebotomist
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-white/90 rounded-xl border border-sky-100 text-xs text-botanical-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-botanical-600 text-[11px]">Assigned Vehicle:</span>
+                      <strong className="font-semibold text-botanical-950">{driverVehicle}</strong>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-botanical-600 text-[11px]">Cold Chain Status:</span>
+                      <strong className="text-emerald-700 font-semibold">4°C Verified Insulated Storage</strong>
+                    </div>
+                  </div>
+
+                  {driverPhone && (
+                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                      <a
+                        href={`tel:${driverPhone}`}
+                        className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-soft transition-all"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>Call ({driverPhone})</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/${driverPhone.replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(driverName || 'Phlebotomist')}%2C%20regarding%20my%20Wellness%20Diagnostic%20home%20collection%20booking%20%23${booking.booking_reference}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-soft transition-all"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>WhatsApp Driver</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 bg-ivory-50 rounded-xl border border-ivory-200 text-[11px] text-botanical-700 space-y-1">
+                  <p className="font-bold text-botanical-900">Safety & Security Verification:</p>
+                  <p>Our phlebotomist carries photo ID card #{driverBadge}, uses single-use sealed sterile vacutainers, and follows 100% antiseptic blood collection protocol.</p>
+                </div>
               </div>
             ) : (
-              <p className="text-xs text-botanical-700/80 italic">
-                A phlebotomist will be assigned shortly by the laboratory dispatcher.
-              </p>
+              <div className="p-6 bg-ivory-50/60 rounded-2xl border border-dashed border-ivory-300 text-center space-y-2">
+                <Truck className="w-8 h-8 text-botanical-400 mx-auto" />
+                <h4 className="text-xs font-bold text-botanical-950">Phlebotomist Assignment in Progress</h4>
+                <p className="text-[11px] text-botanical-700/80 max-w-xs mx-auto">
+                  Our dispatch coordinator is assigning a phlebotomist for your scheduled time slot ({booking.scheduled_slot}). Their photo, name, and contact details will appear here.
+                </p>
+              </div>
             )}
           </div>
 

@@ -138,13 +138,37 @@ export default function DriverDashboardPage() {
                   </p>
                 </div>
 
-                {/* Test tubes needed */}
-                <div className="pt-2 border-t border-ivory-100 flex flex-wrap gap-1">
-                  {(job.items || []).map((it, idx) => (
-                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-ivory-100 text-[10px] font-semibold text-botanical-900">
-                      🧪 {it.item_name}
+                {/* Diagnostic Tests to Draw & Payment Badge */}
+                <div className="pt-2 border-t border-ivory-100 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-botanical-900">
+                      Tests ({(job.items?.length || job.tests?.length || 1)}):
                     </span>
-                  ))}
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                      job.payment_status === 'Paid'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-amber-100 text-amber-900 border-amber-300'
+                    }`}>
+                      {job.payment_status === 'Paid' ? '✓ Prepaid' : `💵 Collect ₹${job.total_amount}`}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {(job.items && job.items.length > 0 
+                      ? job.items.map((i) => i.item_name) 
+                      : (job.tests && job.tests.length > 0 
+                        ? job.tests.map((t) => t.name) 
+                        : ['Diagnostic Test Profile'])
+                    ).map((testName, idx) => (
+                      <span 
+                        key={idx} 
+                        className="px-2 py-0.5 rounded-lg bg-ivory-100 text-[10px] font-bold text-botanical-950 border border-ivory-200 flex items-center gap-1"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        <span>{testName}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Mobile Touch Action Button */}

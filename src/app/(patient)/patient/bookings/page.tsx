@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Calendar, 
+  Truck, 
+  Phone, 
+  MessageSquare, 
   Clock, 
   MapPin, 
   ChevronRight, 
@@ -22,7 +25,7 @@ import { BookingStatus } from '@/types';
 
 export default function PatientBookingsPage() {
   const { user } = useAuth();
-  const { bookings, updateBookingStatus, selectedTests, syncBookings } = useData();
+  const { bookings, drivers, updateBookingStatus, selectedTests, syncBookings } = useData();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -137,7 +140,16 @@ export default function PatientBookingsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredBookings.map((booking) => (
+          {filteredBookings.map((booking) => {
+            const assignedDriver = drivers.find((d) => 
+              (booking.driver_id && d.id === booking.driver_id) || 
+              (booking.assigned_driver_id && d.id === booking.assigned_driver_id) ||
+              (booking.driver_name && d.name.toLowerCase() === booking.driver_name.toLowerCase())
+            );
+            const driverName = assignedDriver?.name || booking.driver_name || booking.assigned_driver_name;
+            const driverPhone = assignedDriver?.phone || booking.driver_phone;
+
+            return (
             <div
               key={booking.id}
               className="bg-white rounded-2xl p-5 sm:p-6 border border-ivory-300 hover:border-botanical-300 transition-all shadow-soft-sm"
@@ -198,6 +210,59 @@ export default function PatientBookingsPage() {
                 </div>
               </div>
 
+              {/* Assigned Phlebotomist Banner */}
+              {driverName ? (
+                <div className="my-3 p-3 bg-gradient-to-r from-sky-50 via-sky-50/50 to-white rounded-2xl border border-sky-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-soft-xs">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-800">
+                          Assigned Phlebotomist:
+                        </span>
+                        <span className="text-xs font-bold text-botanical-950">{driverName}</span>
+                        {assignedDriver?.badge_id && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white border border-sky-200 text-sky-900 font-bold">
+                            #{assignedDriver.badge_id}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-botanical-700/80">
+                        {assignedDriver?.vehicle_details || 'Mobile Phlebotomy Unit'} • Cold Chain Verified
+                      </p>
+                    </div>
+                  </div>
+
+                  {driverPhone && (
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <a
+                        href={`tel:${driverPhone}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-soft-xs transition-colors"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>Call</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/${driverPhone.replace(/\D/g, '')}?text=Hello%20${encodeURIComponent(driverName)}%2C%20regarding%20my%20Wellness%20Diagnostic%20home%20collection%20booking%20%23${booking.booking_reference}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-soft-xs transition-colors"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        <span>WhatsApp</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="my-2 p-2.5 bg-ivory-50 rounded-xl border border-dashed border-ivory-300 text-[11px] text-botanical-700/80 flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-botanical-400 flex-shrink-0" />
+                  <span>Phlebotomist will be assigned by the lab for slot <strong>{booking.scheduled_slot}</strong></span>
+                </div>
+              )}
+
               {/* Bottom Actions */}
               <div className="pt-3 border-t border-ivory-200/80 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -221,7 +286,7 @@ export default function PatientBookingsPage() {
                 </Link>
               </div>
             </div>
-          ))}
+          ); })}
         </div>
       )}
     </div>
