@@ -49,6 +49,9 @@ interface DataContextType {
   addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => Promise<DiagnosticTest | null> | void;
   updateTestPackage: (id: string, test: Partial<DiagnosticTest>) => Promise<DiagnosticTest | null> | void;
   deleteTestPackage: (id: string) => Promise<boolean> | void;
+  addPackage: (pkg: Omit<DiagnosticPackage, 'id'>) => Promise<DiagnosticPackage | null>;
+  updatePackage: (id: string, pkg: Partial<DiagnosticPackage>) => Promise<DiagnosticPackage | null>;
+  deletePackage: (id: string) => Promise<boolean>;
   resetAllDataToDefault: () => void;
 }
 
@@ -916,6 +919,85 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addPackage = async (pkg: Omit<DiagnosticPackage, 'id'>): Promise<DiagnosticPackage | null> => {
+    const tempId = `pkg_${Date.now()}`;
+    const newPkg: DiagnosticPackage = {
+      ...pkg,
+      id: tempId,
+    };
+    const updated = [...packages, newPkg];
+    setPackages(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(updated));
+    } catch {}
+
+    try {
+      const res = await fetch('/api/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pkg),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setPackages((prev) => prev.map((p) => (p.id === tempId ? json.data : p)));
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to create package in database:', err);
+    }
+    return newPkg;
+  };
+
+  const updatePackage = async (id: string, updatedFields: Partial<DiagnosticPackage>): Promise<DiagnosticPackage | null> => {
+    // 1. Optimistic update
+    const updated = packages.map((p) => (p.id === id ? { ...p, ...updatedFields } : p));
+    setPackages(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(updated));
+    } catch {}
+
+    // 2. Persist to API
+    try {
+      const res = await fetch(`/api/packages/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setPackages((prev) => prev.map((p) => (p.id === id ? { ...p, ...json.data } : p)));
+          return json.data;
+        }
+      } else {
+        console.error('Failed to update package in database:', await res.text());
+      }
+    } catch (err) {
+      console.error('Failed to update package in database:', err);
+    }
+    return null;
+  };
+
+  const deletePackage = async (id: string): Promise<boolean> => {
+    const updated = packages.filter((p) => p.id !== id);
+    setPackages(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_PACKAGES, JSON.stringify(updated));
+    } catch {}
+
+    try {
+      const res = await fetch(`/api/packages/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('Failed to delete package from database:', err);
+      return false;
+    }
+  };
+
   const resetAllDataToDefault = () => {
     setBookings([]);
     setReports([]);
@@ -961,6 +1043,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         addTestPackage,
         updateTestPackage,
         deleteTestPackage,
+        addPackage,
+        updatePackage,
+        deletePackage,
         resetAllDataToDefault
       }}
     >
