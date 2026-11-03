@@ -150,7 +150,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     syncTests();
     syncPackages();
 
-    // Live Bookings sync with automatic cross-device synchronization (Read-only polling)
+    // Live Bookings sync with automatic cross-device synchronization (Fast 3.5s live polling)
     const syncBookingsInternal = () => {
       fetch(`/api/bookings?_t=${Date.now()}`, { cache: 'no-store' })
         .then((res) => (res.ok ? res.json() : null))
@@ -183,7 +183,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncInvoices();
-    const invInterval = setInterval(syncInvoices, 12000);
+    const invInterval = setInterval(syncInvoices, 10000);
 
     // Sync Reports from Supabase & Cloudflare R2 (Read-only polling)
     const syncReports = () => {
@@ -201,7 +201,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncReports();
-    const repInterval = setInterval(syncReports, 12000);
+    const repInterval = setInterval(syncReports, 10000);
 
     // Sync Phlebotomist Drivers from Supabase (Read-only polling)
     const syncDriversInternal = () => {
@@ -219,11 +219,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncDriversInternal();
-    const drvInterval = setInterval(syncDriversInternal, 10000);
+    const drvInterval = setInterval(syncDriversInternal, 8000);
 
-    // Auto-refresh when switching tabs and every 10-15 seconds so Desktop & Mobile are always in sync
-    const interval = setInterval(syncBookingsInternal, 10000);
-    const testInterval = setInterval(syncTests, 15000);
+    // Live auto-refresh: poll bookings every 3.5 seconds so admin & phlebotomists see orders immediately
+    const interval = setInterval(syncBookingsInternal, 3500);
+    const testInterval = setInterval(syncTests, 20000);
     const onFocus = () => {
       syncTests();
       syncPackages();
@@ -233,6 +233,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       syncDriversInternal();
     };
     window.addEventListener('focus', onFocus);
+    const onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        onFocus();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       clearInterval(interval);
@@ -241,6 +247,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       clearInterval(repInterval);
       clearInterval(drvInterval);
       window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 

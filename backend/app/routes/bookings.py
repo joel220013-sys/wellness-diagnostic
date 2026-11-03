@@ -124,9 +124,11 @@ def list_bookings(
 
 @router.post("")
 def create_booking(payload: BookingCreateInput):
-    ref_suffix = uuid.uuid4().hex[:4].upper()
     booking_id = str(uuid.uuid4())
-    ref = f"WD-2026-{ref_suffix}"
+    ref = payload.booking_reference
+    if not ref:
+        ref_suffix = uuid.uuid4().hex[:4].upper()
+        ref = f"WD-2026-{ref_suffix}"
 
     new_booking = payload.model_dump()
     new_booking.update({
@@ -140,50 +142,69 @@ def create_booking(payload: BookingCreateInput):
     # Save to local in-memory store
     DB["bookings"].append(new_booking)
 
-    # Persist directly into Supabase PostgreSQL
-    try:
-        p_uuid = to_uuid(payload.patient_id)
-        coll_date = payload.scheduled_date if payload.scheduled_date else datetime.utcnow().strftime("%Y-%m-%d")
+    # Persist directly into Supabase PostgreSQL with safe retry on order_number conflict
+    p_uuid = to_uuid(payload.patient_id)
+    coll_date = payload.scheduled_date if payload.scheduled_date else datetime.utcnow().strftime("%Y-%m-%d")
+    addr_dict = {}
+    if payload.address_snapshot:
         addr_dict = payload.address_snapshot.model_dump() if hasattr(payload.address_snapshot, "model_dump") else dict(payload.address_snapshot)
-        items_list = [it.model_dump() if hasattr(it, "model_dump") else dict(it) for it in payload.items]
+    items_list = [it.model_dump() if hasattr(it, "model_dump") else dict(it) for it in (payload.items or [])]
 
-        insert_sql = """
-        INSERT INTO public.bookings (
-            id, order_number, patient_id, patient_name, patient_phone,
-            collection_date, time_slot, scheduled_date, scheduled_slot,
-            status, total_amount, subtotal, collection_fee,
-            payment_status, payment_method, address_snapshot,
-            items, patient_notes, created_at, updated_at
-        ) VALUES (
-            %s, %s, %s, %s, %s,
-            %s, %s, %s, %s,
-            %s, %s, %s, %s,
-            %s, %s, %s,
-            %s, %s, NOW(), NOW()
-        );
-        """
-        supabase_db.execute(insert_sql, (
-            booking_id,
-            ref,
-            p_uuid,
-            payload.patient_name,
-            payload.patient_phone,
-            coll_date,
-            payload.scheduled_slot,
-            payload.scheduled_date,
-            payload.scheduled_slot,
-            "Pending",
-            float(payload.total_amount),
-            float(payload.subtotal),
-            float(payload.collection_fee),
-            "Pending",
-            "Cash on Collection",
-            json.dumps(addr_dict),
-            json.dumps(items_list),
-            payload.patient_notes or ""
-        ))
-    except Exception as e:
-        print(f"[Supabase DB Bookings] Insert error: {e}")
+    insert_sql = """
+    INSERT INTO public.bookings (
+        id, order_number, patient_id, patient_name, patient_phone,
+        collection_date, time_slot, scheduled_date, scheduled_slot,
+        status, total_amount, subtotal, collection_fee,
+        payment_status, payment_method, address_snapshot,
+        items, patient_notes, created_at, updated_at
+    ) VALUES (
+        %s, %s, %s, %s, %s,
+        %s, %s, %s, %s,
+        %s, %s, %s, %s,
+        %s, %s, %s,
+        %s, %s, NOW(), NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        status = EXCLUDED.status,
+        updated_at = NOW();
+    """
+
+    inserted = False
+    for attempt in range(3):
+        try:
+            success = supabase_db.execute(insert_sql, (
+                booking_id,
+                ref,
+                p_uuid,
+                payload.patient_name,
+                payload.patient_phone,
+                coll_date,
+                payload.scheduled_slot,
+                payload.scheduled_date or coll_date,
+                payload.scheduled_slot,
+                "Pending",
+                float(payload.total_amount or 0),
+                float(payload.subtotal or 0),
+                float(payload.collection_fee or 50),
+                "Pending",
+                payload.payment_method or "Cash on Collection",
+                json.dumps(addr_dict),
+                json.dumps(items_list),
+                payload.patient_notes or ""
+            ))
+            if success:
+                inserted = True
+                break
+            # If failed, generate unique ref and retry
+            ref = f"WD-2026-{uuid.uuid4().hex[:4].upper()}"
+            new_booking["booking_reference"] = ref
+        except Exception as e:
+            print(f"[Supabase DB Bookings] Insert attempt {attempt} error: {e}")
+            ref = f"WD-2026-{uuid.uuid4().hex[:4].upper()}"
+            new_booking["booking_reference"] = ref
+
+    if not inserted:
+        print(f"[Supabase DB Bookings Warning] Could not persist booking {booking_id} to Supabase after 3 attempts")
 
     # Add audit event
     DB["events"].append({

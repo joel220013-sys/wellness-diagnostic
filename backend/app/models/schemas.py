@@ -30,41 +30,44 @@ class AddressSchema(BaseModel):
     id: Optional[str] = None
     patient_id: Optional[str] = None
     label: Optional[str] = "Home"
-    recipient_name: str
+    recipient_name: Optional[str] = None
     recipient_phone: Optional[str] = None
     phone: Optional[str] = None
-    address_line_1: str
+    address_line_1: Optional[str] = "Home Address"
     address_line_2: Optional[str] = None
     locality: Optional[str] = None
-    city: str
-    state: Optional[str] = "Delhi NCR"
-    postal_code: str
-    latitude: float
-    longitude: float
+    city: Optional[str] = "Davangere"
+    state: Optional[str] = "Karnataka"
+    postal_code: Optional[str] = "577004"
+    latitude: Optional[float] = 14.44086
+    longitude: Optional[float] = 75.93329
     landmark: Optional[str] = None
     access_instructions: Optional[str] = None
     is_default: Optional[bool] = False
 
 class BookingItemInput(BaseModel):
-    test_id: str
-    item_name: str
-    unit_price: int
-    quantity: int = 1
-    line_total: int
+    test_id: Optional[str] = "test_default"
+    item_name: Optional[str] = "Diagnostic Test"
+    unit_price: Optional[float] = 0.0
+    quantity: Optional[int] = 1
+    line_total: Optional[float] = 0.0
 
 class BookingCreateInput(BaseModel):
-    patient_id: str
+    patient_id: Optional[str] = "guest_patient"
     patient_name: str
     patient_phone: str
-    scheduled_date: str
-    scheduled_slot: str
-    address_snapshot: AddressSchema
-    items: List[BookingItemInput]
-    subtotal: int
-    collection_fee: int
-    tax_amount: int = 0
-    total_amount: int
+    scheduled_date: Optional[str] = None
+    scheduled_slot: Optional[str] = "07:00 AM – 07:30 AM"
+    address_snapshot: Optional[AddressSchema] = None
+    items: Optional[List[BookingItemInput]] = []
+    subtotal: Optional[float] = 0.0
+    collection_fee: Optional[float] = 50.0
+    tax_amount: Optional[float] = 0.0
+    total_amount: Optional[float] = 0.0
     patient_notes: Optional[str] = None
+    booking_reference: Optional[str] = None
+    payment_method: Optional[str] = "Cash on Collection"
+    payment_status: Optional[str] = "Pending"
 
 class AssignmentCreateInput(BaseModel):
     booking_id: str

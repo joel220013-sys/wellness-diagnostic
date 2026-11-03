@@ -36,8 +36,19 @@ import { getWhatsAppDirectUrl } from '@/lib/whatsappService';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const { bookings, reports, invoices, drivers, updateBookingStatus } = useData();
+  const { bookings, reports, invoices, drivers, updateBookingStatus, syncBookings, syncReports, syncInvoices } = useData();
   const [dashboardToast, setDashboardToast] = useState<string | null>(null);
+
+  // Live polling every 3 seconds so incoming orders appear instantly on the dashboard
+  useEffect(() => {
+    syncBookings();
+    syncReports();
+    syncInvoices();
+    const livePolling = setInterval(() => {
+      syncBookings();
+    }, 3000);
+    return () => clearInterval(livePolling);
+  }, []);
 
   // Day filter state: defaults strictly to TODAY
   const [dayFilterMode, setDayFilterMode] = useState<DayFilterMode>('TODAY');
@@ -49,8 +60,10 @@ export default function AdminDashboardPage() {
   const handleConfirmOrder = (bookingId: string) => {
     updateBookingStatus(bookingId, 'Confirmed');
     const order = bookings.find((b) => b.id === bookingId);
-    setDashboardToast(`Order #${order?.booking_reference || bookingId} confirmed! Phlebotomist can now be assigned.`);
-    setTimeout(() => setDashboardToast(null), 3500);
+    const isTomorrow = order && isBookingMatchingDay(order, 'TOMORROW');
+    const dateLabel = isTomorrow ? 'for Tomorrow' : order?.scheduled_date ? `for ${order.scheduled_date}` : '';
+    setDashboardToast(`Order #${order?.booking_reference || bookingId} confirmed ${dateLabel}! Phlebotomist can now be assigned.`);
+    setTimeout(() => setDashboardToast(null), 4000);
   };
 
   const handleConfirmAllPending = () => {
@@ -210,13 +223,23 @@ export default function AdminDashboardPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-extrabold text-sm text-botanical-950">
                           #{booking.booking_reference}
                         </span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
                           Pending Confirmation
                         </span>
+                        {isBookingMatchingDay(booking, 'TOMORROW') && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-200">
+                            Tomorrow&apos;s Slot
+                          </span>
+                        )}
+                        {isBookingMatchingDay(booking, 'TODAY') && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                            Today&apos;s Slot
+                          </span>
+                        )}
                       </div>
                       <p className="font-bold text-xs text-botanical-900 mt-1">
                         {booking.patient_name}
@@ -395,16 +418,28 @@ export default function AdminDashboardPage() {
                 ? 'No home blood collection appointments or bookings scheduled for today yet.'
                 : 'There are no patient orders scheduled or booked on this selected day.'}
             </p>
-            {dayFilterMode !== 'TODAY' && (
-              <button
-                type="button"
-                onClick={() => setDayFilterMode('TODAY')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Return to Today&apos;s Orders</span>
-              </button>
-            )}
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {dayFilterMode !== 'TODAY' && (
+                <button
+                  type="button"
+                  onClick={() => setDayFilterMode('TODAY')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Return to Today&apos;s Orders</span>
+                </button>
+              )}
+              {dayFilterMode === 'TODAY' && tomorrowCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDayFilterMode('TOMORROW')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-amber-300" />
+                  <span>View Tomorrow&apos;s Bookings ({tomorrowCount})</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">

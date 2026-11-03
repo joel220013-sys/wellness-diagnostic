@@ -96,3 +96,4 @@ export async function downloadReportFile(report: {
     return false;
   }
 }
+

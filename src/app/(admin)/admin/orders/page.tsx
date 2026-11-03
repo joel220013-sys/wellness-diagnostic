@@ -45,10 +45,15 @@ export default function AdminOrdersPage() {
   const [customDate, setCustomDate] = useState<string>(getTodayDateStr());
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Sync latest orders and phlebotomists from database on page mount
+  // Sync latest orders and phlebotomists from database on page mount & live polling
   useEffect(() => {
     syncBookings();
     syncDrivers();
+    const livePolling = setInterval(() => {
+      syncBookings();
+      syncDrivers();
+    }, 3000);
+    return () => clearInterval(livePolling);
   }, []);
 
   const handleManualSync = () => {
