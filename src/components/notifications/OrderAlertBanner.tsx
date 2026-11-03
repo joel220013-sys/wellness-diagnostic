@@ -8,7 +8,8 @@ import {
   VolumeX, 
   Sparkles,
   Smartphone,
-  Power
+  Power,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -19,6 +20,8 @@ import {
   setSoundAlertsEnabled,
   isMasterAlertsEnabled,
   setMasterAlertsEnabled,
+  isScreenPushAlertsEnabled,
+  setScreenPushAlertsEnabled,
   triggerOrderNotification
 } from '@/lib/notificationService';
 import { registerPushDevice } from '@/lib/pushSubscriptionService';
@@ -27,6 +30,7 @@ export default function OrderAlertBanner() {
   const { user } = useAuth();
   const [masterEnabled, setMasterEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [screenPushEnabled, setScreenPushEnabled] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -36,6 +40,7 @@ export default function OrderAlertBanner() {
   useEffect(() => {
     setMasterEnabled(isMasterAlertsEnabled());
     setSoundEnabled(isSoundAlertsEnabled());
+    setScreenPushEnabled(isScreenPushAlertsEnabled());
 
     const currentPerm = getNotificationPermissionState();
     setPermission(currentPerm);
@@ -69,17 +74,41 @@ export default function OrderAlertBanner() {
     }
   };
 
-  const handleRequestPermission = async () => {
-    setIsRegistering(true);
-    try {
-      const res = await requestNotificationPermission();
-      setPermission(res);
-      if (res === 'granted') {
-        const ok = await registerPushDevice({ userId: user?.id, role: user?.role });
-        setIsSubscribed(ok);
+  // Screen Push Toggle ON / OFF
+  const handleToggleScreenPush = async () => {
+    if (!masterEnabled) return;
+
+    // If currently OFF and switching to ON:
+    if (!screenPushEnabled) {
+      if (permission !== 'granted') {
+        setIsRegistering(true);
+        try {
+          const res = await requestNotificationPermission();
+          setPermission(res);
+          if (res === 'granted') {
+            const ok = await registerPushDevice({ userId: user?.id, role: user?.role });
+            setIsSubscribed(ok);
+            setScreenPushEnabled(true);
+            setScreenPushAlertsEnabled(true);
+          } else {
+            setScreenPushEnabled(false);
+            setScreenPushAlertsEnabled(false);
+          }
+        } finally {
+          setIsRegistering(false);
+        }
+        return;
       }
-    } finally {
-      setIsRegistering(false);
+
+      setScreenPushEnabled(true);
+      setScreenPushAlertsEnabled(true);
+      registerPushDevice({ userId: user?.id, role: user?.role })
+        .then((ok) => setIsSubscribed(ok))
+        .catch(() => {});
+    } else {
+      // Switching to OFF
+      setScreenPushEnabled(false);
+      setScreenPushAlertsEnabled(false);
     }
   };
 
@@ -97,30 +126,34 @@ export default function OrderAlertBanner() {
       timeSlot: 'Immediate Test'
     }, { broadcast: false, force: true });
 
-    // 2. Cloud Web Push dispatch
-    try {
-      const res = await fetch('/api/push/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: `test_${Date.now()}`,
-          reference: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
-          patientName: 'Mobile Screen Alert Test',
-          phone: '+91 98111 22334',
-          totalAmount: 1499,
-          testName: 'Aarogyam Profile Test',
-          timeSlot: 'Immediate Test',
-          targetUrl: '/admin/orders',
-        }),
-      });
-      const data = await res.json();
-      if (data.sentCount > 0) {
-        setTestStatus(`Alert Sent to ${data.sentCount} Phone(s) ✓`);
-      } else {
+    // 2. Cloud Web Push dispatch (if screen push is enabled)
+    if (screenPushEnabled && masterEnabled) {
+      try {
+        const res = await fetch('/api/push/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: `test_${Date.now()}`,
+            reference: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+            patientName: 'Mobile Screen Alert Test',
+            phone: '+91 98111 22334',
+            totalAmount: 1499,
+            testName: 'Aarogyam Profile Test',
+            timeSlot: 'Immediate Test',
+            targetUrl: '/admin/orders',
+          }),
+        });
+        const data = await res.json();
+        if (data.sentCount > 0) {
+          setTestStatus(`Alert Sent to ${data.sentCount} Phone(s) ✓`);
+        } else {
+          setTestStatus('Chime Played');
+        }
+      } catch {
         setTestStatus('Chime Played');
       }
-    } catch {
-      setTestStatus('Chime Played');
+    } else {
+      setTestStatus('Chime Played (Push OFF)');
     }
 
     setTimeout(() => {
@@ -244,24 +277,67 @@ export default function OrderAlertBanner() {
           </span>
         </button>
 
-        {/* Screen Push Notification Status / Enable Button */}
-        {permission === 'granted' ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold bg-sky-50 text-sky-900 border border-sky-200">
-            <Smartphone className="w-3.5 h-3.5 text-sky-600" />
-            <span>Screen Push: {isSubscribed ? 'Mobile Registered ✓' : 'Enabled ✓'}</span>
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={handleRequestPermission}
-            disabled={isRegistering}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-soft-xs"
-            title="Enable lock-screen & desktop push notifications"
+        {/* Screen Push Sliding Toggle Switch */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={screenPushEnabled}
+          onClick={handleToggleScreenPush}
+          disabled={!masterEnabled || isRegistering}
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold transition-all border select-none ${
+            !masterEnabled
+              ? 'opacity-40 cursor-not-allowed bg-ivory-100 text-botanical-400 border-ivory-200'
+              : screenPushEnabled && masterEnabled
+              ? 'bg-sky-50 text-sky-950 border-sky-300 hover:bg-sky-100 shadow-soft-xs cursor-pointer'
+              : 'bg-ivory-200 text-botanical-800 border-ivory-300 hover:bg-ivory-300 cursor-pointer'
+          }`}
+          title={
+            !masterEnabled
+              ? 'Alert system is paused'
+              : screenPushEnabled
+              ? `Screen Push is ON ${isSubscribed ? '(Mobile Registered ✓)' : ''} — Click to toggle OFF`
+              : 'Screen Push is OFF — Click to toggle ON'
+          }
+        >
+          {isRegistering ? (
+            <Loader2 className="w-3.5 h-3.5 text-sky-600 animate-spin flex-shrink-0" />
+          ) : (
+            <Smartphone
+              className={`w-3.5 h-3.5 flex-shrink-0 ${
+                screenPushEnabled && masterEnabled ? 'text-sky-600' : 'text-botanical-600'
+              }`}
+            />
+          )}
+
+          <span>Screen Push:</span>
+
+          {/* Sliding switch track & thumb */}
+          <span
+            className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+              screenPushEnabled && masterEnabled ? 'bg-sky-500' : 'bg-gray-300'
+            }`}
           >
-            <BellRing className={`w-3.5 h-3.5 ${isRegistering ? 'animate-spin' : 'animate-pulse'}`} />
-            <span>{isRegistering ? 'Registering...' : 'Enable Screen Push'}</span>
-          </button>
-        )}
+            <span
+              className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ${
+                screenPushEnabled && masterEnabled ? 'translate-x-3' : 'translate-x-0'
+              }`}
+            />
+          </span>
+
+          <span
+            className={`text-[10px] font-extrabold uppercase ${
+              screenPushEnabled && masterEnabled ? 'text-sky-700' : 'text-botanical-600'
+            }`}
+          >
+            {isRegistering ? '...' : screenPushEnabled && masterEnabled ? 'ON' : 'OFF'}
+          </span>
+
+          {screenPushEnabled && masterEnabled && isSubscribed && (
+            <span className="text-[10px] text-sky-700 font-bold hidden sm:inline" title="Mobile device registered">
+              (Registered ✓)
+            </span>
+          )}
+        </button>
 
         {/* Test Chime & Alert Button */}
         <button

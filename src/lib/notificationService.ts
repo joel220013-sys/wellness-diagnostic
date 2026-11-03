@@ -16,6 +16,7 @@ export interface OrderNotificationPayload {
 
 const STORAGE_KEY_MASTER_ALERTS = 'wellness_alerts_master_enabled';
 const STORAGE_KEY_SOUND = 'wellness_order_chime_enabled';
+const STORAGE_KEY_SCREEN_PUSH = 'wellness_screen_push_enabled';
 const STORAGE_KEY_SEEN_ORDERS = 'wellness_notified_orders_v2';
 const BROADCAST_CHANNEL_NAME = 'wellness_order_notifications';
 
@@ -216,6 +217,22 @@ export function isMasterAlertsEnabled(): boolean {
 }
 
 /**
+ * Toggle screen push alerts on/off (persists in localStorage)
+ */
+export function setScreenPushAlertsEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY_SCREEN_PUSH, enabled ? 'true' : 'false');
+}
+
+/**
+ * Get whether screen push alerts are currently enabled (defaults to true)
+ */
+export function isScreenPushAlertsEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem(STORAGE_KEY_SCREEN_PUSH) !== 'false';
+}
+
+/**
  * Trigger an OS-level push notification + chime sound for an order
  */
 export async function triggerOrderNotification(
@@ -263,6 +280,10 @@ export async function triggerOrderNotification(
   }
 
   // 3. Show native OS notification banner on screen / phone lock-screen
+  if (!isForce && !isScreenPushAlertsEnabled()) {
+    return true; // Screen push notifications disabled by user toggle
+  }
+
   if (!('Notification' in window) || Notification.permission !== 'granted') {
     return true;
   }
