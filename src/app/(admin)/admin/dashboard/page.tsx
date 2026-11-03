@@ -15,11 +15,21 @@ import {
   Users, 
   Truck,
   ArrowUpRight,
-  Filter
+  Filter,
+  CalendarDays,
+  Sparkles
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import NotificationQuickControl from '@/components/notifications/NotificationQuickControl';
+import DayFilterControl from '@/components/admin/DayFilterControl';
+import { 
+  DayFilterMode, 
+  getTodayDateStr, 
+  getYesterdayDateStr, 
+  isBookingMatchingDay,
+  formatFriendlyDate 
+} from '@/lib/dateUtils';
 import { 
   BarChart, 
   Bar, 
@@ -27,37 +37,52 @@ import {
   YAxis, 
   Tooltip, 
   ResponsiveContainer, 
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell
+  CartesianGrid
 } from 'recharts';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const { bookings, reports, invoices, drivers } = useData();
 
-  // Metrics derived from actual database records
-  const totalBookings = bookings.length;
-  const pendingConfirmation = bookings.filter((b) => b.status === 'Pending').length;
-  const assignedJobs = bookings.filter((b) => ['Assigned', 'Collection Scheduled'].includes(b.status)).length;
-  const collectionsCompleted = bookings.filter((b) => ['Sample Collected', 'Processing', 'Report Ready'].includes(b.status)).length;
-  const reportsReady = reports.length;
-  const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
-  const paidRevenue = invoices
-    .filter((inv) => inv.status === 'Paid')
-    .reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+  // Day filter state: defaults strictly to TODAY
+  const [dayFilterMode, setDayFilterMode] = useState<DayFilterMode>('TODAY');
+  const [customDate, setCustomDate] = useState<string>(getTodayDateStr());
 
-  // Recharts Chart Data: Collections by Status
+  const todayStr = getTodayDateStr();
+  const yesterdayStr = getYesterdayDateStr();
+
+  // Counts for Day filter badges
+  const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
+  const yesterdayCount = bookings.filter((b) => isBookingMatchingDay(b, 'YESTERDAY')).length;
+
+  // Active bookings filtered by chosen day (Today by default, past day only if explicitly chosen)
+  const activeBookings = bookings.filter((b) => isBookingMatchingDay(b, dayFilterMode, customDate));
+
+  // Metrics dynamically derived from the active day's orders
+  const totalActiveOrders = activeBookings.length;
+  const pendingConfirmation = activeBookings.filter((b) => b.status === 'Pending').length;
+  const assignedJobs = activeBookings.filter((b) => ['Assigned', 'Collection Scheduled'].includes(b.status)).length;
+  const collectionsCompleted = activeBookings.filter((b) => ['Sample Collected', 'Processing', 'Report Ready'].includes(b.status)).length;
+  const reportsReady = dayFilterMode === 'ALL'
+    ? reports.length
+    : reports.filter((r) => activeBookings.some((b) => b.id === r.booking_id || b.booking_reference === r.booking_reference)).length;
+
+  // Day revenue
+  const totalRevenue = activeBookings.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  const paidRevenue = activeBookings
+    .filter((b) => b.payment_status === 'Paid' || b.payment_status === 'paid')
+    .reduce((sum, b) => sum + (b.total_amount || 0), 0);
+
+  // Status distribution for the selected day
   const statusDistributionData = [
-    { name: 'Pending', count: bookings.filter((b) => b.status === 'Pending').length, color: '#F59E0B' },
-    { name: 'Confirmed', count: bookings.filter((b) => b.status === 'Confirmed').length, color: '#0D9488' },
+    { name: 'Pending', count: pendingConfirmation, color: '#F59E0B' },
+    { name: 'Confirmed', count: activeBookings.filter((b) => b.status === 'Confirmed').length, color: '#0D9488' },
     { name: 'Assigned', count: assignedJobs, color: '#2563EB' },
-    { name: 'Collected', count: bookings.filter((b) => b.status === 'Sample Collected').length, color: '#8B5CF6' },
+    { name: 'Collected', count: activeBookings.filter((b) => b.status === 'Sample Collected').length, color: '#8B5CF6' },
     { name: 'Report Ready', count: reportsReady, color: '#08784E' },
   ];
 
-  // Recharts Weekly Volume Trend
+  // Weekly Trend Chart Data
   const weeklyTrendData = [
     { day: 'Mon', collections: 12, revenue: 18500 },
     { day: 'Tue', collections: 18, revenue: 26400 },
@@ -68,9 +93,18 @@ export default function AdminDashboardPage() {
     { day: 'Sun', collections: 19, revenue: 28900 },
   ];
 
+  const activeDayLabel =
+    dayFilterMode === 'TODAY'
+      ? "Today's Orders"
+      : dayFilterMode === 'YESTERDAY'
+      ? "Yesterday's Orders"
+      : dayFilterMode === 'CUSTOM'
+      ? `Orders for ${formatFriendlyDate(customDate)}`
+      : 'All Historical Orders';
+
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header */}
+    <div className="space-y-6 pb-12">
+      {/* Cockpit Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-botanical-950">
@@ -99,7 +133,7 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Live Order Audio & Push Alert Banner */}
+      {/* Live Audio & Lock-Screen Push Alert Banner */}
       <div className="bg-white/80 backdrop-blur p-3.5 sm:p-4 rounded-2xl border border-ivory-300 shadow-soft-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
@@ -116,12 +150,26 @@ export default function AdminDashboardPage() {
         <NotificationQuickControl />
       </div>
 
-      {/* 6 Key Operational Metrics (Database Derived) */}
+      {/* Primary Date Filter Bar */}
+      <DayFilterControl
+        mode={dayFilterMode}
+        customDate={customDate}
+        onModeChange={setDayFilterMode}
+        onCustomDateChange={setCustomDate}
+        todayCount={todayCount}
+        yesterdayCount={yesterdayCount}
+        filteredCount={totalActiveOrders}
+        totalCount={bookings.length}
+      />
+
+      {/* 6 Key Operational Metrics (Filtered strictly by selected day) */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-ivory-300 shadow-soft-sm">
           <span className="text-[11px] font-semibold text-botanical-700">Total Orders</span>
-          <p className="text-2xl font-extrabold text-botanical-950 mt-1">{totalBookings}</p>
-          <span className="text-[10px] text-botanical-600 font-medium">All patient orders</span>
+          <p className="text-2xl font-extrabold text-botanical-950 mt-1">{totalActiveOrders}</p>
+          <span className="text-[10px] text-botanical-600 font-medium">
+            {dayFilterMode === 'TODAY' ? "Today's bookings" : activeDayLabel}
+          </span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-soft-sm">
@@ -189,7 +237,7 @@ export default function AdminDashboardPage() {
         <div className="bg-white rounded-3xl p-6 border border-ivory-300 shadow-soft-sm space-y-4">
           <div>
             <h2 className="text-base font-bold text-botanical-950">Order Status Breakdown</h2>
-            <p className="text-xs text-botanical-700/80">Current state of all bookings</p>
+            <p className="text-xs text-botanical-700/80">State of orders for {activeDayLabel}</p>
           </div>
 
           <div className="space-y-3 pt-2">
@@ -218,70 +266,112 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Recent Orders Intake Feed */}
+      {/* Orders Intake Feed for Selected Day */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-botanical-950">Recent Orders Feed</h2>
-            <p className="text-xs text-botanical-700/80">Incoming bookings awaiting verification and dispatch</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-botanical-950">{activeDayLabel} Feed</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-botanical-100 text-botanical-800">
+                {totalActiveOrders} {totalActiveOrders === 1 ? 'Order' : 'Orders'}
+              </span>
+            </div>
+            <p className="text-xs text-botanical-700/80">
+              {dayFilterMode === 'TODAY'
+                ? "Live feed of today's incoming patient orders and home collections"
+                : `Showing verified patient orders recorded for this day`}
+            </p>
           </div>
 
           <Link
             href="/admin/orders"
-            className="text-xs font-bold text-botanical-600 hover:text-botanical-700 flex items-center gap-1"
+            className="text-xs font-bold text-botanical-600 hover:text-botanical-700 flex items-center gap-1 self-start sm:self-auto"
           >
-            <span>View All ({bookings.length})</span>
+            <span>Open Orders Console</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-ivory-100/80 text-botanical-800 font-bold uppercase tracking-wider border-b border-ivory-200">
-              <tr>
-                <th className="p-3">Reference</th>
-                <th className="p-3">Patient</th>
-                <th className="p-3">Scheduled Slot</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Tests</th>
-                <th className="p-3">Amount</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ivory-100">
-              {bookings.slice(0, 5).map((booking) => (
-                <tr key={booking.id} className="hover:bg-ivory-50/50 transition-colors">
-                  <td className="p-3 font-bold text-botanical-950">#{booking.booking_reference}</td>
-                  <td className="p-3 font-semibold text-botanical-900">{booking.patient_name}</td>
-                  <td className="p-3 text-botanical-700/80">
-                    {booking.scheduled_date} <br />
-                    <span className="text-[10px] text-botanical-600 font-medium">{booking.scheduled_slot}</span>
-                  </td>
-                  <td className="p-3 text-botanical-700/80 truncate max-w-[150px]">
-                    {booking.address_snapshot?.locality}, {booking.address_snapshot?.city}
-                  </td>
-                  <td className="p-3 text-botanical-800">{booking.items ? booking.items.length : 0} Tests</td>
-                  <td className="p-3 font-bold text-botanical-950">₹{booking.total_amount}</td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-ivory-200 text-botanical-800 border border-ivory-300">
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right">
-                    <Link
-                      href={`/admin/orders/${booking.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-botanical-600 hover:text-botanical-800"
-                    >
-                      <span>Manage</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </td>
+        {activeBookings.length === 0 ? (
+          <div className="py-12 px-4 text-center space-y-3 bg-ivory-50/50 rounded-2xl border border-dashed border-ivory-300">
+            <div className="w-12 h-12 bg-ivory-200 text-botanical-700 rounded-full flex items-center justify-center mx-auto">
+              <CalendarDays className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-botanical-950">
+              No orders found for {activeDayLabel}
+            </h3>
+            <p className="text-xs text-botanical-700/80 max-w-sm mx-auto">
+              {dayFilterMode === 'TODAY'
+                ? 'No home blood collection appointments or bookings scheduled for today yet.'
+                : 'There are no patient orders scheduled or booked on this selected day.'}
+            </p>
+            {dayFilterMode !== 'TODAY' && (
+              <button
+                type="button"
+                onClick={() => setDayFilterMode('TODAY')}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Return to Today&apos;s Orders</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-ivory-100/80 text-botanical-800 font-bold uppercase tracking-wider border-b border-ivory-200">
+                <tr>
+                  <th className="p-3">Reference</th>
+                  <th className="p-3">Patient</th>
+                  <th className="p-3">Scheduled Slot</th>
+                  <th className="p-3">Location</th>
+                  <th className="p-3">Tests</th>
+                  <th className="p-3">Amount</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-ivory-100">
+                {activeBookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-ivory-50/50 transition-colors">
+                    <td className="p-3 font-bold text-botanical-950">#{booking.booking_reference}</td>
+                    <td className="p-3 font-semibold text-botanical-900">{booking.patient_name}</td>
+                    <td className="p-3 text-botanical-700/80">
+                      {booking.scheduled_date} <br />
+                      <span className="text-[10px] text-botanical-600 font-medium">{booking.scheduled_slot}</span>
+                    </td>
+                    <td className="p-3 text-botanical-700/80 truncate max-w-[150px]">
+                      {booking.address_snapshot?.locality || booking.address_snapshot?.street || 'Home Address'}, {booking.address_snapshot?.city || 'Davangere'}
+                    </td>
+                    <td className="p-3 text-botanical-800">
+                      {booking.tests?.length ? booking.tests[0].name : booking.items?.length ? booking.items[0].item_name : 'Diagnostic Test'}
+                      {((booking.tests?.length || booking.items?.length || 1) > 1) && (
+                        <span className="text-[10px] text-botanical-500 ml-1">
+                          (+{((booking.tests?.length || booking.items?.length || 1) - 1)})
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 font-bold text-botanical-950">₹{booking.total_amount}</td>
+                    <td className="p-3">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-ivory-200 text-botanical-800 border border-ivory-300">
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <Link
+                        href={`/admin/orders/${booking.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-botanical-600 hover:text-botanical-800"
+                      >
+                        <span>Manage</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

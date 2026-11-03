@@ -25,6 +25,14 @@ import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
 import NotificationQuickControl from '@/components/notifications/NotificationQuickControl';
 import UploadReportModal from '@/components/reports/UploadReportModal';
+import DayFilterControl from '@/components/admin/DayFilterControl';
+import { 
+  DayFilterMode, 
+  getTodayDateStr, 
+  getYesterdayDateStr, 
+  isBookingMatchingDay, 
+  formatFriendlyDate 
+} from '@/lib/dateUtils';
 
 export default function AdminOrdersPage() {
   const { bookings, drivers, syncDrivers, syncBookings, addDriver, updateBookingStatus, assignDriverToBooking } = useData();
@@ -32,6 +40,8 @@ export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [driverFilter, setDriverFilter] = useState<string>('ALL');
+  const [dayFilterMode, setDayFilterMode] = useState<DayFilterMode>('TODAY');
+  const [customDate, setCustomDate] = useState<string>(getTodayDateStr());
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Sync latest orders and phlebotomists from database on page mount
@@ -47,6 +57,10 @@ export default function AdminOrdersPage() {
     setTimeout(() => setIsSyncing(false), 800);
   };
 
+  // Day filter counts
+  const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
+  const yesterdayCount = bookings.filter((b) => isBookingMatchingDay(b, 'YESTERDAY')).length;
+
   // Assign driver modal state
   const [assigningBookingId, setAssigningBookingId] = useState<string | null>(null);
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
@@ -61,6 +75,9 @@ export default function AdminOrdersPage() {
   const [uploadModalBookingId, setUploadModalBookingId] = useState<string | null>(null);
 
   const filteredBookings = bookings.filter((b) => {
+    const matchesDay = isBookingMatchingDay(b, dayFilterMode, customDate);
+    if (!matchesDay) return false;
+
     const ref = b.booking_reference || (b as any).order_number || '';
     const pat = b.patient_name || '';
     const matchesSearch =
@@ -204,6 +221,18 @@ export default function AdminOrdersPage() {
         <NotificationQuickControl />
       </div>
 
+      {/* Primary Date Filter Bar */}
+      <DayFilterControl
+        mode={dayFilterMode}
+        customDate={customDate}
+        onModeChange={setDayFilterMode}
+        onCustomDateChange={setCustomDate}
+        todayCount={todayCount}
+        yesterdayCount={yesterdayCount}
+        filteredCount={filteredBookings.length}
+        totalCount={bookings.length}
+      />
+
       {/* Filter Toolbar */}
       <div className="bg-white p-4 rounded-2xl border border-ivory-300 shadow-soft-sm flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:w-80">
@@ -265,8 +294,43 @@ export default function AdminOrdersPage() {
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ivory-100">
-              {filteredBookings.map((booking) => (
+            {filteredBookings.length === 0 ? (
+              <tbody>
+                <tr>
+                  <td colSpan={8} className="p-12 text-center">
+                    <div className="max-w-sm mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-ivory-200 text-botanical-700 flex items-center justify-center mx-auto">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-sm font-bold text-botanical-950">
+                        No orders found for this view
+                      </h3>
+                      <p className="text-xs text-botanical-700/80">
+                        {dayFilterMode === 'TODAY'
+                          ? 'No home blood collection appointments or bookings scheduled for today yet.'
+                          : 'There are no patient orders matching the chosen date or search criteria.'}
+                      </p>
+                      {dayFilterMode !== 'TODAY' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDayFilterMode('TODAY');
+                            setStatusFilter('ALL');
+                            setDriverFilter('ALL');
+                            setSearchQuery('');
+                          }}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-all"
+                        >
+                          <span>Return to Today&apos;s Orders</span>
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            ) : (
+              <tbody className="divide-y divide-ivory-100">
+                {filteredBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-ivory-50/60 transition-colors">
                   <td className="p-3.5 font-bold text-botanical-950">
                     #{booking.booking_reference}
@@ -354,7 +418,8 @@ export default function AdminOrdersPage() {
                   </td>
                 </tr>
               ))}
-            </tbody>
+              </tbody>
+            )}
           </table>
         </div>
       </div>
