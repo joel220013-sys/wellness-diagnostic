@@ -4,18 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingBag, 
-  Clock, 
-  CheckCircle2, 
-  FileText, 
-  Receipt, 
-  TrendingUp, 
-  AlertCircle, 
   ChevronRight, 
   MapPin, 
   Users, 
-  Truck,
-  ArrowUpRight,
-  Filter,
   CalendarDays,
   Sparkles
 } from 'lucide-react';
@@ -30,15 +21,6 @@ import {
   isBookingMatchingDay,
   formatFriendlyDate 
 } from '@/lib/dateUtils';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  CartesianGrid
-} from 'recharts';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -47,9 +29,6 @@ export default function AdminDashboardPage() {
   // Day filter state: defaults strictly to TODAY
   const [dayFilterMode, setDayFilterMode] = useState<DayFilterMode>('TODAY');
   const [customDate, setCustomDate] = useState<string>(getTodayDateStr());
-
-  const todayStr = getTodayDateStr();
-  const yesterdayStr = getYesterdayDateStr();
 
   // Counts for Day filter badges
   const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
@@ -72,26 +51,6 @@ export default function AdminDashboardPage() {
   const paidRevenue = activeBookings
     .filter((b) => b.payment_status === 'Paid' || b.payment_status === 'paid')
     .reduce((sum, b) => sum + (b.total_amount || 0), 0);
-
-  // Status distribution for the selected day
-  const statusDistributionData = [
-    { name: 'Pending', count: pendingConfirmation, color: '#F59E0B' },
-    { name: 'Confirmed', count: activeBookings.filter((b) => b.status === 'Confirmed').length, color: '#0D9488' },
-    { name: 'Assigned', count: assignedJobs, color: '#2563EB' },
-    { name: 'Collected', count: activeBookings.filter((b) => b.status === 'Sample Collected').length, color: '#8B5CF6' },
-    { name: 'Report Ready', count: reportsReady, color: '#08784E' },
-  ];
-
-  // Weekly Trend Chart Data
-  const weeklyTrendData = [
-    { day: 'Mon', collections: 12, revenue: 18500 },
-    { day: 'Tue', collections: 18, revenue: 26400 },
-    { day: 'Wed', collections: 15, revenue: 22100 },
-    { day: 'Thu', collections: 22, revenue: 34800 },
-    { day: 'Fri', collections: 26, revenue: 41200 },
-    { day: 'Sat', collections: 31, revenue: 49500 },
-    { day: 'Sun', collections: 19, revenue: 28900 },
-  ];
 
   const activeDayLabel =
     dayFilterMode === 'TODAY'
@@ -116,6 +75,13 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/assignments"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-950 font-bold text-xs border border-ivory-300 shadow-soft-sm"
+          >
+            <Users className="w-4 h-4 text-botanical-600" />
+            <span>Phlebotomist Dispatch</span>
+          </Link>
           <Link
             href="/admin/map"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-950 font-bold text-xs border border-ivory-300 shadow-soft-sm"
@@ -200,69 +166,6 @@ export default function AdminDashboardPage() {
           <span className="text-[11px] font-semibold text-botanical-900">Total Billed</span>
           <p className="text-2xl font-extrabold text-botanical-950 mt-1">₹{totalRevenue.toLocaleString()}</p>
           <span className="text-[10px] text-emerald-700 font-bold">₹{paidRevenue.toLocaleString()} Paid</span>
-        </div>
-      </div>
-
-      {/* Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Weekly Revenue & Collection Trend */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-ivory-300 shadow-soft-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-botanical-950">Weekly Diagnostic Collections & Volume</h2>
-              <p className="text-xs text-botanical-700/80">Completed home phlebotomy visits over the past 7 days</p>
-            </div>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#FFF0E0" />
-                <XAxis dataKey="day" stroke="#18352E" fontSize={12} />
-                <YAxis stroke="#18352E" fontSize={12} />
-                <Tooltip
-                  formatter={(value: any, name: any) => [
-                    name === 'revenue' ? `₹${value}` : `${value} Collections`,
-                    name === 'revenue' ? 'Revenue' : 'Collections'
-                  ]}
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2D9CF' }}
-                />
-                <Bar dataKey="collections" fill="#08784E" radius={[6, 6, 0, 0]} name="collections" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Right 1 Col: Status Distribution */}
-        <div className="bg-white rounded-3xl p-6 border border-ivory-300 shadow-soft-sm space-y-4">
-          <div>
-            <h2 className="text-base font-bold text-botanical-950">Order Status Breakdown</h2>
-            <p className="text-xs text-botanical-700/80">State of orders for {activeDayLabel}</p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            {statusDistributionData.map((item) => (
-              <div key={item.name} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="font-semibold text-botanical-950">{item.name}</span>
-                </div>
-                <span className="font-bold text-botanical-900 px-2 py-0.5 rounded-lg bg-ivory-100">
-                  {item.count} Orders
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="pt-4 border-t border-ivory-200">
-            <Link
-              href="/admin/assignments"
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-botanical-50 hover:bg-botanical-100 text-botanical-800 font-bold text-xs border border-botanical-200 transition-colors"
-            >
-              <Users className="w-4 h-4 text-botanical-600" />
-              <span>Phlebotomist Dispatch Console</span>
-            </Link>
-          </div>
         </div>
       </div>
 
