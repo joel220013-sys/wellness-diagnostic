@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingBag, 
@@ -8,7 +8,13 @@ import {
   MapPin, 
   Users, 
   CalendarDays,
-  Sparkles
+  Sparkles,
+  CheckCircle2,
+  BellRing,
+  Phone,
+  MessageSquare,
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -21,14 +27,50 @@ import {
   isBookingMatchingDay,
   formatFriendlyDate 
 } from '@/lib/dateUtils';
+import { 
+  playOrderChime, 
+  isMasterAlertsEnabled, 
+  isSoundAlertsEnabled 
+} from '@/lib/notificationService';
+import { getWhatsAppDirectUrl } from '@/lib/whatsappService';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const { bookings, reports, invoices, drivers } = useData();
+  const { bookings, reports, invoices, drivers, updateBookingStatus } = useData();
+  const [dashboardToast, setDashboardToast] = useState<string | null>(null);
 
   // Day filter state: defaults strictly to TODAY
   const [dayFilterMode, setDayFilterMode] = useState<DayFilterMode>('TODAY');
   const [customDate, setCustomDate] = useState<string>(getTodayDateStr());
+
+  // All pending orders across the clinic awaiting admin confirmation (pinned until confirmed)
+  const allPendingOrders = bookings.filter((b) => String(b.status || '').toLowerCase() === 'pending');
+
+  const handleConfirmOrder = (bookingId: string) => {
+    updateBookingStatus(bookingId, 'Confirmed');
+    const order = bookings.find((b) => b.id === bookingId);
+    setDashboardToast(`Order #${order?.booking_reference || bookingId} confirmed! Phlebotomist can now be assigned.`);
+    setTimeout(() => setDashboardToast(null), 3500);
+  };
+
+  const handleConfirmAllPending = () => {
+    allPendingOrders.forEach((b) => {
+      updateBookingStatus(b.id, 'Confirmed');
+    });
+    setDashboardToast(`All ${allPendingOrders.length} pending orders confirmed successfully!`);
+    setTimeout(() => setDashboardToast(null), 3500);
+  };
+
+  // Periodic reminder chime for unconfirmed pending orders (every 90s)
+  useEffect(() => {
+    if (allPendingOrders.length === 0) return;
+    const interval = setInterval(() => {
+      if (isMasterAlertsEnabled() && isSoundAlertsEnabled()) {
+        playOrderChime();
+      }
+    }, 90000);
+    return () => clearInterval(interval);
+  }, [allPendingOrders.length]);
 
   // Counts for Day filter badges
   const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
@@ -66,6 +108,14 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Toast Notification */}
+      {dashboardToast && (
+        <div className="fixed top-6 right-6 z-50 bg-emerald-700 text-white px-4 py-3 rounded-2xl shadow-soft-lg flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+          <span>{dashboardToast}</span>
+        </div>
+      )}
+
       {/* Cockpit Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -104,6 +154,153 @@ export default function AdminDashboardPage() {
 
       {/* Live Order Audio & Push Alert Banner with Master and Chime ON/OFF Toggles */}
       <OrderAlertBanner />
+
+      {/* Pinned Action Queue: Incoming Orders Awaiting Admin Confirmation */}
+      {allPendingOrders.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-50 to-emerald-500/10 border-2 border-amber-400 rounded-3xl p-5 sm:p-6 shadow-soft-lg space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 rounded-2xl bg-amber-500 text-white shadow-soft flex-shrink-0">
+                <BellRing className="w-5 h-5 animate-bounce" />
+              </span>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base sm:text-lg font-extrabold text-botanical-950">
+                    Orders Awaiting Confirmation ({allPendingOrders.length})
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-500 text-white tracking-wider">
+                    Action Required
+                  </span>
+                </div>
+                <p className="text-xs text-botanical-700/80 mt-0.5">
+                  These patient bookings will remain pinned here until you click Confirm. They will not be dismissed or lost.
+                </p>
+              </div>
+            </div>
+
+            {allPendingOrders.length > 1 && (
+              <button
+                type="button"
+                onClick={handleConfirmAllPending}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-soft transition-all active:scale-95 self-start sm:self-auto"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                <span>Confirm All ({allPendingOrders.length})</span>
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            {allPendingOrders.map((booking) => {
+              const cleanPhone = booking.patient_phone || '';
+              const whatsappUrl = getWhatsAppDirectUrl({
+                orderId: booking.id,
+                reference: booking.booking_reference,
+                patientName: booking.patient_name,
+                phone: cleanPhone,
+                totalAmount: booking.total_amount,
+                testName: booking.tests?.[0]?.name || booking.items?.[0]?.item_name || 'Diagnostic Package',
+                timeSlot: `${booking.scheduled_date} • ${booking.scheduled_slot}`,
+              });
+
+              return (
+                <div 
+                  key={booking.id}
+                  className="bg-white rounded-2xl p-4 border border-amber-300 shadow-soft-sm hover:shadow-soft transition-all space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-sm text-botanical-950">
+                          #{booking.booking_reference}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          Pending Confirmation
+                        </span>
+                      </div>
+                      <p className="font-bold text-xs text-botanical-900 mt-1">
+                        {booking.patient_name}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-sm font-extrabold text-botanical-950">
+                        ₹{booking.total_amount}
+                      </span>
+                      <p className="text-[10px] text-botanical-600 font-medium">
+                        {booking.payment_method || 'Cash on Collection'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-ivory-100/70 rounded-xl border border-ivory-200 text-[11px] space-y-1 text-botanical-800">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-botanical-500 flex-shrink-0" />
+                      <span>{booking.scheduled_date}</span>
+                      <span className="text-botanical-400">•</span>
+                      <Clock className="w-3.5 h-3.5 text-botanical-500 flex-shrink-0" />
+                      <span className="truncate">{booking.scheduled_slot}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-botanical-500 flex-shrink-0" />
+                      <span className="truncate">
+                        {booking.address_snapshot?.locality || booking.address_snapshot?.address_line_1 || 'Home Collection Address'}, {booking.address_snapshot?.city || 'Davangere'}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-semibold text-botanical-900 pt-0.5 truncate">
+                      Tests: {booking.tests?.length ? booking.tests.map((t) => t.name).join(', ') : booking.items?.length ? booking.items.map((it) => it.item_name).join(', ') : 'Diagnostic Profile'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-ivory-200">
+                    <div className="flex items-center gap-1.5">
+                      {cleanPhone && (
+                        <>
+                          <a
+                            href={`tel:${cleanPhone}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-800 text-[11px] font-semibold border border-ivory-300 transition-colors"
+                            title="Call Patient"
+                          >
+                            <Phone className="w-3 h-3 text-botanical-600" />
+                            <span className="hidden sm:inline">Call</span>
+                          </a>
+                          <a
+                            href={whatsappUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-semibold border border-emerald-200 transition-colors"
+                            title="Chat on WhatsApp"
+                          >
+                            <MessageSquare className="w-3 h-3 text-emerald-600" />
+                            <span className="hidden sm:inline">WhatsApp</span>
+                          </a>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/orders/${booking.id}`}
+                        className="px-2.5 py-1.5 rounded-xl bg-ivory-100 hover:bg-ivory-200 text-botanical-800 text-xs font-semibold border border-ivory-300 transition-colors"
+                      >
+                        Inspect
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleConfirmOrder(booking.id)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-soft transition-all active:scale-95"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                        <span>Confirm Order</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Primary Date Filter Bar */}
       <DayFilterControl
@@ -264,13 +461,34 @@ export default function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <Link
-                        href={`/admin/orders/${booking.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-botanical-600 hover:text-botanical-800"
-                      >
-                        <span>Manage</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </Link>
+                      {String(booking.status || '').toLowerCase() === 'pending' ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmOrder(booking.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-soft-xs transition-all active:scale-95"
+                            title="Confirm this pending order"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                            <span>Confirm</span>
+                          </button>
+                          <Link
+                            href={`/admin/orders/${booking.id}`}
+                            className="inline-flex items-center gap-0.5 text-xs font-semibold text-botanical-600 hover:text-botanical-800"
+                          >
+                            <span>Manage</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/admin/orders/${booking.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-botanical-600 hover:text-botanical-800"
+                        >
+                          <span>Manage</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}
