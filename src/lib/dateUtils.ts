@@ -24,6 +24,18 @@ export function getYesterdayDateStr(): string {
 }
 
 /**
+ * Returns tomorrow's date in YYYY-MM-DD format (local time)
+ */
+export function getTomorrowDateStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Converts any Date object to YYYY-MM-DD format in local timezone
  */
 export function toLocalDateStr(d: Date): string {
@@ -61,11 +73,12 @@ export function getBookingNormalizedDates(booking: Booking): { scheduledDateStr:
   return { scheduledDateStr, createdDateStr };
 }
 
-export type DayFilterMode = 'TODAY' | 'YESTERDAY' | 'CUSTOM' | 'ALL';
+export type DayFilterMode = 'TODAY' | 'TOMORROW' | 'YESTERDAY' | 'CUSTOM' | 'ALL';
 
 /**
  * Determines whether a booking matches the selected day filter mode.
- * Matches if scheduled collection date OR order creation date falls on target date.
+ * Matches strictly against the patient's scheduled collection date.
+ * If no collection date exists, falls back to booking creation date.
  */
 export function isBookingMatchingDay(booking: Booking, mode: DayFilterMode, customDate?: string): boolean {
   if (mode === 'ALL') return true;
@@ -73,12 +86,18 @@ export function isBookingMatchingDay(booking: Booking, mode: DayFilterMode, cust
   const targetDate =
     mode === 'TODAY'
       ? getTodayDateStr()
+      : mode === 'TOMORROW'
+      ? getTomorrowDateStr()
       : mode === 'YESTERDAY'
       ? getYesterdayDateStr()
       : customDate || getTodayDateStr();
 
   const { scheduledDateStr, createdDateStr } = getBookingNormalizedDates(booking);
-  return scheduledDateStr === targetDate || createdDateStr === targetDate;
+  
+  if (scheduledDateStr) {
+    return scheduledDateStr === targetDate;
+  }
+  return createdDateStr === targetDate;
 }
 
 /**

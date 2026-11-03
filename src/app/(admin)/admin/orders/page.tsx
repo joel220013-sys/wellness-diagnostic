@@ -59,6 +59,7 @@ export default function AdminOrdersPage() {
 
   // Day filter counts
   const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
+  const tomorrowCount = bookings.filter((b) => isBookingMatchingDay(b, 'TOMORROW')).length;
   const yesterdayCount = bookings.filter((b) => isBookingMatchingDay(b, 'YESTERDAY')).length;
 
   // Assign driver modal state
@@ -228,6 +229,7 @@ export default function AdminOrdersPage() {
         onModeChange={setDayFilterMode}
         onCustomDateChange={setCustomDate}
         todayCount={todayCount}
+        tomorrowCount={tomorrowCount}
         yesterdayCount={yesterdayCount}
         filteredCount={filteredBookings.length}
         totalCount={bookings.length}

@@ -32,6 +32,7 @@ export default function AdminDashboardPage() {
 
   // Counts for Day filter badges
   const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
+  const tomorrowCount = bookings.filter((b) => isBookingMatchingDay(b, 'TOMORROW')).length;
   const yesterdayCount = bookings.filter((b) => isBookingMatchingDay(b, 'YESTERDAY')).length;
 
   // Active bookings filtered by chosen day (Today by default, past day only if explicitly chosen)
@@ -55,6 +56,8 @@ export default function AdminDashboardPage() {
   const activeDayLabel =
     dayFilterMode === 'TODAY'
       ? "Today's Orders"
+      : dayFilterMode === 'TOMORROW'
+      ? "Tomorrow's Orders"
       : dayFilterMode === 'YESTERDAY'
       ? "Yesterday's Orders"
       : dayFilterMode === 'CUSTOM'
@@ -123,6 +126,7 @@ export default function AdminDashboardPage() {
         onModeChange={setDayFilterMode}
         onCustomDateChange={setCustomDate}
         todayCount={todayCount}
+        tomorrowCount={tomorrowCount}
         yesterdayCount={yesterdayCount}
         filteredCount={totalActiveOrders}
         totalCount={bookings.length}
@@ -238,7 +242,12 @@ export default function AdminDashboardPage() {
                 {activeBookings.map((booking) => (
                   <tr key={booking.id} className="hover:bg-ivory-50/50 transition-colors">
                     <td className="p-3 font-bold text-botanical-950">#{booking.booking_reference}</td>
-                    <td className="p-3 font-semibold text-botanical-900">{booking.patient_name}</td>
+                    <td className="p-3">
+                      <p className="font-semibold text-botanical-950">{booking.patient_name}</p>
+                      {booking.patient_phone && (
+                        <p className="text-[10px] text-botanical-600 font-medium">{booking.patient_phone}</p>
+                      )}
+                    </td>
                     <td className="p-3 text-botanical-700/80">
                       {booking.scheduled_date} <br />
                       <span className="text-[10px] text-botanical-600 font-medium">{booking.scheduled_slot}</span>

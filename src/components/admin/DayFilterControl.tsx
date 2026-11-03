@@ -13,6 +13,7 @@ import {
 import { 
   DayFilterMode, 
   getTodayDateStr, 
+  getTomorrowDateStr,
   getYesterdayDateStr, 
   formatFriendlyDate 
 } from '@/lib/dateUtils';
@@ -23,6 +24,7 @@ interface DayFilterControlProps {
   onModeChange: (mode: DayFilterMode) => void;
   onCustomDateChange: (dateStr: string) => void;
   todayCount?: number;
+  tomorrowCount?: number;
   yesterdayCount?: number;
   filteredCount?: number;
   totalCount?: number;
@@ -34,16 +36,20 @@ export default function DayFilterControl({
   onModeChange,
   onCustomDateChange,
   todayCount = 0,
+  tomorrowCount = 0,
   yesterdayCount = 0,
   filteredCount = 0,
   totalCount = 0,
 }: DayFilterControlProps) {
   const todayStr = getTodayDateStr();
+  const tomorrowStr = getTomorrowDateStr();
   const yesterdayStr = getYesterdayDateStr();
 
   const activeDateLabel = 
     mode === 'TODAY' 
       ? `Today (${formatFriendlyDate(todayStr)})`
+      : mode === 'TOMORROW'
+      ? `Tomorrow (${formatFriendlyDate(tomorrowStr)})`
       : mode === 'YESTERDAY' 
       ? `Yesterday (${formatFriendlyDate(yesterdayStr)})`
       : mode === 'CUSTOM' && customDate 
@@ -75,6 +81,29 @@ export default function DayFilterControl({
               }`}
             >
               {todayCount}
+            </span>
+          </button>
+
+          {/* Tomorrow (Next Day Collections) */}
+          <button
+            type="button"
+            onClick={() => onModeChange('TOMORROW')}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all border ${
+              mode === 'TOMORROW'
+                ? 'bg-botanical-500 text-white border-botanical-600 shadow-soft'
+                : 'bg-ivory-100 hover:bg-ivory-200 text-botanical-800 border-ivory-300'
+            }`}
+          >
+            <CalendarDays className={`w-3.5 h-3.5 ${mode === 'TOMORROW' ? 'text-amber-300' : 'text-botanical-600'}`} />
+            <span>Tomorrow</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+                mode === 'TOMORROW'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-ivory-200 text-botanical-900 border border-ivory-300'
+              }`}
+            >
+              {tomorrowCount}
             </span>
           </button>
 
