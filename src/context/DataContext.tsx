@@ -11,6 +11,7 @@ import {
   BookingStatus, 
   LabReportResultItem 
 } from '@/types';
+import { getTodayDateStr } from '@/lib/dateUtils';
 interface DataContextType {
   tests: DiagnosticTest[];
   packages: DiagnosticPackage[];
@@ -333,7 +334,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       tax_amount: 0,
       discount: newBooking.discount_amount,
       total_amount: newBooking.total_amount,
-      issued_at: new Date().toISOString().split('T')[0],
+      issued_at: getTodayDateStr(),
       payment_method: newBooking.payment_method,
       status: newBooking.payment_status === 'paid' ? 'paid' : 'pending'
     };

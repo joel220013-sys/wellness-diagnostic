@@ -27,6 +27,7 @@ import AddressMapPickerWrapper from '@/components/map/AddressMapPickerWrapper';
 import { AddressInput } from '@/lib/validations';
 import { DiagnosticTest } from '@/types';
 import CategoryPillIcon from '@/components/common/CategoryPillIcon';
+import { getTodayDateStr, getTomorrowDateStr } from '@/lib/dateUtils';
 
 const BOOK_CATEGORIES = [
   'All',
@@ -90,9 +91,7 @@ export default function BookCollectionPage() {
     }
   }, [selectedTests.length]);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return getTodayDateStr();
   });
   const [selectedSlot, setSelectedSlot] = useState<string>(COLLECTION_SLOTS[2]);
   const [testSearch, setTestSearch] = useState('');
@@ -651,12 +650,38 @@ export default function BookCollectionPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-botanical-900 mb-2">
-                Collection Date
-              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-botanical-900">
+                  Collection Date
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(getTodayDateStr())}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
+                      selectedDate === getTodayDateStr()
+                        ? 'bg-botanical-500 text-white border-botanical-500 shadow-soft-xs'
+                        : 'bg-ivory-100 text-botanical-800 border-ivory-300 hover:bg-ivory-200'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(getTomorrowDateStr())}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
+                      selectedDate === getTomorrowDateStr()
+                        ? 'bg-botanical-500 text-white border-botanical-500 shadow-soft-xs'
+                        : 'bg-ivory-100 text-botanical-800 border-ivory-300 hover:bg-ivory-200'
+                    }`}
+                  >
+                    Tomorrow
+                  </button>
+                </div>
+              </div>
               <input
                 type="date"
-                min={new Date().toISOString().split('T')[0]}
+                min={getTodayDateStr()}
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 text-sm font-semibold text-botanical-950"
