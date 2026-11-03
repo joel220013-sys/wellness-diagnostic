@@ -14,8 +14,7 @@ import {
   Loader2,
   Clock,
   Droplet,
-  Coffee,
-  Tag
+  Coffee
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { DiagnosticPackage } from '@/types/test';
@@ -40,10 +39,13 @@ export default function AdminPackagesPage() {
   const [formActive, setFormActive] = useState(true);
   const [formPopular, setFormPopular] = useState(false);
 
-  const filteredPackages = packages.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredPackages = (packages || []).filter((p) => {
+    if (!p) return false;
+    const name = (p.name || '').toLowerCase();
+    const desc = (p.description || '').toLowerCase();
+    const q = (searchQuery || '').toLowerCase();
+    return name.includes(q) || desc.includes(q);
+  });
 
   const handleOpenAdd = () => {
     setEditingPkg(null);
