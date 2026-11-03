@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { LabReport } from '@/types';
-import { X, Printer, Download, ExternalLink, FileText, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, Printer, Download, ExternalLink, FileText, AlertCircle, ShieldCheck, Loader2 } from 'lucide-react';
+import { downloadReportFile } from '@/lib/downloadUtils';
 import BrandLogo from '@/components/common/BrandLogo';
 
 interface LabReportModalProps {
@@ -11,8 +12,21 @@ interface LabReportModalProps {
 }
 
 export default function LabReportModal({ report, onClose }: LabReportModalProps) {
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      await downloadReportFile(report);
+    } catch (err) {
+      console.error('Modal download error:', err);
+    } finally {
+      setTimeout(() => setIsDownloading(false), 1000);
+    }
   };
 
   const reportNum = report.report_number || (report as any).reportNumber || 'WD-REP-001';
@@ -61,18 +75,23 @@ export default function LabReportModal({ report, onClose }: LabReportModalProps)
               </a>
             )}
 
-            {hasUploadedPdf && (
-              <a
-                href={report.download_url!}
-                download={`Report_${reportNum}.pdf`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3.5 py-1.5 rounded-xl bg-botanical-700 hover:bg-botanical-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-soft-sm"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download PDF</span>
-              </a>
-            )}
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-soft-sm disabled:opacity-75"
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Downloading...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </>
+              )}
+            </button>
 
             {hasUploadedPdf ? (
               <button
@@ -108,12 +127,12 @@ export default function LabReportModal({ report, onClose }: LabReportModalProps)
         {hasUploadedPdf ? (
           <div className="flex-1 w-full bg-slate-900 flex flex-col relative overflow-hidden">
             <object
-              data={`${report.download_url!}#toolbar=1`}
+              data={`${(report as any).view_url || report.download_url!}#toolbar=1`}
               type="application/pdf"
               className="w-full flex-1 h-full border-0 min-h-[500px]"
             >
               <iframe
-                src={`${report.download_url!}#toolbar=1`}
+                src={`${(report as any).view_url || report.download_url!}#toolbar=1`}
                 className="w-full flex-1 h-full border-0 min-h-[500px]"
                 title={`Laboratory Report ${reportNum}`}
               >

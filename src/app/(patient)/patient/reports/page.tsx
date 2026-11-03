@@ -11,12 +11,14 @@ import {
   ShieldCheck, 
   Award, 
   CheckCircle2, 
-  ExternalLink 
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { LabReport } from '@/types';
 import LabReportModal from '@/components/reports/LabReportModal';
+import { downloadReportFile } from '@/lib/downloadUtils';
 
 export default function PatientReportsPage() {
   const { user } = useAuth();
@@ -24,10 +26,22 @@ export default function PatientReportsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     syncReports();
   }, []);
+
+  const handleDownload = async (report: LabReport) => {
+    try {
+      setDownloadingId(report.id);
+      await downloadReportFile(report);
+    } catch (err) {
+      console.error('Download error:', err);
+    } finally {
+      setTimeout(() => setDownloadingId(null), 1000);
+    }
+  };
 
   // Filter for this patient
   const patientReports = reports.filter((r) => {
@@ -158,26 +172,23 @@ export default function PatientReportsPage() {
                     <span>View Report</span>
                   </button>
 
-                  {hasPdf ? (
-                    <a
-                      href={report.download_url!}
-                      download={`Report_${report.report_number}.pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Download PDF</span>
-                    </a>
-                  ) : (
-                    <button
-                      onClick={() => setActiveReport(report)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Download PDF</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDownload(report)}
+                    disabled={downloadingId === report.id}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 active:scale-95 text-white font-bold text-xs shadow-soft transition-all disabled:opacity-75"
+                  >
+                    {downloadingId === report.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Downloading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>Download PDF</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             );

@@ -25,8 +25,10 @@ import {
   Check,
   Settings,
   Truck,
-  Phone
+  Phone,
+  Loader2
 } from 'lucide-react';
+import { downloadReportFile } from '@/lib/downloadUtils';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import LabReportModal from '@/components/reports/LabReportModal';
@@ -59,6 +61,18 @@ export default function PatientDashboardPage() {
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
   const [overviewTest, setOverviewTest] = useState<DiagnosticTest | null>(null);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+
+  const handleDownloadReport = async (report: LabReport) => {
+    try {
+      setDownloadingReportId(report.id);
+      await downloadReportFile(report);
+    } catch (err) {
+      console.error('Download error:', err);
+    } finally {
+      setTimeout(() => setDownloadingReportId(null), 1000);
+    }
+  };
 
   React.useEffect(() => {
     syncBookings();
@@ -571,13 +585,27 @@ export default function PatientDashboardPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setActiveReport(report)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-botanical-800 bg-ivory-100 hover:bg-botanical-50 hover:text-botanical-700 border border-ivory-300 transition-colors"
-                  >
-                    <Eye className="w-3 h-3" />
-                    <span>View</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setActiveReport(report)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-botanical-800 bg-ivory-100 hover:bg-botanical-50 hover:text-botanical-700 border border-ivory-300 transition-colors"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>View</span>
+                    </button>
+                    <button
+                      onClick={() => handleDownloadReport(report)}
+                      disabled={downloadingReportId === report.id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-75 shadow-soft-xs"
+                    >
+                      {downloadingReportId === report.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Download className="w-3 h-3" />
+                      )}
+                      <span>PDF</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -18,13 +18,17 @@ import {
   ShieldCheck, 
   AlertCircle,
   ExternalLink,
-  Ban
+  Ban,
+  Eye,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { BookingStatus, LabReport, Invoice } from '@/types';
 import LabReportModal from '@/components/reports/LabReportModal';
 import InvoiceModal from '@/components/invoices/InvoiceModal';
+import { downloadReportFile } from '@/lib/downloadUtils';
 
 const TIMELINE_STEPS: BookingStatus[] = [
   'Pending',
@@ -43,6 +47,18 @@ export default function PatientBookingDetailPage() {
   const { bookings, drivers, reports, invoices, updateBookingStatus } = useData();
 
   const [activeReport, setActiveReport] = useState<LabReport | null>(null);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+
+  const handleDownloadReport = async (report: LabReport) => {
+    try {
+      setIsDownloadingReport(true);
+      await downloadReportFile(report);
+    } catch (err) {
+      console.error('Download report error:', err);
+    } finally {
+      setTimeout(() => setIsDownloadingReport(false), 1000);
+    }
+  };
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
 
   const bookingId = params.id as string;
@@ -68,7 +84,7 @@ export default function PatientBookingDetailPage() {
   }
 
   // Linked report & invoice if ready
-  const linkedReport = reports.find((r) => r.order_id === booking.id || r.patient_id === booking.patient_id);
+  const linkedReport = reports.find((r) => (booking.report_id && r.id === booking.report_id) || r.booking_id === booking.id || r.order_id === booking.id || (r as any).booking_reference === booking.booking_reference || (booking.booking_reference && (r as any).booking_reference === booking.booking_reference) || r.patient_id === booking.patient_id);
   const linkedInvoice = invoices.find((inv) => inv.order_id === booking.id);
 
   // Match assigned driver from drivers collection or booking snapshot
@@ -117,13 +133,32 @@ export default function PatientBookingDetailPage() {
           )}
 
           {booking.status === 'Report Ready' && linkedReport && (
-            <button
-              onClick={() => setActiveReport(linkedReport)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-soft"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Download Lab Report</span>
-            </button>
+            <>
+              <button
+                onClick={() => setActiveReport(linkedReport)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-botanical-50 text-botanical-900 hover:bg-botanical-100 border border-botanical-200"
+              >
+                <Eye className="w-3.5 h-3.5 text-botanical-600" />
+                <span>View Report</span>
+              </button>
+              <button
+                onClick={() => handleDownloadReport(linkedReport)}
+                disabled={isDownloadingReport}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-soft transition-all disabled:opacity-75"
+              >
+                {isDownloadingReport ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Lab Report</span>
+                  </>
+                )}
+              </button>
+            </>
           )}
         </div>
       </div>

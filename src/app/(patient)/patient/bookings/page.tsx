@@ -17,15 +17,47 @@ import {
   FileText, 
   CalendarPlus, 
   Ban,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Loader2
 } from 'lucide-react';
+import { downloadReportFile } from '@/lib/downloadUtils';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
 
 export default function PatientBookingsPage() {
   const { user } = useAuth();
-  const { bookings, drivers, updateBookingStatus, selectedTests, syncBookings } = useData();
+  const { bookings, drivers, reports, updateBookingStatus, selectedTests, syncBookings } = useData();
+  const [downloadingBookingId, setDownloadingBookingId] = useState<string | null>(null);
+
+  const handleDownloadReport = async (b: any) => {
+    const rep = reports.find(
+      (r) =>
+        (b.report_id && r.id === b.report_id) ||
+        r.booking_id === b.id ||
+        r.order_id === b.id ||
+        (r as any).booking_reference === b.booking_reference
+    );
+    if (!rep) {
+      // Direct report request using booking reference or id
+      try {
+        setDownloadingBookingId(b.id);
+        await downloadReportFile({ id: b.id, report_number: b.booking_reference });
+      } finally {
+        setTimeout(() => setDownloadingBookingId(null), 1000);
+      }
+      return;
+    }
+    try {
+      setDownloadingBookingId(b.id);
+      await downloadReportFile(rep);
+    } catch (err) {
+      console.error('Download report error:', err);
+    } finally {
+      setTimeout(() => setDownloadingBookingId(null), 1000);
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -273,6 +305,26 @@ export default function PatientBookingsPage() {
                     >
                       <Ban className="w-3 h-3" />
                       <span>Cancel Appointment</span>
+                    </button>
+                  )}
+
+                  {booking.status === 'Report Ready' && (
+                    <button
+                      onClick={() => handleDownloadReport(booking)}
+                      disabled={downloadingBookingId === booking.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 shadow-soft-xs transition-all disabled:opacity-75"
+                    >
+                      {downloadingBookingId === booking.id ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Downloading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download Report PDF</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>

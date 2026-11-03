@@ -68,17 +68,23 @@ def upload_file(file_content: bytes, object_key: str, content_type: str = "appli
         print(f"[R2 Storage Error] Failed to upload {object_key}: {e}")
         return None
 
-def generate_download_url(object_key: str, expires_in: int = 86400) -> Optional[str]:
+def generate_download_url(object_key: str, expires_in: int = 86400, filename: Optional[str] = None) -> Optional[str]:
     """
     Generates a secure presigned GET URL for the specified object key in R2.
+    If filename is supplied, sets ResponseContentDisposition to force direct download on mobile/desktop.
     """
     s3 = get_s3_client()
     if not s3:
         return None
     try:
+        params: Dict[str, Any] = {"Bucket": R2_BUCKET_NAME, "Key": object_key}
+        if filename:
+            safe_name = "".join(c for c in filename if c.isalnum() or c in "._- ")
+            params["ResponseContentDisposition"] = f'attachment; filename="{safe_name}"'
+            params["ResponseContentType"] = "application/pdf"
         url = s3.generate_presigned_url(
             "get_object",
-            Params={"Bucket": R2_BUCKET_NAME, "Key": object_key},
+            Params=params,
             ExpiresIn=expires_in
         )
         return url
