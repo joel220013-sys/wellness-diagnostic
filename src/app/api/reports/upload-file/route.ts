@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryDb } from '@/lib/server/db';
 import { uploadToR2, getPresignedDownloadUrl } from '@/lib/server/r2';
+import { sendReportReadyPatientSMS } from '@/lib/smsService';
 import crypto from 'crypto';
 
 function toSafeUuid(val: any): string | null {
@@ -59,15 +60,30 @@ export async function POST(req: NextRequest) {
         [reportId, reportNumber, bookingUuid, patientUuid, objectKey, overallRemarks, doctorName, labTechnician]
       );
 
-      // Automatically move booking to "Report Ready" in DB
+      // Automatically move booking to "Report Ready" in DB & trigger SMS
       if (bookingId) {
         const cleanBookingId = String(bookingId).replace(/^#/, '').trim();
-        await queryDb(
+        const updatedBookingRows = await queryDb(
           `UPDATE public.bookings
            SET status = 'Report Ready', report_id = $1, updated_at = NOW()
-           WHERE id::text = $2 OR order_number = $2 OR order_number = $3;`,
+           WHERE id::text = $2 OR order_number = $2 OR order_number = $3
+           RETURNING *;`,
           [reportId, cleanBookingId, `#${cleanBookingId}`]
         );
+
+        if (updatedBookingRows[0]) {
+          const patientName = updatedBookingRows[0].patient_name || 'Patient';
+          const patientPhone = updatedBookingRows[0].patient_phone;
+          const ref = updatedBookingRows[0].order_number || cleanBookingId;
+
+          if (patientPhone) {
+            sendReportReadyPatientSMS({
+              patientName,
+              patientPhone,
+              bookingReference: ref,
+            }).catch((e) => console.warn('[Report Ready SMS error]', e));
+          }
+        }
       }
     } catch (dbErr) {
       console.error('[API upload-file DB persistence error]', dbErr);

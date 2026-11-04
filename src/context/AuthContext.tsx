@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: 'user_admin_1',
             name: 'Dr. Joel Joyson',
             email: 'admin@gmail.com',
-            phone: '7899514777',
+            phone: '9611213216',
             role: 'admin',
             designation: 'Medical Director / Admin',
             active: true,

@@ -1,6 +1,6 @@
 /**
  * Wellness Diagnostic Center - WhatsApp Notification Service
- * Sends automated WhatsApp alerts to Admin (+91 7899514777)
+ * Sends automated WhatsApp alerts to Admin (+91 96112 13216)
  * Supports CallMeBot (Free), Twilio WhatsApp, Meta Cloud API, or Custom Webhook.
  */
 
@@ -17,7 +17,7 @@ export interface OrderWhatsAppPayload {
   longitude?: number;
 }
 
-export const ADMIN_PHONE_NUMBER = '917899514777';
+export const ADMIN_PHONE_NUMBER = '919611213216';
 
 /**
  * Formats a clean, professional WhatsApp message for lab staff & phlebotomy dispatch

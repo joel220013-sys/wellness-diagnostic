@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryDb } from '@/lib/server/db';
 import { formatDbBooking } from '@/lib/server/formatters';
+import { sendBookingAdminSMS, sendBookingPatientSMS } from '@/lib/smsService';
 import crypto from 'crypto';
 
 function toSafeUuid(val: any): string {
@@ -170,6 +171,31 @@ export async function POST(req: NextRequest) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    // Automated Real SMS Dispatch to Admin (+91 96112 13216) and Patient
+    const locality =
+      body.address_snapshot?.locality ||
+      body.address_snapshot?.address_line_2 ||
+      body.address_snapshot?.city ||
+      'Davanagere';
+
+    Promise.allSettled([
+      sendBookingAdminSMS({
+        bookingReference: ref,
+        patientName,
+        patientPhone,
+        scheduledSlot: `${scheduledDate} (${scheduledSlot})`,
+        totalAmount,
+        locality,
+      }),
+      sendBookingPatientSMS({
+        bookingReference: ref,
+        patientName,
+        patientPhone,
+        scheduledSlot: `${scheduledDate} (${scheduledSlot})`,
+        totalAmount,
+      }),
+    ]).catch((e) => console.warn('[SMS Dispatch error]', e));
 
     return NextResponse.json({
       success: true,

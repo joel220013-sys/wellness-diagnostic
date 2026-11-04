@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryDb } from '@/lib/server/db';
 import { formatDbBooking } from '@/lib/server/formatters';
+import { sendReportReadyPatientSMS } from '@/lib/smsService';
 
 export async function PATCH(
   req: NextRequest,
@@ -54,10 +55,27 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'Order not found to update' }, { status: 404 });
     }
 
+    const updatedBooking = rows[0];
+
+    // Trigger Report Ready SMS if status changed to 'Report Ready'
+    if (body.status === 'Report Ready' && updatedBooking) {
+      const patientPhone = updatedBooking.patient_phone;
+      const patientName = updatedBooking.patient_name || 'Patient';
+      const ref = updatedBooking.order_number || cleanId;
+
+      if (patientPhone) {
+        sendReportReadyPatientSMS({
+          patientName,
+          patientPhone,
+          bookingReference: ref,
+        }).catch((e) => console.warn('[Report Ready SMS error]', e));
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Order updated successfully',
-      data: formatDbBooking(rows[0]),
+      data: formatDbBooking(updatedBooking),
     });
   } catch (err: any) {
     console.error('[API /api/admin/orders/[id] PATCH error]', err);
