@@ -10,6 +10,36 @@ interface DriverDirectionsMapProps {
   addressText: string;
 }
 
+const GOOGLE_API_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+  'AIzaSyAwsS5CrgxBPJ37X6UoWiX5ZgIAlVWDk48';
+
+function loadGoogleMapsScript(apiKey: string): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.google?.maps) return Promise.resolve();
+  if (window.__googleMapsLoadingPromise) return window.__googleMapsLoadingPromise;
+
+  window.__googleMapsLoadingPromise = new Promise((resolve, reject) => {
+    const existing = document.getElementById('google-maps-sdk-script');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', (err) => reject(err));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-maps-sdk-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&loading=async`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(err);
+    document.head.appendChild(script);
+  });
+
+  return window.__googleMapsLoadingPromise;
+}
+
 export default function DriverDirectionsMap({
   latitude,
   longitude,
@@ -18,55 +48,68 @@ export default function DriverDirectionsMap({
 }: DriverDirectionsMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const markerRef = useRef<any>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function init() {
       if (typeof window === 'undefined' || !mapRef.current) return;
-      const L = (await import('leaflet')).default;
+      await loadGoogleMapsScript(GOOGLE_API_KEY);
+      if (!isMounted || !mapRef.current || !window.google?.maps) return;
 
-      if (mapInstance.current) {
-        mapInstance.current.remove();
+      const google = window.google;
+      const pos = { lat: latitude, lng: longitude };
+
+      if (!mapInstance.current) {
+        mapInstance.current = new google.maps.Map(mapRef.current, {
+          center: pos,
+          zoom: 16,
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          zoomControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+        });
+      } else {
+        mapInstance.current.setCenter(pos);
       }
 
-      const map = L.map(mapRef.current, {
-        center: [latitude, longitude],
-        zoom: 15,
-        zoomControl: false,
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+      }
+
+      const marker = new google.maps.Marker({
+        position: pos,
+        map: mapInstance.current,
+        title: patientName,
+        icon: {
+          url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="%2308784E" stroke="%23ffffff" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+          scaledSize: new google.maps.Size(36, 36),
+          anchor: new google.maps.Point(18, 18),
+        },
       });
 
-      L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; Google Maps',
-      }).addTo(map);
-
-      const pinIcon = L.divIcon({
-        className: 'driver-dest-pin',
-        html: `
-          <div style="background-color: #08784E; color: white; width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid white;">
-            <svg style="transform: rotate(45deg); width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v20M2 12h20"/>
-            </svg>
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="font-family: sans-serif; font-size: 12px; color: #18352E; padding: 4px;">
+            <b>${patientName}</b><br/>
+            ${addressText}
           </div>
         `,
-        iconSize: [34, 34],
-        iconAnchor: [17, 34],
       });
+      infoWindow.open(mapInstance.current, marker);
 
-      L.marker([latitude, longitude], { icon: pinIcon })
-        .addTo(map)
-        .bindPopup(`<b>${patientName}</b><br/>${addressText}`)
-        .openPopup();
-
-      mapInstance.current = map;
+      markerRef.current = marker;
     }
 
     init();
 
     return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
+      isMounted = false;
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
       }
     };
   }, [latitude, longitude, patientName, addressText]);
@@ -92,7 +135,7 @@ export default function DriverDirectionsMap({
           className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-botanical-600 hover:bg-botanical-700 text-white text-xs font-bold transition-colors shadow-soft-sm"
         >
           <Navigation className="w-3.5 h-3.5" />
-          <span>Open GPS</span>
+          <span>Open Google GPS</span>
           <ExternalLink className="w-3 h-3 opacity-70" />
         </a>
       </div>

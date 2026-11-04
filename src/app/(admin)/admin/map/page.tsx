@@ -49,7 +49,7 @@ export default function AdminMapPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[600px]">
-        {/* Left 2 Cols: Interactive Leaflet Map */}
+        {/* Left 2 Cols: Interactive Google Map */}
         <div className="lg:col-span-2 min-h-[520px]">
           <DynamicAdminMap
             bookings={bookings}

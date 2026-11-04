@@ -814,7 +814,7 @@ export default function BookCollectionPage() {
             </div>
           </div>
 
-          {/* Interactive Leaflet Map Address Picker (Standalone 2-Column Component) */}
+          {/* Interactive Google Map Address Picker (Standalone 2-Column Component) */}
           <AddressMapPickerWrapper
             initialAddress={{
               ...confirmedAddress,
