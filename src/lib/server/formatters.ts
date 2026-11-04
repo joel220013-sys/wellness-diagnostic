@@ -77,3 +77,4 @@ export function formatDbBooking(r: any): any {
     updated_at: updatedStr,
   };
 }
+

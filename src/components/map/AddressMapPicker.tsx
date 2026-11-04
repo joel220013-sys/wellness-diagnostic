@@ -243,35 +243,45 @@ export default function AddressMapPicker({
   const handleReverseGeocode = async (lat: number, lng: number) => {
     setIsReverseGeocoding(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        { headers: { 'User-Agent': 'WellnessDiagnosticApp/1.0' } }
-      );
+      // 1. Try our unified Next.js geocode API (Google Maps + OpenStreetMap fallback)
+      const res = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
       if (res.ok) {
         const data = await res.json();
         if (data.display_name) {
           setReverseGeocodedText(data.display_name);
-          const parsed = parseNominatimAddress(data);
 
-          // Update local state with rich extracted address
-          if (parsed.addressLine1) setAddressLine1(parsed.addressLine1);
-          if (parsed.addressLine2) setAddressLine2(parsed.addressLine2);
-          if (parsed.landmark && !landmark) setLandmark(parsed.landmark);
-          if (parsed.city) setCity(parsed.city);
-          if (parsed.state) setState(parsed.state);
-          if (parsed.postalCode) setPostalCode(parsed.postalCode);
+          let parsedLine1 = data.address?.address_line_1;
+          let parsedLine2 = data.address?.address_line_2;
+          let parsedCity = data.address?.city;
+          let parsedState = data.address?.state;
+          let parsedPostal = data.address?.postal_code;
 
-          // Immediately notify parent booking form
+          if (data.raw) {
+            const parsed = parseNominatimAddress(data.raw);
+            parsedLine1 = parsed.addressLine1 || parsedLine1;
+            parsedLine2 = parsed.addressLine2 || parsedLine2;
+            parsedCity = parsed.city || parsedCity;
+            parsedState = parsed.state || parsedState;
+            parsedPostal = parsed.postalCode || parsedPostal;
+            if (parsed.landmark && !landmark) setLandmark(parsed.landmark);
+          }
+
+          if (parsedLine1) setAddressLine1(parsedLine1);
+          if (parsedLine2) setAddressLine2(parsedLine2);
+          if (parsedCity) setCity(parsedCity);
+          if (parsedState) setState(parsedState);
+          if (parsedPostal) setPostalCode(parsedPostal);
+
           onConfirmAddress({
             label,
             recipient_name: recipientName || initialAddress?.recipient_name || '',
             recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
-            address_line_1: parsed.addressLine1 || addressLine1,
-            address_line_2: parsed.addressLine2 || addressLine2 || undefined,
-            landmark: parsed.landmark || landmark || undefined,
-            city: parsed.city || city,
-            state: parsed.state || state || undefined,
-            postal_code: parsed.postalCode || postalCode,
+            address_line_1: parsedLine1 || addressLine1,
+            address_line_2: parsedLine2 || addressLine2 || undefined,
+            landmark: landmark || undefined,
+            city: parsedCity || city,
+            state: parsedState || state || undefined,
+            postal_code: parsedPostal || postalCode,
             latitude: lat,
             longitude: lng,
             access_instructions: accessInstructions || undefined,
@@ -312,7 +322,7 @@ export default function AddressMapPicker({
     await handleReverseGeocode(loc.lat, loc.lng);
   };
 
-  // Search Address with Geocoding and auto-population (biased to Davanagere / Karnataka)
+  // Search Address with Geocoding and auto-population (Google Maps + OpenStreetMap fallback)
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -323,56 +333,51 @@ export default function AddressMapPicker({
 
     try {
       const q = searchQuery.trim();
-      const hasCity = /davanagere|davangere|bangalore|bengaluru|hubli|shivamogga|karnataka/i.test(q);
-      const queryWithCity = hasCity ? q : `${q}, Davanagere, Karnataka`;
 
-      // 1. Search with Davanagere viewbox priority & India countrycode
-      let res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          queryWithCity
-        )}&countrycodes=in&viewbox=75.7,14.6,76.1,14.3&bounded=0&addressdetails=1&limit=5`,
-        { headers: { 'User-Agent': 'WellnessDiagnosticApp/1.0' } }
-      );
-
-      let data = res.ok ? await res.json() : [];
-
-      // 2. Fallback to general Karnataka search if queryWithCity had 0 matches
-      if ((!data || data.length === 0) && !hasCity) {
-        res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            `${q}, Karnataka, India`
-          )}&countrycodes=in&addressdetails=1&limit=5`,
-          { headers: { 'User-Agent': 'WellnessDiagnosticApp/1.0' } }
-        );
-        data = res.ok ? await res.json() : [];
-      }
+      // 1. Call unified geocoding API
+      const res = await fetch(`/api/geocode/search?q=${encodeURIComponent(q)}`);
+      const resData = res.ok ? await res.json() : null;
+      const data = resData?.results || [];
 
       if (data && data.length > 0) {
         const item = data[0];
         const lat = parseFloat(item.lat);
-        const lng = parseFloat(item.lon);
+        const lng = parseFloat(item.lon || item.lng);
         updateMapMarker(lat, lng);
         setReverseGeocodedText(item.display_name);
 
-        const parsed = parseNominatimAddress(item);
+        let parsedLine1 = item.address?.address_line_1;
+        let parsedLine2 = item.address?.address_line_2;
+        let parsedCity = item.address?.city;
+        let parsedState = item.address?.state;
+        let parsedPostal = item.address?.postal_code;
 
-        if (parsed.addressLine1) setAddressLine1(parsed.addressLine1);
-        if (parsed.addressLine2) setAddressLine2(parsed.addressLine2);
-        if (parsed.landmark) setLandmark(parsed.landmark);
-        if (parsed.city) setCity(parsed.city);
-        if (parsed.state) setState(parsed.state);
-        if (parsed.postalCode) setPostalCode(parsed.postalCode);
+        if (item.raw) {
+          const parsed = parseNominatimAddress(item.raw);
+          parsedLine1 = parsed.addressLine1 || parsedLine1;
+          parsedLine2 = parsed.addressLine2 || parsedLine2;
+          parsedCity = parsed.city || parsedCity;
+          parsedState = parsed.state || parsedState;
+          parsedPostal = parsed.postalCode || parsedPostal;
+          if (parsed.landmark && !landmark) setLandmark(parsed.landmark);
+        }
+
+        if (parsedLine1) setAddressLine1(parsedLine1);
+        if (parsedLine2) setAddressLine2(parsedLine2);
+        if (parsedCity) setCity(parsedCity);
+        if (parsedState) setState(parsedState);
+        if (parsedPostal) setPostalCode(parsedPostal);
 
         onConfirmAddress({
           label,
           recipient_name: recipientName || initialAddress?.recipient_name || '',
           recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
-          address_line_1: parsed.addressLine1 || addressLine1,
-          address_line_2: parsed.addressLine2 || addressLine2 || undefined,
-          landmark: parsed.landmark || landmark || undefined,
-          city: parsed.city || city,
-          state: parsed.state || state || undefined,
-          postal_code: parsed.postalCode || postalCode,
+          address_line_1: parsedLine1 || addressLine1,
+          address_line_2: parsedLine2 || addressLine2 || undefined,
+          landmark: landmark || undefined,
+          city: parsedCity || city,
+          state: parsedState || state || undefined,
+          postal_code: parsedPostal || postalCode,
           latitude: lat,
           longitude: lng,
           access_instructions: accessInstructions || undefined,
