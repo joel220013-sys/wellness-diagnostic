@@ -19,6 +19,7 @@ declare global {
   interface Window {
     google?: any;
     __googleMapsLoadingPromise?: Promise<void>;
+    gm_authFailure?: () => void;
   }
 }
 
@@ -66,7 +67,7 @@ const GOOGLE_API_KEY =
 
 function loadGoogleMapsScript(apiKey: string): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  if (window.google && window.google.maps) {
+  if (window.google && window.google.maps && window.google.maps.Map) {
     return Promise.resolve();
   }
   if (window.__googleMapsLoadingPromise) {
@@ -74,21 +75,55 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
   }
 
   window.__googleMapsLoadingPromise = new Promise((resolve, reject) => {
+    if (window.google?.maps?.Map) {
+      resolve();
+      return;
+    }
+
+    const callbackName = '__googleMapsInitCallback';
+    (window as any)[callbackName] = () => {
+      resolve();
+    };
+
+    window.gm_authFailure = () => {
+      console.warn('[Google Maps]: Key authentication issue detected in Google Cloud Console.');
+    };
+
     const existing = document.getElementById('google-maps-sdk-script');
     if (existing) {
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', (err) => reject(err));
+      if (window.google?.maps?.Map) {
+        resolve();
+      } else {
+        existing.addEventListener('load', () => {
+          setTimeout(() => {
+            if (window.google?.maps?.Map) resolve();
+            else reject(new Error('Google Maps Map not initialized'));
+          }, 200);
+        });
+        existing.addEventListener('error', (err) => reject(err));
+      }
       return;
     }
 
     const script = document.createElement('script');
     script.id = 'google-maps-sdk-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=${callbackName}`;
     script.async = true;
     script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = (err) => reject(err);
+    script.onerror = (err) => {
+      console.error('[Google Maps script tag onerror]:', err);
+      reject(err);
+    };
     document.head.appendChild(script);
+
+    // Timeout safety net (8 seconds)
+    setTimeout(() => {
+      if (window.google?.maps?.Map) {
+        resolve();
+      } else {
+        reject(new Error('Google Maps script loading timed out'));
+      }
+    }, 8000);
   });
 
   return window.__googleMapsLoadingPromise;
@@ -145,109 +180,112 @@ export default function AddressMapPicker({
     async function initGoogleMap() {
       try {
         await loadGoogleMapsScript(GOOGLE_API_KEY);
-        if (!isMounted || !mapContainerRef.current || !window.google?.maps) return;
+        if (!isMounted || !mapContainerRef.current) return;
 
-        const google = window.google;
+        if (window.google?.maps?.Map) {
+          const google = window.google;
 
-        const mapOptions = {
-          center: { lat: coords.lat, lng: coords.lng },
-          zoom: 16,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            position: google.maps.ControlPosition.TOP_RIGHT,
-          },
-          zoomControl: true,
-          zoomControlOptions: {
-            position: google.maps.ControlPosition.RIGHT_CENTER,
-          },
-          streetViewControl: false,
-          fullscreenControl: false,
-          gestureHandling: 'greedy',
-        };
+          const mapOptions = {
+            center: { lat: coords.lat, lng: coords.lng },
+            zoom: 16,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            mapTypeControl: true,
+            mapTypeControlOptions: {
+              style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+              position: google.maps.ControlPosition.TOP_RIGHT,
+            },
+            zoomControl: true,
+            zoomControlOptions: {
+              position: google.maps.ControlPosition.RIGHT_CENTER,
+            },
+            streetViewControl: false,
+            fullscreenControl: false,
+            gestureHandling: 'greedy',
+          };
 
-        const map = new google.maps.Map(mapContainerRef.current, mapOptions);
-        mapInstanceRef.current = map;
+          const map = new google.maps.Map(mapContainerRef.current, mapOptions);
+          mapInstanceRef.current = map;
 
-        // Custom green healthcare SVG pin for Google Maps
-        const marker = new google.maps.Marker({
-          position: { lat: coords.lat, lng: coords.lng },
-          map,
-          draggable: true,
-          title: 'Selected Collection Address - Drag to doorstep',
-          animation: google.maps.Animation.DROP,
-          icon: {
-            url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="%2308784E" stroke="%23ffffff" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round"/></svg>`,
-            scaledSize: new google.maps.Size(38, 38),
-            anchor: new google.maps.Point(19, 19),
-          },
-        });
-        markerRef.current = marker;
+          // Custom green healthcare SVG pin for Google Maps
+          const marker = new google.maps.Marker({
+            position: { lat: coords.lat, lng: coords.lng },
+            map,
+            draggable: true,
+            title: 'Selected Collection Address - Drag to doorstep',
+            animation: google.maps.Animation.DROP,
+            icon: {
+              url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="%2308784E" stroke="%23ffffff" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+              scaledSize: new google.maps.Size(38, 38),
+              anchor: new google.maps.Point(19, 19),
+            },
+          });
+          markerRef.current = marker;
 
-        const infoWindow = new google.maps.InfoWindow({
-          content: `<div style="font-family: sans-serif; font-size: 12px; color: #18352E; padding: 4px;">
-            <b>Selected Collection Address</b><br/>
-            Drag pin to pinpoint your home doorstep
-          </div>`,
-        });
-        infoWindowRef.current = infoWindow;
-        infoWindow.open(map, marker);
-
-        // Marker dragend event
-        marker.addListener('dragend', async () => {
-          const pos = marker.getPosition();
-          if (pos) {
-            const newLat = pos.lat();
-            const newLng = pos.lng();
-            setCoords({ lat: newLat, lng: newLng });
-            await reverseGeocodeWithGoogle(newLat, newLng);
-          }
-        });
-
-        // Map click event: snaps marker to clicked spot
-        map.addListener('click', async (e: any) => {
-          if (!e.latLng) return;
-          const clickLat = e.latLng.lat();
-          const clickLng = e.latLng.lng();
-          marker.setPosition(e.latLng);
-          setCoords({ lat: clickLat, lng: clickLng });
+          const infoWindow = new google.maps.InfoWindow({
+            content: `<div style="font-family: sans-serif; font-size: 12px; color: #18352E; padding: 4px;">
+              <b>Selected Collection Address</b><br/>
+              Drag pin to pinpoint your home doorstep
+            </div>`,
+          });
+          infoWindowRef.current = infoWindow;
           infoWindow.open(map, marker);
-          await reverseGeocodeWithGoogle(clickLat, clickLng);
-        });
 
-        // Initialize Google Places Autocomplete on the search input
-        if (searchInputRef.current && google.maps.places) {
-          const davangereBounds = new google.maps.LatLngBounds(
-            new google.maps.LatLng(14.3, 75.7),
-            new google.maps.LatLng(14.6, 76.1)
-          );
-
-          const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
-            bounds: davangereBounds,
-            componentRestrictions: { country: 'in' },
-            fields: ['geometry', 'formatted_address', 'address_components', 'name'],
-          });
-          autocompleteRef.current = autocomplete;
-
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (!place.geometry || !place.geometry.location) {
-              return;
+          // Marker dragend event
+          marker.addListener('dragend', async () => {
+            const pos = marker.getPosition();
+            if (pos) {
+              const newLat = pos.lat();
+              const newLng = pos.lng();
+              setCoords({ lat: newLat, lng: newLng });
+              await reverseGeocodeWithGoogle(newLat, newLng);
             }
-
-            const placeLat = place.geometry.location.lat();
-            const placeLng = place.geometry.location.lng();
-
-            updateMapMarker(placeLat, placeLng);
-            parseAndPopulateGoogleComponents(place);
           });
-        }
 
-        setIsMapReady(true);
+          // Map click event: snaps marker to clicked spot
+          map.addListener('click', async (e: any) => {
+            if (!e.latLng) return;
+            const clickLat = e.latLng.lat();
+            const clickLng = e.latLng.lng();
+            marker.setPosition(e.latLng);
+            setCoords({ lat: clickLat, lng: clickLng });
+            infoWindow.open(map, marker);
+            await reverseGeocodeWithGoogle(clickLat, clickLng);
+          });
+
+          // Initialize Google Places Autocomplete on the search input
+          if (searchInputRef.current && google.maps.places) {
+            const davangereBounds = new google.maps.LatLngBounds(
+              new google.maps.LatLng(14.3, 75.7),
+              new google.maps.LatLng(14.6, 76.1)
+            );
+
+            const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
+              bounds: davangereBounds,
+              componentRestrictions: { country: 'in' },
+              fields: ['geometry', 'formatted_address', 'address_components', 'name'],
+            });
+            autocompleteRef.current = autocomplete;
+
+            autocomplete.addListener('place_changed', () => {
+              const place = autocomplete.getPlace();
+              if (!place.geometry || !place.geometry.location) {
+                return;
+              }
+
+              const placeLat = place.geometry.location.lat();
+              const placeLng = place.geometry.location.lng();
+
+              updateMapMarker(placeLat, placeLng);
+              parseAndPopulateGoogleComponents(place);
+            });
+          }
+        }
       } catch (err) {
-        console.error('[Google Maps Init Error]:', err);
-        setGeoError('Failed to load Google Maps. Please verify internet connection.');
+        console.warn('[Google Maps Init Error]:', err);
+      } finally {
+        if (isMounted) {
+          setIsMapReady(true);
+        }
       }
     }
 

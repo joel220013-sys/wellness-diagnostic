@@ -16,25 +16,48 @@ const GOOGLE_API_KEY =
 
 function loadGoogleMapsScript(apiKey: string): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  if (window.google?.maps) return Promise.resolve();
+  if (window.google?.maps?.Map) return Promise.resolve();
   if (window.__googleMapsLoadingPromise) return window.__googleMapsLoadingPromise;
 
   window.__googleMapsLoadingPromise = new Promise((resolve, reject) => {
+    if (window.google?.maps?.Map) {
+      resolve();
+      return;
+    }
+
+    const callbackName = '__googleMapsInitCallback';
+    (window as any)[callbackName] = () => {
+      resolve();
+    };
+
     const existing = document.getElementById('google-maps-sdk-script');
     if (existing) {
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', (err) => reject(err));
+      if (window.google?.maps?.Map) {
+        resolve();
+      } else {
+        existing.addEventListener('load', () => {
+          setTimeout(() => {
+            if (window.google?.maps?.Map) resolve();
+            else reject(new Error('Google Maps Map not ready'));
+          }, 200);
+        });
+        existing.addEventListener('error', (err) => reject(err));
+      }
       return;
     }
 
     const script = document.createElement('script');
     script.id = 'google-maps-sdk-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=${callbackName}`;
     script.async = true;
     script.defer = true;
-    script.onload = () => resolve();
     script.onerror = (err) => reject(err);
     document.head.appendChild(script);
+
+    setTimeout(() => {
+      if (window.google?.maps?.Map) resolve();
+      else reject(new Error('Google Maps timeout'));
+    }, 8000);
   });
 
   return window.__googleMapsLoadingPromise;
