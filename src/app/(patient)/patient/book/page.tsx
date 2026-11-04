@@ -18,7 +18,9 @@ import {
   CalendarCheck,
   AlertCircle,
   Search,
-  FlaskConical
+  FlaskConical,
+  CreditCard,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -242,7 +244,23 @@ export default function BookCollectionPage() {
 
   const [patientNotes, setPatientNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentMethodChoice, setPaymentMethodChoice] = useState<'online' | 'cash'>('online');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [bookingSuccessRef, setBookingSuccessRef] = useState<string | null>(null);
+  const [paidOnlineSuccess, setPaidOnlineSuccess] = useState(false);
+
+  function loadRazorpayScript(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
 
   // Authoritative Pricing calculation with distance-based delivery fee
   const pricing = useMemo(() => {
@@ -270,7 +288,10 @@ export default function BookCollectionPage() {
 
   const handleSubmitBooking = async () => {
     setIsSubmitting(true);
+    setPaymentError(null);
     try {
+      const isOnline = paymentMethodChoice === 'online';
+
       const newBooking = createBooking({
         patient_id: user?.id || 'user_patient_1',
         patient_name: patientName,
@@ -297,16 +318,120 @@ export default function BookCollectionPage() {
         discount: pricing.discount,
         tax_amount: pricing.tax,
         total_amount: pricing.total,
-        payment_status: 'Unpaid',
+        payment_status: isOnline ? 'Pending' : 'Unpaid',
+        payment_method: isOnline ? 'Online / Razorpay' : 'Cash on Collection',
         patient_notes: patientNotes
       });
 
-      clearSelectedTests();
-      setBookingSuccessRef(newBooking.booking_reference);
-    } catch (err) {
-      console.error('Error creating booking:', err);
+      if (!isOnline) {
+        clearSelectedTests();
+        setPaidOnlineSuccess(false);
+        setBookingSuccessRef(newBooking.booking_reference);
+        return;
+      }
+
+      // ONLINE PAYMENT VIA RAZORPAY
+      setIsProcessingPayment(true);
+      await loadRazorpayScript();
+
+      // Call server to create Razorpay Order
+      const orderRes = await fetch('/api/payments/razorpay/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: pricing.total,
+          booking_reference: newBooking.booking_reference,
+          patient_name: patientName,
+          patient_phone: patientPhone,
+        }),
+      });
+
+      const orderData = await orderRes.json();
+      if (!orderData.success) {
+        throw new Error(orderData.error || 'Failed to initiate payment gateway');
+      }
+
+      const { order_id, amount, currency, key_id, mode } = orderData.data;
+
+      // If Razorpay keys are not yet configured in environment (Simulation mode)
+      if (mode === 'simulation' || !key_id || key_id === 'rzp_test_placeholder') {
+        await fetch('/api/payments/razorpay/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpay_order_id: order_id,
+            razorpay_payment_id: `pay_sim_${Date.now()}`,
+            razorpay_signature: 'sim_signature',
+            booking_id: newBooking.id,
+            booking_reference: newBooking.booking_reference,
+          }),
+        });
+
+        clearSelectedTests();
+        setPaidOnlineSuccess(true);
+        setBookingSuccessRef(newBooking.booking_reference);
+        return;
+      }
+
+      // Open Native Razorpay Checkout
+      const options = {
+        key: key_id,
+        amount: amount,
+        currency: currency || 'INR',
+        name: 'Wellness Diagnostic Center',
+        description: 'Diagnostic Tests & Home Collection Fee',
+        order_id: order_id,
+        handler: async function (response: any) {
+          try {
+            await fetch('/api/payments/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                booking_id: newBooking.id,
+                booking_reference: newBooking.booking_reference,
+              }),
+            });
+
+            clearSelectedTests();
+            setPaidOnlineSuccess(true);
+            setBookingSuccessRef(newBooking.booking_reference);
+          } catch (e: any) {
+            console.error('Payment verification error', e);
+            clearSelectedTests();
+            setBookingSuccessRef(newBooking.booking_reference);
+          }
+        },
+        prefill: {
+          name: patientName,
+          contact: patientPhone,
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#08784E',
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessingPayment(false);
+            setPaymentError('Payment window closed. You can retry payment or select Pay at Doorstep.');
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (resp: any) {
+        setIsProcessingPayment(false);
+        setPaymentError(resp.error?.description || 'Payment transaction failed. Please retry.');
+      });
+      rzp.open();
+    } catch (err: any) {
+      console.error('Error creating booking or payment:', err);
+      setPaymentError(err.message || 'Payment initiation failed. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setIsProcessingPayment(false);
     }
   };
 
@@ -320,7 +445,7 @@ export default function BookCollectionPage() {
 
           <div className="space-y-2">
             <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              Booking Confirmed
+              {paidOnlineSuccess ? '✓ Prepaid Online & Booking Confirmed' : 'Booking Confirmed (Pay at Doorstep)'}
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-botanical-950">
               Home Sample Collection Scheduled!
@@ -347,8 +472,12 @@ export default function BookCollectionPage() {
               </strong>
             </div>
             <div className="flex justify-between pt-1 border-t border-ivory-300 font-bold text-sm">
-              <span className="text-botanical-950">Total Payable at Collection:</span>
-              <span className="text-botanical-600">₹{pricing.total}</span>
+              <span className="text-botanical-950">
+                {paidOnlineSuccess ? 'Payment Status:' : 'Total Payable at Doorstep:'}
+              </span>
+              <span className={paidOnlineSuccess ? 'text-emerald-700 font-extrabold' : 'text-botanical-600'}>
+                {paidOnlineSuccess ? `✓ Paid ₹${pricing.total} Online via Razorpay` : `₹${pricing.total} (Cash / UPI)`}
+              </span>
             </div>
           </div>
 
@@ -920,6 +1049,102 @@ export default function BookCollectionPage() {
                 {confirmedAddress.landmark && <p><strong>Landmark:</strong> {confirmedAddress.landmark}</p>}
               </div>
             </div>
+            {/* PAYMENT METHOD SELECTOR */}
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-botanical-700 block">
+                Select Payment Mode
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Option 1: Pay Online Now */}
+                <div
+                  onClick={() => setPaymentMethodChoice('online')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    paymentMethodChoice === 'online'
+                      ? 'border-botanical-600 bg-botanical-50/60 shadow-soft-xs'
+                      : 'border-ivory-300 bg-white hover:border-botanical-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg ${
+                          paymentMethodChoice === 'online'
+                            ? 'bg-botanical-600 text-white'
+                            : 'bg-ivory-100 text-botanical-700'
+                        }`}
+                      >
+                        ⚡
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-xs sm:text-sm text-botanical-950 flex items-center gap-1.5">
+                          <span>Pay Online via Razorpay</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Instant
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-botanical-700/80 block mt-0.5">
+                          UPI (GPay / PhonePe / Paytm), Cards, NetBanking
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                        paymentMethodChoice === 'online' ? 'border-botanical-600' : 'border-ivory-400'
+                      }`}
+                    >
+                      {paymentMethodChoice === 'online' && <div className="w-2 h-2 rounded-full bg-botanical-600" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 2: Pay on Doorstep Collection */}
+                <div
+                  onClick={() => setPaymentMethodChoice('cash')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    paymentMethodChoice === 'cash'
+                      ? 'border-botanical-600 bg-botanical-50/60 shadow-soft-xs'
+                      : 'border-ivory-300 bg-white hover:border-botanical-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg ${
+                          paymentMethodChoice === 'cash'
+                            ? 'bg-botanical-600 text-white'
+                            : 'bg-ivory-100 text-botanical-700'
+                        }`}
+                      >
+                        💵
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-xs sm:text-sm text-botanical-950">
+                          Pay at Doorstep
+                        </div>
+                        <span className="text-[11px] text-botanical-700/80 block mt-0.5">
+                          Cash or UPI to Phlebotomist upon arrival
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                        paymentMethodChoice === 'cash' ? 'border-botanical-600' : 'border-ivory-400'
+                      }`}
+                    >
+                      {paymentMethodChoice === 'cash' && <div className="w-2 h-2 rounded-full bg-botanical-600" />}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {paymentError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <span>{paymentError}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-2">
@@ -932,12 +1157,31 @@ export default function BookCollectionPage() {
             </button>
 
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || isProcessingPayment}
               onClick={handleSubmitBooking}
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white font-bold text-sm shadow-soft transition-all hover:-translate-y-0.5"
             >
-              <CheckCircle2 className="w-5 h-5" />
-              <span>{isSubmitting ? 'Confirming Appointment...' : 'Submit Booking'}</span>
+              {isProcessingPayment ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Opening Razorpay Secure Checkout...</span>
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Confirming Appointment...</span>
+                </>
+              ) : paymentMethodChoice === 'online' ? (
+                <>
+                  <CreditCard className="w-5 h-5" />
+                  <span>Pay ₹{pricing.total} Online via Razorpay</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Confirm & Pay at Doorstep (₹{pricing.total})</span>
+                </>
+              )}
             </button>
           </div>
         </div>
