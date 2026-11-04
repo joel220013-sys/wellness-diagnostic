@@ -347,17 +347,19 @@ export default function AddressMapPicker({
       }
     }
 
-    const road = comps.route || comps.premise || comps.establishment || '';
+    const streetOrRoad = comps.premise || comps.street_address || comps.route || comps.establishment || '';
     const locality = comps.sublocality_level_1 || comps.sublocality || comps.neighborhood || '';
     const cityVal = comps.locality || comps.administrative_area_level_2 || 'Davanagere';
     const stateVal = comps.administrative_area_level_1 || 'Karnataka';
     const pinVal = comps.postal_code || postalCode;
 
-    const formatted = googleResult.formatted_address || `${locality}, ${cityVal}`;
+    const formatted = googleResult.formatted_address || `${streetOrRoad ? streetOrRoad + ', ' : ''}${locality}, ${cityVal}`;
     setReverseGeocodedText(formatted);
 
-    const line1 = road || locality || formatted.split(',')[0] || '';
-    if (line1) setAddressLine1(line1);
+    // Only set building/street if it's not a duplicate of locality
+    if (streetOrRoad && streetOrRoad.toLowerCase() !== locality.toLowerCase()) {
+      setAddressLine1(streetOrRoad);
+    }
     if (locality) setAddressLine2(locality);
     if (cityVal) setCity(cityVal);
     if (stateVal) setState(stateVal);
@@ -371,7 +373,7 @@ export default function AddressMapPicker({
       label,
       recipient_name: recipientName || initialAddress?.recipient_name || '',
       recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
-      address_line_1: line1 || addressLine1,
+      address_line_1: (streetOrRoad && streetOrRoad.toLowerCase() !== locality.toLowerCase()) ? streetOrRoad : addressLine1,
       address_line_2: locality || addressLine2 || undefined,
       landmark: landmark || undefined,
       city: cityVal,
@@ -414,8 +416,11 @@ export default function AddressMapPicker({
         if (data.display_name) {
           setReverseGeocodedText(data.display_name);
           const addr = data.address || {};
-          if (addr.address_line_1) setAddressLine1(addr.address_line_1);
+          if (addr.address_line_1 && (!addr.address_line_2 || addr.address_line_1.toLowerCase() !== addr.address_line_2.toLowerCase())) {
+            setAddressLine1(addr.address_line_1);
+          }
           if (addr.address_line_2) setAddressLine2(addr.address_line_2);
+          if (addr.landmark) setLandmark(addr.landmark);
           if (addr.city) setCity(addr.city);
           if (addr.state) setState(addr.state);
           if (addr.postal_code) setPostalCode(addr.postal_code);
@@ -426,7 +431,7 @@ export default function AddressMapPicker({
             recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
             address_line_1: addr.address_line_1 || addressLine1,
             address_line_2: addr.address_line_2 || addressLine2 || undefined,
-            landmark: landmark || undefined,
+            landmark: addr.landmark || landmark || undefined,
             city: addr.city || city,
             state: addr.state || state || undefined,
             postal_code: addr.postal_code || postalCode,

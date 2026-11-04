@@ -5,21 +5,134 @@ const GOOGLE_API_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
   'AIzaSyAwsS5CrgxBPJ37X6UoWiX5ZgIAlVWDk48';
 
-// High-fidelity Davanagere landmark grid (exact distances)
+// High-fidelity Davanagere landmark grid (exact street-level reference)
 const DAVANAGERE_GRID = [
-  { name: '15th Cross, SS Layout', locality: 'SS Layout', landmark: 'Near Kubera Hotel', lat: 14.43516, lng: 75.91902, pin: '577004' },
-  { name: 'Wellness Diagnostic Center (Lab)', locality: 'Vidyanagar', landmark: 'Teachers Colony Main Road', lat: 14.44086, lng: 75.93329, pin: '577004' },
-  { name: 'Teachers Colony', locality: 'Teachers Colony', landmark: 'Near Vidyanagar', lat: 14.4415, lng: 75.9320, pin: '577004' },
-  { name: 'Vidyanagar', locality: 'Vidyanagar', landmark: 'Near Bapuji College', lat: 14.4532, lng: 75.9084, pin: '577005' },
-  { name: 'MCC B Block', locality: 'MCC B Block', landmark: 'Near Kuvempu Nagar', lat: 14.4721, lng: 75.9126, pin: '577004' },
-  { name: 'MCC A Block', locality: 'MCC A Block', landmark: 'Opposite Bapuji Hospital', lat: 14.4695, lng: 75.9172, pin: '577004' },
-  { name: 'PJ Extension', locality: 'PJ Extension', landmark: 'City Central Bus Stand Road', lat: 14.4688, lng: 75.9255, pin: '577002' },
-  { name: 'Davanagere City Center', locality: 'Davanagere Center', landmark: 'Clock Tower / Railway Station', lat: 14.4644, lng: 75.9218, pin: '577001' },
-  { name: 'Kuvempu Nagar', locality: 'Kuvempu Nagar', landmark: 'Near MCC Layout', lat: 14.4820, lng: 75.9110, pin: '577004' },
-  { name: 'Hadadi Road', locality: 'Hadadi Road', landmark: 'Near Shamanur Circle', lat: 14.4602, lng: 75.9015, pin: '577005' },
-  { name: 'Dental College Area', locality: 'Bapuji Dental College', landmark: 'MCC Road', lat: 14.4447, lng: 75.9168, pin: '577004' },
-  { name: 'Devaraja Arasu Badavane', locality: 'Devaraja Arasu Badavane', landmark: 'Vinobanagara', lat: 14.47210, lng: 75.91260, pin: '577006' },
-  { name: 'Nituvalli', locality: 'Nituvalli', landmark: 'Near Durgambika Temple', lat: 14.43706, lng: 75.92760, pin: '577002' },
+  {
+    name: 'Near Sri Marikamba Temple, Vishnuvardhana Rd',
+    street: 'Vishnuvardhana Rd / Marikamba Temple Rd',
+    locality: 'Saraswathi Nagar A Block',
+    landmark: 'Near Sri Marikamba Temple / 2rs Idli Hotel',
+    lat: 14.43707,
+    lng: 75.92800,
+    pin: '577002',
+  },
+  {
+    name: '15th Cross Road, SS Layout',
+    street: '15th Cross Rd',
+    locality: 'SS Layout',
+    landmark: 'Near Kubera Hotel',
+    lat: 14.43516,
+    lng: 75.91902,
+    pin: '577004',
+  },
+  {
+    name: 'Wellness Diagnostic Center (Lab), Teachers Colony Main Rd',
+    street: 'Teachers Colony Main Rd',
+    locality: 'Vidyanagar South / Teachers Colony',
+    landmark: 'Wellness Diagnostic Center',
+    lat: 14.44086,
+    lng: 75.93329,
+    pin: '577004',
+  },
+  {
+    name: 'Teachers Colony Main Road',
+    street: 'Teachers Colony 1st Cross',
+    locality: 'Teachers Colony',
+    landmark: 'Near Vidyanagar Ring Road',
+    lat: 14.4415,
+    lng: 75.9320,
+    pin: '577004',
+  },
+  {
+    name: 'Vidyanagar Main Road',
+    street: 'Vidyanagar Main Rd',
+    locality: 'Vidyanagar',
+    landmark: 'Near Bapuji College of Engineering',
+    lat: 14.4532,
+    lng: 75.9084,
+    pin: '577005',
+  },
+  {
+    name: 'MCC B Block Main Road',
+    street: 'MCC B Block 2nd Main',
+    locality: 'MCC B Block',
+    landmark: 'Near Kuvempu Nagar',
+    lat: 14.4721,
+    lng: 75.9126,
+    pin: '577004',
+  },
+  {
+    name: 'MCC A Block Hospital Road',
+    street: 'MCC A Block Main Rd',
+    locality: 'MCC A Block',
+    landmark: 'Opposite Bapuji Hospital',
+    lat: 14.4695,
+    lng: 75.9172,
+    pin: '577004',
+  },
+  {
+    name: 'PJ Extension Commercial Street',
+    street: 'PJ Extension 1st Main Rd',
+    locality: 'PJ Extension',
+    landmark: 'Near City Central Bus Stand',
+    lat: 14.4688,
+    lng: 75.9255,
+    pin: '577002',
+  },
+  {
+    name: 'Davanagere City Center / Station Road',
+    street: 'Station Rd / Clock Tower Circle',
+    locality: 'City Center',
+    landmark: 'Clock Tower & Railway Station',
+    lat: 14.4644,
+    lng: 75.9218,
+    pin: '577001',
+  },
+  {
+    name: 'Kuvempu Nagar Main Road',
+    street: 'Kuvempu Nagar Ring Rd',
+    locality: 'Kuvempu Nagar',
+    landmark: 'Near MCC Layout',
+    lat: 14.4820,
+    lng: 75.9110,
+    pin: '577004',
+  },
+  {
+    name: 'Hadadi Road Main',
+    street: 'Hadadi Rd',
+    locality: 'Hadadi Road',
+    landmark: 'Near Shamanur Circle',
+    lat: 14.4602,
+    lng: 75.9015,
+    pin: '577005',
+  },
+  {
+    name: 'Dental College Road',
+    street: 'Dental College Rd',
+    locality: 'Bapuji Dental College Area',
+    landmark: 'Near MCC Road',
+    lat: 14.4447,
+    lng: 75.9168,
+    pin: '577004',
+  },
+  {
+    name: 'Devaraja Arasu Badavane Main',
+    street: 'Arasu Badavane 1st Cross',
+    locality: 'Devaraja Arasu Badavane',
+    landmark: 'Near Vinobanagara',
+    lat: 14.47210,
+    lng: 75.91260,
+    pin: '577006',
+  },
+  {
+    name: 'Shivakumara Swamy Badavane',
+    street: 'Shivakumara Swamy Badavane 3rd Cross',
+    locality: 'Shivakumara Swamy Badavane',
+    landmark: 'Near Saraswathi Nagar',
+    lat: 14.43580,
+    lng: 75.92650,
+    pin: '577002',
+  },
 ];
 
 function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -72,7 +185,7 @@ export async function GET(req: NextRequest) {
             source: 'google',
             display_name: first.formatted_address,
             address: {
-              address_line_1: road || locality || first.formatted_address.split(',')[0],
+              address_line_1: road,
               address_line_2: locality,
               locality,
               city,
@@ -88,7 +201,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. High-Accuracy Davanagere Locality Grid Lookup (No coarse OpenStreetMap/Leaflet fallback)
+  // 2. High-Accuracy Davanagere Locality Grid Lookup
   let closest = DAVANAGERE_GRID[0];
   let minDistance = Infinity;
 
@@ -101,19 +214,19 @@ export async function GET(req: NextRequest) {
   }
 
   const isLocalToDavanagere = minDistance < 15000;
-  const line1 = isLocalToDavanagere ? closest.name : `GPS Point (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+  const street = isLocalToDavanagere ? closest.street : `GPS Coordinates (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
   const locality = isLocalToDavanagere ? closest.locality : 'Davanagere';
   const landmark = isLocalToDavanagere ? closest.landmark : '';
   const pin = isLocalToDavanagere ? closest.pin : '577004';
 
-  const formattedAddress = `${line1}, ${locality}, Davanagere, Karnataka ${pin}, India`;
+  const formattedAddress = `${closest.name}, ${locality}, Davanagere, Karnataka ${pin}, India`;
 
   return NextResponse.json({
     success: true,
     source: 'google_fallback_grid',
     display_name: formattedAddress,
     address: {
-      address_line_1: line1,
+      address_line_1: street,
       address_line_2: locality,
       landmark,
       locality,
