@@ -15,17 +15,20 @@ import {
 } from 'lucide-react';
 import { AddressInput } from '@/lib/validations';
 
+declare global {
+  interface Window {
+    google?: any;
+    __googleMapsLoadingPromise?: Promise<void>;
+  }
+}
+
 interface AddressMapPickerProps {
   initialAddress?: Partial<AddressInput>;
   onConfirmAddress: (address: AddressInput) => void;
   savedAddresses?: AddressInput[];
 }
 
-import { parseNominatimAddress, ParsedAddress } from '@/lib/geoAddress';
-export type { ParsedAddress };
-
-
-// Default lab center: Wellness Diagnostic Center, Vidyanagar, Davangere
+// Default lab center: Wellness Diagnostic Center, Vidyanagar, Davanagere
 export const LAB_COORDS = { lat: 14.4408576, lng: 75.9332864 };
 const DEFAULT_COORDS = LAB_COORDS;
 
@@ -43,10 +46,6 @@ const DAVANAGERE_LOCALITIES = [
   { name: 'Dental College Area', lat: 14.4447, lng: 75.9168 },
 ];
 
-/**
- * Calculates straight-line distance in meters between two GPS coordinates (Haversine formula).
- * Used to filter out Wi-Fi/cellular triangulation jitter when clicking "Use Current Location".
- */
 function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -61,14 +60,51 @@ function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2:
   return R * c;
 }
 
+const GOOGLE_API_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+  'AIzaSyAwsS5CrgxBPJ37X6UoWiX5ZgIAlVWDk48';
+
+function loadGoogleMapsScript(apiKey: string): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.google && window.google.maps) {
+    return Promise.resolve();
+  }
+  if (window.__googleMapsLoadingPromise) {
+    return window.__googleMapsLoadingPromise;
+  }
+
+  window.__googleMapsLoadingPromise = new Promise((resolve, reject) => {
+    const existing = document.getElementById('google-maps-sdk-script');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', (err) => reject(err));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'google-maps-sdk-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&loading=async`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(err);
+    document.head.appendChild(script);
+  });
+
+  return window.__googleMapsLoadingPromise;
+}
+
 export default function AddressMapPicker({
   initialAddress,
   onConfirmAddress,
   savedAddresses = [],
 }: AddressMapPickerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const infoWindowRef = useRef<any>(null);
+  const autocompleteRef = useRef<any>(null);
 
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
     lat: initialAddress?.latitude || DEFAULT_COORDS.lat,
@@ -81,245 +117,255 @@ export default function AddressMapPicker({
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [ispWarning, setIspWarning] = useState<string | null>(null);
-  const [isConfirmedFeedback, setIsConfirmedFeedback] = useState(false);
-
-  const [reverseGeocodedText, setReverseGeocodedText] = useState(
-    initialAddress?.address_line_1 
-      ? `${initialAddress.address_line_1}, ${initialAddress.city || ''}` 
-      : 'Click on map or search above to set exact door pin'
+  const [reverseGeocodedText, setReverseGeocodedText] = useState<string>(
+    initialAddress?.address_line_1
+      ? `${initialAddress.address_line_1}, ${initialAddress.city || 'Davanagere'}`
+      : 'Click on Google Map or search above to set doorstep pin'
   );
 
-  // Address details form fields
+  // Address form fields
+  const [label, setLabel] = useState<'Home' | 'Work' | 'Other'>((initialAddress?.label as any) || 'Home');
   const [recipientName, setRecipientName] = useState(initialAddress?.recipient_name || '');
   const [recipientPhone, setRecipientPhone] = useState(initialAddress?.recipient_phone || '');
   const [addressLine1, setAddressLine1] = useState(initialAddress?.address_line_1 || '');
   const [addressLine2, setAddressLine2] = useState(initialAddress?.address_line_2 || '');
   const [landmark, setLandmark] = useState(initialAddress?.landmark || '');
-  const [city, setCity] = useState(initialAddress?.city || '');
-  const [state, setState] = useState(initialAddress?.state || '');
-  const [postalCode, setPostalCode] = useState(initialAddress?.postal_code || '');
-  const [accessInstructions, setAccessInstructions] = useState(
-    initialAddress?.access_instructions || ''
-  );
-  const [label, setLabel] = useState<'Home' | 'Work' | 'Other'>(
-    (initialAddress?.label as 'Home' | 'Work' | 'Other') || 'Home'
-  );
+  const [city, setCity] = useState(initialAddress?.city || 'Davanagere');
+  const [state, setState] = useState(initialAddress?.state || 'Karnataka');
+  const [postalCode, setPostalCode] = useState(initialAddress?.postal_code || '577004');
+  const [accessInstructions, setAccessInstructions] = useState(initialAddress?.access_instructions || '');
   const [isDefault, setIsDefault] = useState(initialAddress?.is_default || false);
+  const [isConfirmedFeedback, setIsConfirmedFeedback] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
 
-  // Auto-sync recipient details when parent patient details change
-  useEffect(() => {
-    if (initialAddress?.recipient_name !== undefined && initialAddress?.recipient_name !== '') {
-      setRecipientName(initialAddress.recipient_name);
-    }
-  }, [initialAddress?.recipient_name]);
-
-  useEffect(() => {
-    if (initialAddress?.recipient_phone !== undefined && initialAddress?.recipient_phone !== '') {
-      setRecipientPhone(initialAddress.recipient_phone);
-    }
-  }, [initialAddress?.recipient_phone]);
-
-  // Sync helper to keep parent in sync with field edits
-  const syncAddress = (updated: Partial<AddressInput>) => {
-    onConfirmAddress({
-      label,
-      recipient_name: recipientName,
-      recipient_phone: recipientPhone,
-      address_line_1: addressLine1,
-      address_line_2: addressLine2 || undefined,
-      landmark: landmark || undefined,
-      city,
-      state: state || undefined,
-      postal_code: postalCode,
-      latitude: coords.lat,
-      longitude: coords.lng,
-      access_instructions: accessInstructions || undefined,
-      is_default: isDefault,
-      ...updated,
-    });
-  };
-
-  // Initialize Leaflet Map safely on Client
+  // Initialize Pure Google Map
   useEffect(() => {
     let isMounted = true;
 
-    async function initMap() {
-      if (typeof window === 'undefined' || !mapContainerRef.current) return;
+    async function initGoogleMap() {
+      try {
+        await loadGoogleMapsScript(GOOGLE_API_KEY);
+        if (!isMounted || !mapContainerRef.current || !window.google?.maps) return;
 
-      const L = (await import('leaflet')).default;
+        const google = window.google;
 
-      // Clean up previous instance
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        const mapOptions = {
+          center: { lat: coords.lat, lng: coords.lng },
+          zoom: 16,
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeControl: true,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+            position: google.maps.ControlPosition.TOP_RIGHT,
+          },
+          zoomControl: true,
+          zoomControlOptions: {
+            position: google.maps.ControlPosition.RIGHT_CENTER,
+          },
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'greedy',
+        };
+
+        const map = new google.maps.Map(mapContainerRef.current, mapOptions);
+        mapInstanceRef.current = map;
+
+        // Custom green healthcare SVG pin for Google Maps
+        const marker = new google.maps.Marker({
+          position: { lat: coords.lat, lng: coords.lng },
+          map,
+          draggable: true,
+          title: 'Selected Collection Address - Drag to doorstep',
+          animation: google.maps.Animation.DROP,
+          icon: {
+            url: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="%2308784E" stroke="%23ffffff" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+            scaledSize: new google.maps.Size(38, 38),
+            anchor: new google.maps.Point(19, 19),
+          },
+        });
+        markerRef.current = marker;
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<div style="font-family: sans-serif; font-size: 12px; color: #18352E; padding: 4px;">
+            <b>Selected Collection Address</b><br/>
+            Drag pin to pinpoint your home doorstep
+          </div>`,
+        });
+        infoWindowRef.current = infoWindow;
+        infoWindow.open(map, marker);
+
+        // Marker dragend event
+        marker.addListener('dragend', async () => {
+          const pos = marker.getPosition();
+          if (pos) {
+            const newLat = pos.lat();
+            const newLng = pos.lng();
+            setCoords({ lat: newLat, lng: newLng });
+            await reverseGeocodeWithGoogle(newLat, newLng);
+          }
+        });
+
+        // Map click event: snaps marker to clicked spot
+        map.addListener('click', async (e: any) => {
+          if (!e.latLng) return;
+          const clickLat = e.latLng.lat();
+          const clickLng = e.latLng.lng();
+          marker.setPosition(e.latLng);
+          setCoords({ lat: clickLat, lng: clickLng });
+          infoWindow.open(map, marker);
+          await reverseGeocodeWithGoogle(clickLat, clickLng);
+        });
+
+        // Initialize Google Places Autocomplete on the search input
+        if (searchInputRef.current && google.maps.places) {
+          const davangereBounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(14.3, 75.7),
+            new google.maps.LatLng(14.6, 76.1)
+          );
+
+          const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
+            bounds: davangereBounds,
+            componentRestrictions: { country: 'in' },
+            fields: ['geometry', 'formatted_address', 'address_components', 'name'],
+          });
+          autocompleteRef.current = autocomplete;
+
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) {
+              return;
+            }
+
+            const placeLat = place.geometry.location.lat();
+            const placeLng = place.geometry.location.lng();
+
+            updateMapMarker(placeLat, placeLng);
+            parseAndPopulateGoogleComponents(place);
+          });
+        }
+
+        setIsMapReady(true);
+      } catch (err) {
+        console.error('[Google Maps Init Error]:', err);
+        setGeoError('Failed to load Google Maps. Please verify internet connection.');
       }
-
-      // Fix default Leaflet icon paths
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      });
-
-      // Custom Botanical Healthcare Map Marker
-      const healthcareIcon = L.divIcon({
-        className: 'custom-leaflet-marker',
-        html: `
-          <div style="background-color: #08784E; color: white; width: 36px; height: 36px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(8,120,78,0.4); border: 2.5px solid white;">
-            <svg style="transform: rotate(45deg); width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v20M2 12h20"/>
-            </svg>
-          </div>
-        `,
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -36],
-      });
-
-      const map = L.map(mapContainerRef.current, {
-        center: [coords.lat, coords.lng],
-        zoom: 15,
-        zoomControl: true,
-      });
-
-      // Official Google Maps Roadmap Tile Layer
-      const googleRoadmap = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; Google Maps',
-      });
-
-      // Official Google Maps Satellite (Hybrid) Layer
-      const googleSatellite = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; Google Maps Satellite',
-      });
-
-      // OpenStreetMap Layer fallback
-      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap',
-      });
-
-      // Set Google Maps as active base map
-      googleRoadmap.addTo(map);
-
-      // Layer switcher control (Google Maps Roadmap, Satellite, OSM)
-      L.control.layers(
-        {
-          'Google Maps': googleRoadmap,
-          'Google Satellite': googleSatellite,
-          'OpenStreetMap': osmLayer,
-        },
-        {},
-        { position: 'topright' }
-      ).addTo(map);
-
-      const marker = L.marker([coords.lat, coords.lng], {
-        draggable: true,
-        icon: healthcareIcon,
-      }).addTo(map);
-
-      marker.bindPopup('<b>Selected Collection Address</b><br/>Drag pin to pinpoint your home doorstep').openPopup();
-
-      marker.on('dragend', async () => {
-        const newPos = marker.getLatLng();
-        setCoords({ lat: newPos.lat, lng: newPos.lng });
-        await handleReverseGeocode(newPos.lat, newPos.lng);
-      });
-
-      map.on('click', async (e: any) => {
-        marker.setLatLng(e.latlng);
-        setCoords({ lat: e.latlng.lat, lng: e.latlng.lng });
-        await handleReverseGeocode(e.latlng.lat, e.latlng.lng);
-      });
-
-      mapInstanceRef.current = map;
-      markerRef.current = marker;
-
-      // Ensure Leaflet tiles and center are perfectly sized without edge cutoffs
-      setTimeout(() => {
-        try {
-          map.invalidateSize();
-          map.setView([coords.lat, coords.lng], 16);
-        } catch {}
-      }, 250);
     }
 
-    initMap();
+    initGoogleMap();
 
     return () => {
       isMounted = false;
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (markerRef.current) markerRef.current.setMap(null);
     };
   }, []);
 
-  // Update map marker when coords change programmatically with smooth gliding
+  // Update map marker and camera position
   const updateMapMarker = (lat: number, lng: number) => {
     setCoords({ lat, lng });
-    if (mapInstanceRef.current && markerRef.current) {
-      try {
-        mapInstanceRef.current.invalidateSize();
-      } catch {}
+    if (mapInstanceRef.current && markerRef.current && window.google?.maps) {
       const targetZoom = 17;
-
-      if (typeof mapInstanceRef.current.flyTo === 'function') {
-        mapInstanceRef.current.flyTo([lat, lng], targetZoom, { duration: 0.5 });
-      } else {
-        mapInstanceRef.current.setView([lat, lng], targetZoom);
+      mapInstanceRef.current.setZoom(targetZoom);
+      mapInstanceRef.current.panTo({ lat, lng });
+      markerRef.current.setPosition({ lat, lng });
+      if (infoWindowRef.current) {
+        infoWindowRef.current.open(mapInstanceRef.current, markerRef.current);
       }
-      markerRef.current.setLatLng([lat, lng]);
-      markerRef.current.openPopup();
     }
   };
 
-  // Reverse Geocoding: Auto-populates all address inputs from coordinates
-  const handleReverseGeocode = async (lat: number, lng: number) => {
+  // Helper to parse Google address components into form state
+  const parseAndPopulateGoogleComponents = (googleResult: any) => {
+    if (!googleResult) return;
+    const comps: Record<string, string> = {};
+    for (const c of googleResult.address_components || []) {
+      for (const t of c.types || []) {
+        comps[t] = c.long_name;
+      }
+    }
+
+    const road = comps.route || comps.premise || comps.establishment || '';
+    const locality = comps.sublocality_level_1 || comps.sublocality || comps.neighborhood || '';
+    const cityVal = comps.locality || comps.administrative_area_level_2 || 'Davanagere';
+    const stateVal = comps.administrative_area_level_1 || 'Karnataka';
+    const pinVal = comps.postal_code || postalCode;
+
+    const formatted = googleResult.formatted_address || `${locality}, ${cityVal}`;
+    setReverseGeocodedText(formatted);
+
+    const line1 = road || locality || formatted.split(',')[0] || '';
+    if (line1) setAddressLine1(line1);
+    if (locality) setAddressLine2(locality);
+    if (cityVal) setCity(cityVal);
+    if (stateVal) setState(stateVal);
+    if (pinVal) setPostalCode(pinVal);
+
+    const pos = markerRef.current?.getPosition?.();
+    const lat = pos ? pos.lat() : coords.lat;
+    const lng = pos ? pos.lng() : coords.lng;
+
+    onConfirmAddress({
+      label,
+      recipient_name: recipientName || initialAddress?.recipient_name || '',
+      recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
+      address_line_1: line1 || addressLine1,
+      address_line_2: locality || addressLine2 || undefined,
+      landmark: landmark || undefined,
+      city: cityVal,
+      state: stateVal,
+      postal_code: pinVal,
+      latitude: lat,
+      longitude: lng,
+      access_instructions: accessInstructions || undefined,
+      is_default: isDefault,
+    });
+  };
+
+  // Reverse Geocoding with Google Maps Geocoder (with Next.js API server fallback)
+  const reverseGeocodeWithGoogle = async (lat: number, lng: number) => {
     setIsReverseGeocoding(true);
     try {
-      // 1. Try our unified Next.js geocode API (Google Maps + OpenStreetMap fallback)
+      // 1. Try Client Google Maps Geocoder if enabled
+      if (window.google?.maps?.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder();
+        const response = await new Promise<any>((resolve) => {
+          geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+            if (status === 'OK' && results && results[0]) {
+              resolve(results[0]);
+            } else {
+              resolve(null);
+            }
+          });
+        });
+
+        if (response) {
+          parseAndPopulateGoogleComponents(response);
+          return;
+        }
+      }
+
+      // 2. Fallback to our Serverless Geocoding Endpoint
       const res = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
       if (res.ok) {
         const data = await res.json();
         if (data.display_name) {
           setReverseGeocodedText(data.display_name);
-
-          let parsedLine1 = data.address?.address_line_1;
-          let parsedLine2 = data.address?.address_line_2;
-          let parsedCity = data.address?.city;
-          let parsedState = data.address?.state;
-          let parsedPostal = data.address?.postal_code;
-
-          if (data.raw) {
-            const parsed = parseNominatimAddress(data.raw);
-            parsedLine1 = parsed.addressLine1 || parsedLine1;
-            parsedLine2 = parsed.addressLine2 || parsedLine2;
-            parsedCity = parsed.city || parsedCity;
-            parsedState = parsed.state || parsedState;
-            parsedPostal = parsed.postalCode || parsedPostal;
-            if (parsed.landmark && !landmark) setLandmark(parsed.landmark);
-          }
-
-          if (parsedLine1) setAddressLine1(parsedLine1);
-          if (parsedLine2) setAddressLine2(parsedLine2);
-          if (parsedCity) setCity(parsedCity);
-          if (parsedState) setState(parsedState);
-          if (parsedPostal) setPostalCode(parsedPostal);
+          const addr = data.address || {};
+          if (addr.address_line_1) setAddressLine1(addr.address_line_1);
+          if (addr.address_line_2) setAddressLine2(addr.address_line_2);
+          if (addr.city) setCity(addr.city);
+          if (addr.state) setState(addr.state);
+          if (addr.postal_code) setPostalCode(addr.postal_code);
 
           onConfirmAddress({
             label,
             recipient_name: recipientName || initialAddress?.recipient_name || '',
             recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
-            address_line_1: parsedLine1 || addressLine1,
-            address_line_2: parsedLine2 || addressLine2 || undefined,
+            address_line_1: addr.address_line_1 || addressLine1,
+            address_line_2: addr.address_line_2 || addressLine2 || undefined,
             landmark: landmark || undefined,
-            city: parsedCity || city,
-            state: parsedState || state || undefined,
-            postal_code: parsedPostal || postalCode,
+            city: addr.city || city,
+            state: addr.state || state || undefined,
+            postal_code: addr.postal_code || postalCode,
             latitude: lat,
             longitude: lng,
             access_instructions: accessInstructions || undefined,
@@ -327,111 +373,15 @@ export default function AddressMapPicker({
           });
         }
       }
-    } catch {
-      setReverseGeocodedText(`Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`);
+    } catch (err) {
+      console.warn('[Reverse Geocode error]:', err);
+      setReverseGeocodedText(`GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
     } finally {
       setIsReverseGeocoding(false);
     }
   };
 
-  // Quick snap to Davanagere center (clears any erroneous out-of-town fields)
-  const handleResetToDavanagere = async () => {
-    setIspWarning(null);
-    setGeoError(null);
-    setAddressLine1('');
-    setAddressLine2('Davanagere Central');
-    setCity('Davanagere');
-    setState('Karnataka');
-    setPostalCode('577002');
-    updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
-    await handleReverseGeocode(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
-  };
-
-  // Quick snap to selected Davanagere neighborhood
-  const handleSelectQuickLocality = async (loc: { name: string; lat: number; lng: number }) => {
-    setIspWarning(null);
-    setGeoError(null);
-    setAddressLine1('');
-    setAddressLine2(loc.name);
-    setCity('Davanagere');
-    setState('Karnataka');
-    setPostalCode('577002');
-    updateMapMarker(loc.lat, loc.lng);
-    await handleReverseGeocode(loc.lat, loc.lng);
-  };
-
-  // Search Address with Geocoding and auto-population (Google Maps + OpenStreetMap fallback)
-  const handleSearchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setIsSearching(true);
-    setGeoError(null);
-    setIspWarning(null);
-
-    try {
-      const q = searchQuery.trim();
-
-      // 1. Call unified geocoding API
-      const res = await fetch(`/api/geocode/search?q=${encodeURIComponent(q)}`);
-      const resData = res.ok ? await res.json() : null;
-      const data = resData?.results || [];
-
-      if (data && data.length > 0) {
-        const item = data[0];
-        const lat = parseFloat(item.lat);
-        const lng = parseFloat(item.lon || item.lng);
-        updateMapMarker(lat, lng);
-        setReverseGeocodedText(item.display_name);
-
-        let parsedLine1 = item.address?.address_line_1;
-        let parsedLine2 = item.address?.address_line_2;
-        let parsedCity = item.address?.city;
-        let parsedState = item.address?.state;
-        let parsedPostal = item.address?.postal_code;
-
-        if (item.raw) {
-          const parsed = parseNominatimAddress(item.raw);
-          parsedLine1 = parsed.addressLine1 || parsedLine1;
-          parsedLine2 = parsed.addressLine2 || parsedLine2;
-          parsedCity = parsed.city || parsedCity;
-          parsedState = parsed.state || parsedState;
-          parsedPostal = parsed.postalCode || parsedPostal;
-          if (parsed.landmark && !landmark) setLandmark(parsed.landmark);
-        }
-
-        if (parsedLine1) setAddressLine1(parsedLine1);
-        if (parsedLine2) setAddressLine2(parsedLine2);
-        if (parsedCity) setCity(parsedCity);
-        if (parsedState) setState(parsedState);
-        if (parsedPostal) setPostalCode(parsedPostal);
-
-        onConfirmAddress({
-          label,
-          recipient_name: recipientName || initialAddress?.recipient_name || '',
-          recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
-          address_line_1: parsedLine1 || addressLine1,
-          address_line_2: parsedLine2 || addressLine2 || undefined,
-          landmark: landmark || undefined,
-          city: parsedCity || city,
-          state: parsedState || state || undefined,
-          postal_code: parsedPostal || postalCode,
-          latitude: lat,
-          longitude: lng,
-          access_instructions: accessInstructions || undefined,
-          is_default: isDefault,
-        });
-      } else {
-        setGeoError('Location not found. Please try another search term or click directly on the map.');
-      }
-    } catch {
-      setGeoError('Unable to reach geocoding service. Please click on the map to place your pin.');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Use Browser Geolocation with fresh satellite GPS detection & automatic accuracy handling
+  // Google Current Location GPS Detection
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       setGeoError('Geolocation is not supported by your browser.');
@@ -449,19 +399,19 @@ export default function AddressMapPicker({
       const lng = pos.coords.longitude;
       const accuracy = Math.round(pos.coords.accuracy || 0);
 
-      // Smoothly glide camera and snap pin to exact detected coordinates
+      // Glide Google Map to exact user coordinates
       updateMapMarker(lat, lng);
-      await handleReverseGeocode(lat, lng);
+      await reverseGeocodeWithGoogle(lat, lng);
 
       const distFromDavanagere = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, lat, lng);
       if (distFromDavanagere > 50000) {
         const distanceKm = Math.round(distFromDavanagere / 1000);
         setIspWarning(
-          `Detected location is ~${distanceKm} km from Davanagere. If you are booking for home collection in Davanagere, feel free to tap 'Davanagere Center' or drag the pin to the patient's doorstep.`
+          `Location detected (~${distanceKm} km from Davanagere). If testing remotely, you can drag the green pin or tap 'Davanagere Center' anytime.`
         );
       } else if (accuracy > 150) {
         setIspWarning(
-          `Location detected via Wi-Fi (accuracy ±${accuracy}m). Drag the green pin to your exact building or doorway for precise phlebotomist arrival.`
+          `Location detected (accuracy ±${accuracy}m). Feel free to drag the green pin to your exact building or doorway for precise phlebotomist arrival.`
         );
       } else {
         setIspWarning(null);
@@ -474,26 +424,105 @@ export default function AddressMapPicker({
       applyPosition,
       (error) => {
         if (error.code === error.TIMEOUT) {
-          // If high-accuracy satellite GPS timed out (e.g. indoors or on PC), fallback to standard network Wi-Fi location
           navigator.geolocation.getCurrentPosition(
             applyPosition,
             () => {
               setIsGeolocating(false);
-              setGeoError('Could not determine current location. Please click or drag the pin on the map.');
+              setGeoError('GPS signal timed out. Please drag the pin on the Google Map or use search.');
             },
             { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
           );
         } else {
           setIsGeolocating(false);
           if (error.code === error.PERMISSION_DENIED) {
-            setGeoError('Location permission was denied in your browser settings. Please click directly on the map to place your pin.');
+            setGeoError('Location permission was denied. Please drag the pin on the Google Map.');
           } else {
-            setGeoError('Location unavailable. Please click directly on the map or use the search bar.');
+            setGeoError('Location unavailable. Please click on the Google Map to place your pin.');
           }
         }
       },
       { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
     );
+  };
+
+  // Search Address with Geocoding
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    setGeoError(null);
+    setIspWarning(null);
+
+    try {
+      const q = searchQuery.trim();
+      const res = await fetch(`/api/geocode/search?q=${encodeURIComponent(q)}`);
+      const resData = res.ok ? await res.json() : null;
+      const data = resData?.results || [];
+
+      if (data && data.length > 0) {
+        const item = data[0];
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon || item.lng);
+        updateMapMarker(lat, lng);
+        setReverseGeocodedText(item.display_name);
+
+        const addr = item.address || {};
+        if (addr.address_line_1) setAddressLine1(addr.address_line_1);
+        if (addr.address_line_2) setAddressLine2(addr.address_line_2);
+        if (addr.city) setCity(addr.city);
+        if (addr.state) setState(addr.state);
+        if (addr.postal_code) setPostalCode(addr.postal_code);
+
+        onConfirmAddress({
+          label,
+          recipient_name: recipientName || initialAddress?.recipient_name || '',
+          recipient_phone: recipientPhone || initialAddress?.recipient_phone || '',
+          address_line_1: addr.address_line_1 || addressLine1,
+          address_line_2: addr.address_line_2 || addressLine2 || undefined,
+          landmark: landmark || undefined,
+          city: addr.city || city,
+          state: addr.state || state || undefined,
+          postal_code: addr.postal_code || postalCode,
+          latitude: lat,
+          longitude: lng,
+          access_instructions: accessInstructions || undefined,
+          is_default: isDefault,
+        });
+      } else {
+        setGeoError('Location not found. Please try another search term or click directly on the Google Map.');
+      }
+    } catch {
+      setGeoError('Unable to reach geocoding service. Please click directly on the Google Map.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Quick snap to Davanagere center
+  const handleResetToDavanagere = async () => {
+    setIspWarning(null);
+    setGeoError(null);
+    setAddressLine1('');
+    setAddressLine2('Davanagere Central');
+    setCity('Davanagere');
+    setState('Karnataka');
+    setPostalCode('577002');
+    updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+    await reverseGeocodeWithGoogle(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
+  };
+
+  // Quick snap to selected Davanagere neighborhood
+  const handleSelectQuickLocality = async (loc: { name: string; lat: number; lng: number }) => {
+    setIspWarning(null);
+    setGeoError(null);
+    setAddressLine1('');
+    setAddressLine2(loc.name);
+    setCity('Davanagere');
+    setState('Karnataka');
+    setPostalCode('577002');
+    updateMapMarker(loc.lat, loc.lng);
+    await reverseGeocodeWithGoogle(loc.lat, loc.lng);
   };
 
   // Confirm Final Address Selection
@@ -552,7 +581,7 @@ export default function AddressMapPicker({
             onClick={handleUseCurrentLocation}
             disabled={isGeolocating}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-botanical-50 text-botanical-700 hover:bg-botanical-100 border border-botanical-200 text-xs font-bold transition-all shadow-soft-sm disabled:opacity-50"
-            title="Detect GPS location (Mobile phones provide high accuracy; PC/laptops use Wi-Fi IP)"
+            title="Detect GPS location with Google Maps"
           >
             {isGeolocating ? (
               <Loader2 className="w-4 h-4 animate-spin text-botanical-600" />
@@ -564,348 +593,300 @@ export default function AddressMapPicker({
         </div>
       </div>
 
-      {/* Responsive Desktop 2-Column Split: Map on Left (7 cols), Form on Right (5 cols) */}
+      {/* Responsive 2-Column Split: Google Map on Left (7 cols), Form on Right (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 lg:divide-x divide-ivory-200">
-        {/* Left Column: Search & Interactive Leaflet Map Canvas */}
+        {/* Left Column: Search & Interactive Google Map Canvas */}
         <div className="lg:col-span-7 flex flex-col bg-ivory-50/30">
-          {/* Search Input Bar */}
-          <div className="p-3.5 sm:p-4 bg-white border-b border-ivory-200">
-            <form onSubmit={handleSearchSubmit} className="flex gap-2">
+          <div className="p-4 sm:p-5 border-b border-ivory-200">
+            {/* Search Bar with Google Places Autocomplete */}
+            <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-2">
               <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-botanical-500">
-                  <Search className="w-4 h-4" />
-                </div>
+                <Search className="w-4 h-4 text-botanical-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  ref={searchInputRef}
                   type="text"
+                  placeholder="Search apartment, locality, street or postal code..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search apartment, locality, street or postal code..."
-                  className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-ivory-300 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-ivory-50/30"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-ivory-300 bg-white text-xs sm:text-sm font-medium text-botanical-950 placeholder:text-botanical-700/50 focus:outline-none focus:ring-2 focus:ring-botanical-500 shadow-soft-xs"
                 />
               </div>
               <button
                 type="submit"
-                disabled={isSearching}
-                className="px-4 py-2 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs sm:text-sm transition-colors flex items-center gap-1.5 flex-shrink-0"
+                disabled={isSearching || !searchQuery.trim()}
+                className="px-4 py-2.5 rounded-xl bg-botanical-600 hover:bg-botanical-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-soft transition-all flex items-center gap-1.5 whitespace-nowrap"
               >
-                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search Area'}
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Search Area</span>}
               </button>
             </form>
 
-            {/* ISP Broadband Gateway Warning Banner */}
-            {ispWarning && (
-              <div className="mt-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2 animate-in slide-in-from-top duration-200">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">
-                    <strong>Broadband / Wi-Fi Provider Location Detected:</strong> {ispWarning}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 pl-6">
-                  <button
-                    type="button"
-                    onClick={handleResetToDavanagere}
-                    className="px-3 py-1 rounded-xl bg-botanical-500 hover:bg-botanical-600 text-white font-bold text-xs shadow-soft-xs flex items-center gap-1.5 transition-all"
-                  >
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>Snap to Davanagere Center</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIspWarning(null)}
-                    className="px-2.5 py-1 text-xs text-amber-800 hover:underline font-semibold"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {geoError && (
-              <div className="mt-2.5 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                <span>{geoError}</span>
-              </div>
-            )}
-
-            {/* Quick Davanagere Neighborhood Chips */}
-            <div className="mt-2.5 pt-2 border-t border-ivory-200/60">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-600 block mb-1.5">
+            {/* Quick-Pick Davanagere Area Pills */}
+            <div className="mt-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-botanical-700 block mb-1.5">
                 Quick-Pick Davanagere Areas:
               </span>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {DAVANAGERE_LOCALITIES.map((loc) => (
-                  <button
-                    key={loc.name}
-                    type="button"
-                    onClick={() => handleSelectQuickLocality(loc)}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ivory-100 hover:bg-ivory-200 border border-ivory-300 text-botanical-900 whitespace-nowrap transition-colors flex items-center gap-1 hover:border-botanical-400 active:scale-95"
-                  >
-                    <MapPin className="w-3 h-3 text-peach-500" />
-                    <span>{loc.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Leaflet Interactive Map Canvas */}
-          <div className="relative w-full h-[320px] lg:h-[440px] bg-ivory-100 z-10 flex-1 min-h-[300px]">
-            <div ref={mapContainerRef} className="w-full h-full" />
-            
-            {/* Floating coordinates badge */}
-            <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl border border-ivory-300 shadow-soft-sm text-[10px] sm:text-[11px] text-botanical-900 font-mono">
-              <span className="font-bold text-botanical-600">GPS:</span> {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-            </div>
-
-            {/* Floating instructions badge */}
-            <div className="absolute top-3 left-3 z-[1000] bg-botanical-900/90 text-white backdrop-blur-md px-2.5 py-1 rounded-xl shadow-soft text-[11px] flex items-center gap-1.5">
-              <Info className="w-3 h-3 text-peach-300" />
-              <span>Click or drag marker to pinpoint doorway</span>
-            </div>
-          </div>
-
-          {/* Selected Location Banner with standard Doorstep Sample Collection pill */}
-          <div className="p-3 bg-botanical-50/70 border-t border-botanical-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-start gap-2.5 min-w-0">
-              <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold text-botanical-700 uppercase tracking-wider block">
-                  Selected Map Location
-                </span>
-                <p className="text-xs font-semibold text-botanical-950 truncate">
-                  {isReverseGeocoding ? 'Detecting address details...' : reverseGeocodedText}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex-shrink-0 self-start sm:self-auto">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-botanical-100 text-botanical-900 border border-botanical-200">
-                ₹50 Doorstep Collection Fee
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Address Details Form */}
-        <form onSubmit={handleSubmitConfirmation} className="lg:col-span-5 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-white">
-          <div className="space-y-3">
-            {/* Address Label Selection */}
-            <div>
-              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                Address Tag
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { id: 'Home', label: 'Home', icon: Home },
-                  { id: 'Work', label: 'Work', icon: Briefcase },
-                  { id: 'Other', label: 'Other', icon: Building },
-                ].map((item) => {
-                  const Icon = item.icon;
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {DAVANAGERE_LOCALITIES.map((loc) => {
+                  const isCurrent =
+                    Math.abs(coords.lat - loc.lat) < 0.003 && Math.abs(coords.lng - loc.lng) < 0.003;
                   return (
                     <button
-                      key={item.id}
+                      key={loc.name}
                       type="button"
-                      onClick={() => {
-                        const newLabel = item.id as 'Home' | 'Work' | 'Other';
-                        setLabel(newLabel);
-                        syncAddress({ label: newLabel });
-                      }}
-                      className={`flex-1 py-1.5 px-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1 transition-all ${
-                        label === item.id
-                          ? 'bg-botanical-500 border-botanical-500 text-white shadow-soft-sm'
-                          : 'bg-white border-ivory-300 text-botanical-800 hover:bg-ivory-50'
+                      onClick={() => handleSelectQuickLocality(loc)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap border transition-all ${
+                        isCurrent
+                          ? 'bg-botanical-600 text-white border-botanical-600 shadow-soft-xs'
+                          : 'bg-white text-botanical-800 border-ivory-300 hover:border-botanical-300 hover:bg-botanical-50/50'
                       }`}
                     >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{item.label}</span>
+                      <span className="text-[11px] text-peach-500 mr-1">📍</span>
+                      {loc.name}
                     </button>
                   );
                 })}
               </div>
             </div>
+          </div>
+
+          {/* Google Map Viewport */}
+          <div className="relative w-full h-[380px] sm:h-[450px] bg-ivory-100">
+            <div ref={mapContainerRef} className="w-full h-full" />
+
+            {!isMapReady && (
+              <div className="absolute inset-0 bg-ivory-100/90 flex flex-col items-center justify-center gap-2 text-botanical-700">
+                <Loader2 className="w-8 h-8 animate-spin text-botanical-500" />
+                <span className="text-xs font-semibold">Loading Official Google Maps...</span>
+              </div>
+            )}
+
+            {/* Drag helper tooltip badge */}
+            <div className="absolute top-3 left-3 z-10 pointer-events-none">
+              <div className="bg-botanical-950/80 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1.5 rounded-xl shadow-soft flex items-center gap-1.5 border border-white/10">
+                <Info className="w-3.5 h-3.5 text-peach-300" />
+                <span>Click or drag marker to pinpoint doorway</span>
+              </div>
+            </div>
+
+            {/* Live GPS Coordinates Indicator */}
+            <div className="absolute bottom-3 left-3 z-10 pointer-events-none">
+              <div className="bg-white/90 backdrop-blur-md text-botanical-950 font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-soft-xs border border-ivory-300">
+                GPS: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Location Banner with standard Doorstep Sample Collection pill */}
+          <div className="p-3.5 bg-botanical-50/70 border-t border-botanical-200/60 flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2 text-xs text-botanical-950">
+              <MapPin className="w-4 h-4 text-botanical-600 flex-shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold text-[10px] uppercase tracking-wider text-botanical-700 block">
+                  Selected Map Location
+                </span>
+                <p className="font-semibold line-clamp-2">
+                  {isReverseGeocoding ? (
+                    <span className="inline-flex items-center gap-1 text-botanical-600">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Locating street via Google Maps...
+                    </span>
+                  ) : (
+                    reverseGeocodedText
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Standard Doorstep Collection Fee Pill */}
+            <div className="flex-shrink-0 text-right">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-botanical-100 text-botanical-900 border border-botanical-300 shadow-soft-xs">
+                ₹50 Doorstep Collection Fee
+              </span>
+            </div>
+          </div>
+
+          {/* Warnings & Alerts */}
+          {ispWarning && (
+            <div className="mx-4 my-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <span>{ispWarning}</span>
+            </div>
+          )}
+
+          {geoError && (
+            <div className="mx-4 my-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-900 flex items-start gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+              <span>{geoError}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Detailed Doorstep Address Form */}
+        <div className="lg:col-span-5 p-5 sm:p-6 flex flex-col justify-between bg-white space-y-4">
+          <form onSubmit={handleSubmitConfirmation} className="space-y-4">
+            {/* Address Tag Selector */}
+            <div>
+              <label className="block text-xs font-bold text-botanical-900 mb-1.5">Address Tag</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['Home', 'Work', 'Other'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setLabel(t)}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                      label === t
+                        ? 'bg-botanical-600 text-white border-botanical-600 shadow-soft-xs'
+                        : 'bg-ivory-50 text-botanical-800 border-ivory-300 hover:bg-botanical-50'
+                    }`}
+                  >
+                    {t === 'Home' && <Home className="w-3.5 h-3.5" />}
+                    {t === 'Work' && <Briefcase className="w-3.5 h-3.5" />}
+                    {t === 'Other' && <Building className="w-3.5 h-3.5" />}
+                    <span>{t}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Recipient Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                  Recipient Name *
-                </label>
+                <label className="block text-xs font-bold text-botanical-900 mb-1">Recipient Name *</label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Ramesh Kumar"
                   value={recipientName}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setRecipientName(val);
-                    syncAddress({ recipient_name: val });
-                  }}
-                  placeholder="Patient / Recipient Name"
-                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
                 />
               </div>
+
               <div>
-                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                  Mobile (For Phlebotomist) *
-                </label>
+                <label className="block text-xs font-bold text-botanical-900 mb-1">Mobile (For Phlebotomist) *</label>
                 <input
                   type="tel"
                   required
-                  value={recipientPhone}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setRecipientPhone(val);
-                    syncAddress({ recipient_phone: val });
-                  }}
                   placeholder="10-digit mobile number"
-                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                  value={recipientPhone}
+                  onChange={(e) => setRecipientPhone(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
                 />
               </div>
             </div>
 
-            {/* Address Line 1 */}
+            {/* House / Flat / Building */}
             <div>
-              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                House / Flat / Building No. *
-              </label>
+              <label className="block text-xs font-bold text-botanical-900 mb-1">House / Flat / Building No. *</label>
               <input
                 type="text"
                 required
+                placeholder="e.g. Flat 302, Sai Residency / House #45"
                 value={addressLine1}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setAddressLine1(val);
-                  syncAddress({ address_line_1: val });
-                }}
-                placeholder="House / Flat / Door No. or Building Name"
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                onChange={(e) => setAddressLine1(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
               />
             </div>
 
-            {/* Address Line 2 */}
+            {/* Floor, Locality or Society */}
             <div>
-              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+              <label className="block text-xs font-bold text-botanical-900 mb-1">
                 Floor, Locality or Society (Optional)
               </label>
               <input
                 type="text"
+                placeholder="e.g. 3rd Floor, Teachers Colony"
                 value={addressLine2}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setAddressLine2(val);
-                  syncAddress({ address_line_2: val || undefined });
-                }}
-                placeholder="Apartment, Street or Locality (Optional)"
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                onChange={(e) => setAddressLine2(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
               />
             </div>
 
-            {/* Landmark, City & Postal Code */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div>
-                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                  Landmark
-                </label>
+            {/* Landmark, City & PIN Code */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-1">
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">Landmark</label>
                 <input
                   type="text"
+                  placeholder="Nearby landmark (Opt)"
                   value={landmark}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setLandmark(val);
-                    syncAddress({ landmark: val || undefined });
-                  }}
-                  placeholder="Nearby landmark (Optional)"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                  onChange={(e) => setLandmark(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl border border-ivory-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
                 />
               </div>
+
               <div>
-                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                  City *
-                </label>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">City *</label>
                 <input
                   type="text"
                   required
+                  placeholder="Davanagere"
                   value={city}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setCity(val);
-                    syncAddress({ city: val });
-                  }}
-                  placeholder="City / Town"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl border border-ivory-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
                 />
               </div>
+
               <div>
-                <label className="block text-[11px] font-bold text-botanical-900 mb-1">
-                  PIN Code *
-                </label>
+                <label className="block text-[11px] font-bold text-botanical-900 mb-1">PIN Code *</label>
                 <input
                   type="text"
                   required
+                  placeholder="577004"
                   value={postalCode}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setPostalCode(val);
-                    syncAddress({ postal_code: val });
-                  }}
-                  placeholder="PIN Code"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl border border-ivory-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
                 />
               </div>
             </div>
 
             {/* Phlebotomist Gate Instructions */}
             <div>
-              <label className="block text-[11px] font-bold text-botanical-900 mb-1">
+              <label className="block text-xs font-bold text-botanical-900 mb-1">
                 Phlebotomist Gate Instructions (Optional)
               </label>
               <input
                 type="text"
-                value={accessInstructions}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setAccessInstructions(val);
-                  syncAddress({ access_instructions: val || undefined });
-                }}
                 placeholder="Gate code, call before arrival, doorbell notes (Optional)"
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-ivory-300 focus:ring-2 focus:ring-botanical-500 bg-white"
+                value={accessInstructions}
+                onChange={(e) => setAccessInstructions(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-ivory-300 text-xs sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-botanical-500"
               />
             </div>
 
-            {/* Save as default checkbox */}
-            <div className="flex items-center gap-2 pt-0.5">
+            {/* Save as Default Checkbox */}
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="checkbox"
-                id="isDefaultAddress"
+                id="isDefault"
                 checked={isDefault}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setIsDefault(checked);
-                  syncAddress({ is_default: checked });
-                }}
-                className="rounded text-botanical-500 focus:ring-botanical-500 h-3.5 w-3.5"
+                onChange={(e) => setIsDefault(e.target.checked)}
+                className="w-4 h-4 rounded text-botanical-600 focus:ring-botanical-500 border-ivory-300"
               />
-              <label htmlFor="isDefaultAddress" className="text-[11px] text-botanical-800 font-medium">
+              <label htmlFor="isDefault" className="text-xs font-semibold text-botanical-800 cursor-pointer">
                 Save as default collection address
               </label>
             </div>
-          </div>
 
-          {/* Confirmation Button with Live Visual Feedback */}
-          <div className="pt-3 border-t border-ivory-200">
+            {/* Confirm Address Button */}
             <button
               type="submit"
-              className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-soft flex items-center justify-center gap-2 transition-all ${
-                isConfirmedFeedback
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-botanical-500 hover:bg-botanical-600 active:bg-botanical-700 text-white'
-              }`}
+              className="w-full mt-2 py-3 rounded-2xl bg-botanical-600 hover:bg-botanical-700 text-white font-bold text-xs sm:text-sm shadow-soft transition-all flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4" />
-              <span>{isConfirmedFeedback ? 'Address Pinned & Confirmed!' : 'Confirm & Use This Collection Address'}</span>
+              {isConfirmedFeedback ? (
+                <>
+                  <Check className="w-4 h-4 text-white" />
+                  <span>Doorstep Pin & Address Saved ✓</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 text-white" />
+                  <span>Confirm & Use This Collection Address</span>
+                </>
+              )}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

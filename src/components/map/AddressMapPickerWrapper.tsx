@@ -16,7 +16,7 @@ const DynamicMap = dynamic(() => import('./AddressMapPicker'), {
   loading: () => (
     <div className="w-full h-96 bg-ivory-100 rounded-3xl border border-ivory-300 flex flex-col items-center justify-center gap-3 text-botanical-700">
       <Loader2 className="w-8 h-8 animate-spin text-botanical-500" />
-      <span className="text-sm font-semibold">Loading interactive collection map...</span>
+      <span className="text-sm font-semibold">Loading Google Maps collection map...</span>
     </div>
   ),
 });
