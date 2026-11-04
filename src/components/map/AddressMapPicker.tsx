@@ -182,10 +182,39 @@ export default function AddressMapPicker({
         zoomControl: true,
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+      // Official Google Maps Roadmap Tile Layer
+      const googleRoadmap = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps',
+      });
+
+      // Official Google Maps Satellite (Hybrid) Layer
+      const googleSatellite = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps Satellite',
+      });
+
+      // OpenStreetMap Layer fallback
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-      }).addTo(map);
+        attribution: '&copy; OpenStreetMap',
+      });
+
+      // Set Google Maps as active base map
+      googleRoadmap.addTo(map);
+
+      // Layer switcher control (Google Maps Roadmap, Satellite, OSM)
+      L.control.layers(
+        {
+          'Google Maps': googleRoadmap,
+          'Google Satellite': googleSatellite,
+          'OpenStreetMap': osmLayer,
+        },
+        {},
+        { position: 'topright' }
+      ).addTo(map);
 
       const marker = L.marker([coords.lat, coords.lng], {
         draggable: true,

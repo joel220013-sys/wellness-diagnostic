@@ -60,7 +60,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com",
-              "img-src 'self' data: blob: https: http: https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com",
+              "img-src 'self' data: blob: https: http: https://maps.gstatic.com https://*.googleapis.com https://*.ggpht.com https://*.google.com",
               "font-src 'self' data: https://fonts.gstatic.com",
               "connect-src 'self' https://maps.googleapis.com https://wellness-diagnostic-backend.onrender.com http://localhost:8000 http://127.0.0.1:8000 https://*.supabase.co https://*.tile.openstreetmap.org https://nominatim.openstreetmap.org",
               "frame-src 'self' blob: data: https: https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.cloudflare.com",
