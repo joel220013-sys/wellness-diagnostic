@@ -85,15 +85,30 @@ export default function DriverDirectionsMap({
       const pos = { lat: latitude, lng: longitude };
 
       if (!mapInstance.current) {
-        mapInstance.current = new google.maps.Map(mapRef.current, {
+        const cleanRoadMapType = new google.maps.ImageMapType({
+          getTileUrl: (coord: any, zoom: number) => {
+            const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+            const s = subdomains[Math.abs(coord.x + coord.y) % subdomains.length];
+            return `https://${s}.google.com/vt/lyrs=m&x=${coord.x}&y=${coord.y}&z=${zoom}`;
+          },
+          tileSize: new google.maps.Size(256, 256),
+          maxZoom: 20,
+          name: 'Map',
+        });
+
+        const map = new google.maps.Map(mapRef.current, {
           center: pos,
           zoom: 16,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeId: 'google_clean_road',
           zoomControl: true,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
         });
+
+        map.mapTypes.set('google_clean_road', cleanRoadMapType);
+        map.setMapTypeId('google_clean_road');
+        mapInstance.current = map;
       } else {
         mapInstance.current.setCenter(pos);
       }

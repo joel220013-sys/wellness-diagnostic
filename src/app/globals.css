@@ -8,6 +8,21 @@ svg {
   box-sizing: content-box;
 }
 
+/* Remove Google Maps development watermark overlay, dimming and dialogs */
+.gm-style-pbc {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.gm-style div[style*="background-color: rgba(0, 0, 0,"],
+.gm-style div[style*="background-color: rgba(0,0,0,"] {
+  background-color: transparent !important;
+}
+
+.gm-style div[style*="z-index: 1000001"] {
+  display: none !important;
+}
+
 svg:not([width]):not([style*="width"]) {
   max-width: 100%;
 }

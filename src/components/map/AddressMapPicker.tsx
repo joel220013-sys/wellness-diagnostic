@@ -185,12 +185,35 @@ export default function AddressMapPicker({
         if (window.google?.maps?.Map) {
           const google = window.google;
 
+          const cleanRoadMapType = new google.maps.ImageMapType({
+            getTileUrl: (coord: any, zoom: number) => {
+              const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+              const s = subdomains[Math.abs(coord.x + coord.y) % subdomains.length];
+              return `https://${s}.google.com/vt/lyrs=m&x=${coord.x}&y=${coord.y}&z=${zoom}`;
+            },
+            tileSize: new google.maps.Size(256, 256),
+            maxZoom: 20,
+            name: 'Map',
+          });
+
+          const cleanSatelliteMapType = new google.maps.ImageMapType({
+            getTileUrl: (coord: any, zoom: number) => {
+              const subdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+              const s = subdomains[Math.abs(coord.x + coord.y) % subdomains.length];
+              return `https://${s}.google.com/vt/lyrs=y&x=${coord.x}&y=${coord.y}&z=${zoom}`;
+            },
+            tileSize: new google.maps.Size(256, 256),
+            maxZoom: 20,
+            name: 'Satellite',
+          });
+
           const mapOptions = {
             center: { lat: coords.lat, lng: coords.lng },
             zoom: 16,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            mapTypeId: 'google_clean_road',
             mapTypeControl: true,
             mapTypeControlOptions: {
+              mapTypeIds: ['google_clean_road', 'google_clean_sat'],
               style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
               position: google.maps.ControlPosition.TOP_RIGHT,
             },
@@ -204,6 +227,9 @@ export default function AddressMapPicker({
           };
 
           const map = new google.maps.Map(mapContainerRef.current, mapOptions);
+          map.mapTypes.set('google_clean_road', cleanRoadMapType);
+          map.mapTypes.set('google_clean_sat', cleanSatelliteMapType);
+          map.setMapTypeId('google_clean_road');
           mapInstanceRef.current = map;
 
           // Custom green healthcare SVG pin for Google Maps
