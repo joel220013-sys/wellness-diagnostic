@@ -237,6 +237,14 @@ export default function AddressMapPicker({
 
       mapInstanceRef.current = map;
       markerRef.current = marker;
+
+      // Ensure Leaflet tiles and center are perfectly sized without edge cutoffs
+      setTimeout(() => {
+        try {
+          map.invalidateSize();
+          map.setView([coords.lat, coords.lng], 16);
+        } catch {}
+      }, 250);
     }
 
     initMap();
@@ -254,17 +262,18 @@ export default function AddressMapPicker({
   const updateMapMarker = (lat: number, lng: number) => {
     setCoords({ lat, lng });
     if (mapInstanceRef.current && markerRef.current) {
-      const currentZoom = typeof mapInstanceRef.current.getZoom === 'function' 
-        ? mapInstanceRef.current.getZoom() 
-        : 16;
-      const targetZoom = Math.max(currentZoom, 16);
+      try {
+        mapInstanceRef.current.invalidateSize();
+      } catch {}
+      const targetZoom = 17;
 
       if (typeof mapInstanceRef.current.flyTo === 'function') {
-        mapInstanceRef.current.flyTo([lat, lng], targetZoom, { duration: 0.6 });
+        mapInstanceRef.current.flyTo([lat, lng], targetZoom, { duration: 0.5 });
       } else {
         mapInstanceRef.current.setView([lat, lng], targetZoom);
       }
       markerRef.current.setLatLng([lat, lng]);
+      markerRef.current.openPopup();
     }
   };
 
@@ -422,67 +431,68 @@ export default function AddressMapPicker({
     }
   };
 
-  // Use Browser Geolocation with Anti-Jitter Filter and Desktop ISP Gateway Detection
+  // Use Browser Geolocation with fresh satellite GPS detection & automatic accuracy handling
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       setGeoError('Geolocation is not supported by your browser.');
       return;
     }
 
-    if (isGeolocating) return; // Prevent double triggers if clicked in rapid succession
+    if (isGeolocating) return;
 
     setIsGeolocating(true);
     setGeoError(null);
     setIspWarning(null);
 
+    const applyPosition = async (pos: GeolocationPosition) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = Math.round(pos.coords.accuracy || 0);
+
+      // Smoothly glide camera and snap pin to exact detected coordinates
+      updateMapMarker(lat, lng);
+      await handleReverseGeocode(lat, lng);
+
+      const distFromDavanagere = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, lat, lng);
+      if (distFromDavanagere > 50000) {
+        const distanceKm = Math.round(distFromDavanagere / 1000);
+        setIspWarning(
+          `Detected location is ~${distanceKm} km from Davanagere. If you are booking for home collection in Davanagere, feel free to tap 'Davanagere Center' or drag the pin to the patient's doorstep.`
+        );
+      } else if (accuracy > 150) {
+        setIspWarning(
+          `Location detected via Wi-Fi (accuracy ±${accuracy}m). Drag the green pin to your exact building or doorway for precise phlebotomist arrival.`
+        );
+      } else {
+        setIspWarning(null);
+      }
+
+      setIsGeolocating(false);
+    };
+
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const distFromDavanagere = calculateDistanceMeters(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng, lat, lng);
-
-        // Anti-jitter check: If newly read position is within 15 meters of existing pin,
-        // keep pin steady to prevent annoying jumps caused by Wi-Fi tower signal fluctuations
-        const distance = calculateDistanceMeters(coords.lat, coords.lng, lat, lng);
-        const isDefaultLocation = 
-          Math.abs(coords.lat - DEFAULT_COORDS.lat) < 0.0001 && 
-          Math.abs(coords.lng - DEFAULT_COORDS.lng) < 0.0001;
-
-        // Check if broadband router IP is far outside Davanagere (e.g. ISP server / VPN hundreds of km away)
-        if (distFromDavanagere > 40000) {
-          // DO NOT jump away! Keep the pin securely in Davanagere!
-          updateMapMarker(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
-          await handleReverseGeocode(DEFAULT_COORDS.lat, DEFAULT_COORDS.lng);
-
-          const distanceKm = Math.round(distFromDavanagere / 1000);
-          setIspWarning(
-            `Your computer's internet connection is routing through a remote ISP server (~${distanceKm} km away). Desktop PCs and laptops lack satellite GPS chips and trace to your provider's datacenter. We automatically kept your pin in Davanagere so your address is not overridden. Use the search bar or tap a Davanagere locality below.`
+      applyPosition,
+      (error) => {
+        if (error.code === error.TIMEOUT) {
+          // If high-accuracy satellite GPS timed out (e.g. indoors or on PC), fallback to standard network Wi-Fi location
+          navigator.geolocation.getCurrentPosition(
+            applyPosition,
+            () => {
+              setIsGeolocating(false);
+              setGeoError('Could not determine current location. Please click or drag the pin on the map.');
+            },
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
           );
         } else {
-          setIspWarning(null);
-          // Inside Davanagere region (e.g. mobile phone GPS or local Wi-Fi)
-          if (distance > 15 || isDefaultLocation) {
-            updateMapMarker(lat, lng);
-            await handleReverseGeocode(lat, lng);
+          setIsGeolocating(false);
+          if (error.code === error.PERMISSION_DENIED) {
+            setGeoError('Location permission was denied in your browser settings. Please click directly on the map to place your pin.');
           } else {
-            // If already at the exact spot, gently highlight the pin without jumping the camera
-            if (markerRef.current) {
-              markerRef.current.openPopup();
-            }
+            setGeoError('Location unavailable. Please click directly on the map or use the search bar.');
           }
         }
-
-        setIsGeolocating(false);
       },
-      (error) => {
-        setIsGeolocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setGeoError('Location access was denied. Please search or pick your address on the map.');
-        } else {
-          setGeoError('Could not determine current location. Please use manual address search.');
-        }
-      },
-      { timeout: 10000, enableHighAccuracy: true, maximumAge: 60000 }
+      { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
