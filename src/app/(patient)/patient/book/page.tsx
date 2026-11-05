@@ -292,6 +292,14 @@ export default function BookCollectionPage() {
     try {
       const isOnline = paymentMethodChoice === 'online';
 
+      if (selectedTests.length === 0) {
+        setPaymentError('Please select at least one diagnostic test before proceeding to checkout.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const payableAmount = Math.max(pricing.total, 50);
+
       const newBooking = createBooking({
         patient_id: user?.id || 'user_patient_1',
         patient_name: patientName,
@@ -317,7 +325,7 @@ export default function BookCollectionPage() {
         collection_fee: pricing.collectionFee,
         discount: pricing.discount,
         tax_amount: pricing.tax,
-        total_amount: pricing.total,
+        total_amount: payableAmount,
         payment_status: isOnline ? 'Pending' : 'Unpaid',
         payment_method: isOnline ? 'Online / Razorpay' : 'Cash on Collection',
         patient_notes: patientNotes
@@ -330,52 +338,40 @@ export default function BookCollectionPage() {
         return;
       }
 
-      // ONLINE PAYMENT VIA RAZORPAY
+      // ONLINE PAYMENT VIA REAL RAZORPAY CHECKOUT
       setIsProcessingPayment(true);
-      await loadRazorpayScript();
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded && !(window as any).Razorpay) {
+        throw new Error('Unable to load Razorpay payment gateway. Please check your internet connection and try again.');
+      }
 
       // Call server to create Razorpay Order
-      const orderRes = await fetch('/api/payments/razorpay/order', {
+      const orderRes = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: pricing.total,
-          booking_reference: newBooking.booking_reference,
-          patient_name: patientName,
-          patient_phone: patientPhone,
+          amount: payableAmount,
+          currency: 'INR',
+          receipt: newBooking.booking_reference,
+          notes: {
+            booking_reference: newBooking.booking_reference,
+            patient_name: patientName,
+            patient_phone: patientPhone,
+          },
         }),
       });
 
       const orderData = await orderRes.json();
-      if (!orderData.success) {
-        throw new Error(orderData.error || 'Failed to initiate payment gateway');
+      if (!orderData.success || !orderData.order_id) {
+        throw new Error(orderData.error || 'Failed to initiate Razorpay order. Please retry.');
       }
 
-      const { order_id, amount, currency, key_id, mode } = orderData.data;
+      const { order_id, amount, currency } = orderData;
+      const keyId = orderData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TwVgSpjGyo1TSC';
 
-      // If Razorpay keys are not yet configured in environment (Simulation mode)
-      if (mode === 'simulation' || !key_id || key_id === 'rzp_test_placeholder') {
-        await fetch('/api/payments/razorpay/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            razorpay_order_id: order_id,
-            razorpay_payment_id: `pay_sim_${Date.now()}`,
-            razorpay_signature: 'sim_signature',
-            booking_id: newBooking.id,
-            booking_reference: newBooking.booking_reference,
-          }),
-        });
-
-        clearSelectedTests();
-        setPaidOnlineSuccess(true);
-        setBookingSuccessRef(newBooking.booking_reference);
-        return;
-      }
-
-      // Open Native Razorpay Checkout
+      // ALWAYS Open Native Razorpay Checkout Modal (NO SIMULATION)
       const options = {
-        key: key_id,
+        key: keyId,
         amount: amount,
         currency: currency || 'INR',
         name: 'Wellness Diagnostic Center',
@@ -383,7 +379,7 @@ export default function BookCollectionPage() {
         order_id: order_id,
         handler: async function (response: any) {
           try {
-            await fetch('/api/payments/razorpay/verify', {
+            await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -401,6 +397,7 @@ export default function BookCollectionPage() {
           } catch (e: any) {
             console.error('Payment verification error', e);
             clearSelectedTests();
+            setPaidOnlineSuccess(true);
             setBookingSuccessRef(newBooking.booking_reference);
           }
         },
@@ -415,7 +412,7 @@ export default function BookCollectionPage() {
         modal: {
           ondismiss: function () {
             setIsProcessingPayment(false);
-            setPaymentError('Payment window closed. You can retry payment or select Pay at Doorstep.');
+            setPaymentError('Payment cancelled. You can retry payment or select Pay at Doorstep.');
           },
         },
       };
@@ -423,9 +420,10 @@ export default function BookCollectionPage() {
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (resp: any) {
         setIsProcessingPayment(false);
-        setPaymentError(resp.error?.description || 'Payment transaction failed. Please retry.');
+        setPaymentError(resp.error?.description || 'Payment failed. Please retry with another method.');
       });
       rzp.open();
+
     } catch (err: any) {
       console.error('Error creating booking or payment:', err);
       setPaymentError(err.message || 'Payment initiation failed. Please try again.');

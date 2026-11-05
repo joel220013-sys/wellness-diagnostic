@@ -2,21 +2,22 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
 export const RAZORPAY_KEY_ID =
-  process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || '';
-export const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
+  process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+  process.env.RAZORPAY_KEY_ID ||
+  'rzp_test_TwVgSpjGyo1TSC';
+
+export const RAZORPAY_KEY_SECRET =
+  process.env.RAZORPAY_KEY_SECRET || '3EIDKLCfQ7YW1NuLdyTlmt1w';
 
 let razorpayInstance: Razorpay | null = null;
 
-export function getRazorpayClient(): Razorpay | null {
+export function getRazorpayClient(): Razorpay {
   if (razorpayInstance) return razorpayInstance;
-  if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
-    razorpayInstance = new Razorpay({
-      key_id: RAZORPAY_KEY_ID,
-      key_secret: RAZORPAY_KEY_SECRET,
-    });
-    return razorpayInstance;
-  }
-  return null;
+  razorpayInstance = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET,
+  });
+  return razorpayInstance;
 }
 
 export interface CreateOrderParams {
@@ -32,39 +33,26 @@ export async function createRazorpayOrder({
   receipt,
   notes = {},
 }: CreateOrderParams) {
-  const amountInPaise = Math.round(amount * 100);
+  // Ensure minimum amount of at least 100 paise (Rs 1)
+  const amountInPaise = Math.max(Math.round(Number(amount || 0) * 100), 100);
   const client = getRazorpayClient();
 
-  if (client) {
-    const order = await client.orders.create({
-      amount: amountInPaise,
-      currency,
-      receipt: receipt.slice(0, 40),
-      notes: {
-        business: 'Wellness Diagnostic Center',
-        ...notes,
-      },
-    });
-
-    return {
-      success: true,
-      order_id: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      key_id: RAZORPAY_KEY_ID,
-      mode: 'live_or_test',
-    };
-  }
-
-  // Simulation mode if key is not yet set in environment
-  const mockOrderId = `order_sim_${Date.now()}`;
-  return {
-    success: true,
-    order_id: mockOrderId,
+  const order = await client.orders.create({
     amount: amountInPaise,
     currency,
-    key_id: RAZORPAY_KEY_ID || 'rzp_test_placeholder',
-    mode: 'simulation',
+    receipt: String(receipt || `WD-${Date.now()}`).slice(0, 40),
+    notes: {
+      business: 'Wellness Diagnostic Center',
+      ...notes,
+    },
+  });
+
+  return {
+    success: true,
+    order_id: order.id,
+    amount: order.amount,
+    currency: order.currency,
+    key_id: RAZORPAY_KEY_ID,
   };
 }
 
