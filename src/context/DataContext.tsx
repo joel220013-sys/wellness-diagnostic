@@ -410,13 +410,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
 
-    // Broadcast alert across tabs immediately for instant audio chime & push notification
-    const firstTest = (newBooking.tests && newBooking.tests.length > 0)
-      ? newBooking.tests[0].name
-      : (newBooking.items?.[0]?.item_name || 'Diagnostic Health Checkup');
-    const totalTestsCount = (newBooking.tests?.length || newBooking.items?.length || 1);
-    const resolvedTestName = totalTestsCount > 1 ? `${firstTest} (+${totalTestsCount - 1} more)` : firstTest;
-    const resolvedSlot = newBooking.scheduled_slot || 'Immediate Home Collection';
 
     // Dispatch WhatsApp Notification to Admin (+91 96112 13216)
     try {
