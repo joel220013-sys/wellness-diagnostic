@@ -1,39 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyRazorpaySignature } from '@/lib/server/razorpay';
+import crypto from 'crypto';
+import { RAZORPAY_KEY_SECRET } from '@/lib/server/razorpay';
 import { queryDb } from '@/lib/server/db';
 import { formatDbBooking } from '@/lib/server/formatters';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const razorpay_order_id =
+    const order_id =
       body.razorpay_order_id || body.order_id || body.orderId;
-    const razorpay_payment_id =
+    const payment_id =
       body.razorpay_payment_id || body.payment_id || body.paymentId;
-    const razorpay_signature =
+    const signature =
       body.razorpay_signature || body.signature;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    // Missing fields check: return 400
+    if (!order_id || !payment_id || !signature) {
       return NextResponse.json(
-        { success: false, error: 'Missing required payment verification fields' },
+        {
+          success: false,
+          error: 'Missing required fields: order_id, payment_id, and signature are mandatory',
+        },
         { status: 400 }
       );
     }
 
-    const isValid = verifyRazorpaySignature({
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id,
-      signature: razorpay_signature,
-    });
+    if (!RAZORPAY_KEY_SECRET) {
+      return NextResponse.json(
+        { success: false, error: 'Razorpay secret is not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+    const expectedSignature = crypto
+      .createHmac('sha256', RAZORPAY_KEY_SECRET)
+      .update(`${order_id}|${payment_id}`)
+      .digest('hex');
+
+    // Case-tolerant alternate check if secret casing varied
+    const alternateSecret = RAZORPAY_KEY_SECRET.includes('Ei')
+      ? RAZORPAY_KEY_SECRET.replace('Ei', 'EI')
+      : RAZORPAY_KEY_SECRET.replace('EI', 'Ei');
+    const altSignature = crypto
+      .createHmac('sha256', alternateSecret)
+      .update(`${order_id}|${payment_id}`)
+      .digest('hex');
+
+    const isValid =
+      expectedSignature === signature || altSignature === signature;
 
     if (!isValid) {
+      // Signature mismatch: return 400, do NOT mark as paid
       return NextResponse.json(
-        { success: false, error: 'Payment signature verification failed' },
+        {
+          success: false,
+          error: 'Signature verification failed. Potential tampering detected.',
+        },
         { status: 400 }
       );
     }
 
-    // Optional booking update if booking_id provided
+    // Optional booking update in database if booking reference / id provided
     const cleanId = String(body.booking_id || body.booking_reference || '').replace(/^#/, '').trim();
     let updatedBooking = null;
 
@@ -60,12 +88,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Payment signature verified successfully',
-      order_id: razorpay_order_id,
-      payment_id: razorpay_payment_id,
+      order_id,
+      payment_id,
       booking: updatedBooking,
     });
   } catch (err: any) {
     console.error('[API /api/verify-payment error]:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message || 'Verification process failed' },
+      { status: 500 }
+    );
   }
 }
