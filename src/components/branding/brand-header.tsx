@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import CartDrawer from '@/components/cart/CartDrawer';
 import AdminSidebar from '@/components/layout/admin-sidebar';
-import { isSoundAlertsEnabled, setSoundAlertsEnabled, playOrderChime } from '@/lib/notificationService';
 import { 
   LogOut, 
   Menu, 
@@ -27,9 +26,7 @@ import {
   FlaskConical, 
   Boxes, 
   Truck,
-  ArrowLeftRight,
-  Volume2,
-  VolumeX
+  ArrowLeftRight
 } from 'lucide-react';
 
 interface BrandHeaderProps {
@@ -42,19 +39,7 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
   const { user, logout } = useAuth();
   const { selectedTests, isCartOpen, setIsCartOpen } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const pathname = usePathname();
-
-  React.useEffect(() => {
-    setSoundEnabled(isSoundAlertsEnabled());
-  }, []);
-
-  const toggleSound = () => {
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    setSoundAlertsEnabled(next);
-    if (next) playOrderChime();
-  };
 
   // Auto-close mobile drawer whenever route changes
   React.useEffect(() => {
@@ -147,48 +132,6 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
             </button>
           )}
 
-          {(portalRole === 'admin' || portalRole === 'driver') && (
-            <button
-              onClick={toggleSound}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 select-none active:scale-95 ${
-                soundEnabled
-                  ? 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 shadow-soft-xs'
-                  : 'bg-ivory-100 text-botanical-700 border-ivory-300 hover:bg-ivory-200'
-              }`}
-              title={soundEnabled ? 'Click to toggle order chime sound OFF' : 'Click to toggle order chime sound ON'}
-              role="switch"
-              aria-checked={soundEnabled}
-            >
-              {soundEnabled ? (
-                <Volume2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-              ) : (
-                <VolumeX className="w-3.5 h-3.5 text-botanical-500 flex-shrink-0" />
-              )}
-              <span className="hidden sm:inline text-[11px]">Chime</span>
-              
-              {/* Sliding toggle switch pill */}
-              <span
-                className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-                  soundEnabled ? 'bg-emerald-500' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ${
-                    soundEnabled ? 'translate-x-3' : 'translate-x-0'
-                  }`}
-                />
-              </span>
-
-              <span
-                className={`text-[10px] font-extrabold uppercase ${
-                  soundEnabled ? 'text-emerald-700' : 'text-botanical-600'
-                }`}
-              >
-                {soundEnabled ? 'ON' : 'OFF'}
-              </span>
-            </button>
-          )}
-
           {user ? (
             <div className="flex items-center gap-3">
               <div className="text-right">
@@ -228,23 +171,6 @@ export default function BrandHeader({ portalRole }: BrandHeaderProps) {
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Cart {selectedTests.length > 0 ? `(${selectedTests.length})` : ''}</span>
-            </button>
-          )}
-          {(portalRole === 'admin' || portalRole === 'driver') && (
-            <button
-              onClick={toggleSound}
-              className={`p-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
-                soundEnabled
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-ivory-100 text-botanical-600 border-ivory-300'
-              }`}
-              title={soundEnabled ? 'Order sound alert is ON' : 'Order sound alert is Muted'}
-            >
-              {soundEnabled ? (
-                <Volume2 className="w-4 h-4 text-emerald-600" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-botanical-500" />
-              )}
             </button>
           )}
           <button

@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { BookingStatus } from '@/types';
-import OrderAlertBanner from '@/components/notifications/OrderAlertBanner';
 import UploadReportModal from '@/components/reports/UploadReportModal';
 import DayFilterControl from '@/components/admin/DayFilterControl';
 import { 
@@ -349,9 +348,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       </div>
-
-      {/* Live Order Audio & Push Alert Banner with Master and Chime ON/OFF Toggles */}
-      <OrderAlertBanner />
 
       {/* Primary Date Filter Bar */}
       <DayFilterControl

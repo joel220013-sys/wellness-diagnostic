@@ -418,43 +418,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const resolvedTestName = totalTestsCount > 1 ? `${firstTest} (+${totalTestsCount - 1} more)` : firstTest;
     const resolvedSlot = newBooking.scheduled_slot || 'Immediate Home Collection';
 
-    try {
-      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        const channel = new BroadcastChannel('wellness_order_notifications');
-        channel.postMessage({
-          type: 'NEW_ORDER_ALERT',
-          order: {
-            id: newBooking.id,
-            reference: newBooking.booking_reference,
-            patientName: newBooking.patient_name,
-            phone: newBooking.patient_phone,
-            totalAmount: newBooking.total_amount,
-            testName: resolvedTestName,
-            timeSlot: resolvedSlot
-          }
-        });
-        channel.close();
-      }
-    } catch {}
-
-    // Dispatch real Cloud Web Push to Admin & Phlebotomist mobile phone screens
-    try {
-      fetch('/api/push/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: newBooking.id,
-          reference: newBooking.booking_reference,
-          patientName: newBooking.patient_name,
-          phone: newBooking.patient_phone,
-          totalAmount: newBooking.total_amount,
-          testName: resolvedTestName,
-          timeSlot: resolvedSlot,
-          targetUrl: '/admin/orders',
-        }),
-      }).catch(() => {});
-    } catch {}
-
     // Dispatch WhatsApp Notification to Admin (+91 96112 13216)
     try {
       fetch('/api/whatsapp/notify', {

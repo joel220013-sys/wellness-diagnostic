@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import OrderAlertBanner from '@/components/notifications/OrderAlertBanner';
 import DayFilterControl from '@/components/admin/DayFilterControl';
 import { 
   DayFilterMode, 
@@ -27,11 +26,6 @@ import {
   isBookingMatchingDay,
   formatFriendlyDate 
 } from '@/lib/dateUtils';
-import { 
-  playOrderChime, 
-  isMasterAlertsEnabled, 
-  isSoundAlertsEnabled 
-} from '@/lib/notificationService';
 import { getWhatsAppDirectUrl } from '@/lib/whatsappService';
 
 export default function AdminDashboardPage() {
@@ -73,17 +67,6 @@ export default function AdminDashboardPage() {
     setDashboardToast(`All ${allPendingOrders.length} pending orders confirmed successfully!`);
     setTimeout(() => setDashboardToast(null), 3500);
   };
-
-  // Periodic reminder chime for unconfirmed pending orders (every 90s)
-  useEffect(() => {
-    if (allPendingOrders.length === 0) return;
-    const interval = setInterval(() => {
-      if (isMasterAlertsEnabled() && isSoundAlertsEnabled()) {
-        playOrderChime();
-      }
-    }, 90000);
-    return () => clearInterval(interval);
-  }, [allPendingOrders.length]);
 
   // Counts for Day filter badges
   const todayCount = bookings.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
@@ -164,9 +147,6 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
       </div>
-
-      {/* Live Order Audio & Push Alert Banner with Master and Chime ON/OFF Toggles */}
-      <OrderAlertBanner />
 
       {/* Pinned Action Queue: Incoming Orders Awaiting Admin Confirmation */}
       {allPendingOrders.length > 0 && (

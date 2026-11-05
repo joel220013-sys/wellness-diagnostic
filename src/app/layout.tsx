@@ -3,7 +3,6 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { DataProvider } from '@/context/DataContext';
-import OrderNotificationListener from '@/components/notifications/OrderNotificationListener';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -147,7 +146,6 @@ export default function RootLayout({
         <AuthProvider>
           <DataProvider>
             {children}
-            <OrderNotificationListener />
           </DataProvider>
         </AuthProvider>
       </body>
