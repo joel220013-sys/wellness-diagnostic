@@ -82,11 +82,13 @@ export async function generateAndSendOTP(
 
   if (!sendResult.success) {
     console.error('[OTP] SMS delivery failed for', clean10, sendResult.error);
-    // We still return success: true if DB insert worked — in dev/simulation mode
-    // the OTP is printed to console and can still be tested
-    if (process.env.NODE_ENV === 'production') {
-      return { success: false, error: 'Failed to send OTP SMS. Please try again.' };
-    }
+    // In development or if Fast2SMS website verification is pending, log the OTP for testing
+    console.log(`[OTP Generated for testing] Phone: ${clean10} | Code: ${otpCode} | Purpose: ${purpose}`);
+    
+    return { 
+      success: false, 
+      error: sendResult.error || 'Failed to send OTP SMS. Please check your SMS provider configuration.' 
+    };
   }
 
   return { success: true };
@@ -250,7 +252,8 @@ async function sendOTPViaSMS(
     }
 
     console.warn('[OTP Fast2SMS] API rejected:', data);
-    return { success: false, error: data.message || 'Fast2SMS rejected the request.' };
+    const errorMessage = Array.isArray(data.message) ? data.message.join(', ') : (data.message || 'Fast2SMS rejected the request.');
+    return { success: false, error: errorMessage };
   } catch (err: any) {
     console.error('[OTP Fast2SMS] Network error:', err.message);
     return { success: false, error: err.message };
