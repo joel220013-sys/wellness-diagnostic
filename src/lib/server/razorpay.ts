@@ -4,10 +4,10 @@ import crypto from 'crypto';
 export const RAZORPAY_KEY_ID =
   process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
   process.env.RAZORPAY_KEY_ID ||
-  'rzp_test_Twt0oi75NVFtzl';
+  'rzp_live_TwtMkYmGj9XOAw';
 
 export const RAZORPAY_KEY_SECRET =
-  process.env.RAZORPAY_KEY_SECRET || 'xX0Q0RqLQuXUVyt52Jy5PW2l';
+  process.env.RAZORPAY_KEY_SECRET || '2LpG9weoSoy8W70Wz29hE6zt';
 
 let razorpayInstance: Razorpay | null = null;
 
