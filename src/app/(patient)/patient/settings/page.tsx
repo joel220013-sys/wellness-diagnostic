@@ -1,34 +1,35 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { 
-  ShieldCheck, 
-  KeyRound, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  CheckCircle2, 
-  AlertCircle, 
-  User, 
-  Phone, 
-  Mail, 
-  Bell, 
-  MessageSquare, 
-  Smartphone, 
-  FileText, 
-  Sliders, 
-  Download, 
-  Trash2, 
-  LogOut, 
-  Check, 
-  Loader2, 
+import {
+  ShieldCheck,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
+  User,
+  Phone,
+  Mail,
+  Bell,
+  MessageSquare,
+  Smartphone,
+  FileText,
+  Sliders,
+  Download,
+  Trash2,
+  LogOut,
+  Check,
+  Loader2,
   Sparkles,
   Calendar,
   Heart,
   Laptop,
   Radio,
-  ArrowRight
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -49,6 +50,21 @@ export default function PatientSettingsPage() {
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [passError, setPassError] = useState<string | null>(null);
   const [passSuccess, setPassSuccess] = useState<string | null>(null);
+
+  // OTP State (for Password Change)
+  const [otpSentForPass, setOtpSentForPass] = useState(false);
+  const [otpForPass, setOtpForPass] = useState('');
+  const [sendingOtpForPass, setSendingOtpForPass] = useState(false);
+  const [otpResendKey, setOtpResendKey] = useState(0);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  // Countdown effect
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const t = setTimeout(() => setOtpCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpCountdown]);
 
   // Profile & Medical Vitals State
   const [name, setName] = useState(user?.name || '');
@@ -96,7 +112,39 @@ export default function PatientSettingsPage() {
     }
   }, [user]);
 
-  // Handle Change Password Form
+  // Send OTP for Password Change
+  const handleSendOTPForPass = async () => {
+    setPassError(null);
+    const userPhone = user?.phone || '';
+    if (!userPhone) {
+      setPassError('No phone number on your account. Please contact support.');
+      return;
+    }
+    setSendingOtpForPass(true);
+    try {
+      const res = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: userPhone, purpose: 'change_password' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpSentForPass(true);
+        setOtpForPass('');
+        setOtpResendKey((k) => k + 1);
+        setOtpCountdown(60);
+        setTimeout(() => otpInputRef.current?.focus(), 100);
+      } else {
+        setPassError(data.error || 'Failed to send OTP.');
+      }
+    } catch {
+      setPassError('Network error. Please try again.');
+    } finally {
+      setSendingOtpForPass(false);
+    }
+  };
+
+  // Handle Change Password Form (now OTP-gated)
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPassError(null);
@@ -118,19 +166,46 @@ export default function PatientSettingsPage() {
       setPassError('New password must be different from your current password.');
       return;
     }
+    if (!otpSentForPass) {
+      setPassError('Please send and verify an OTP to your registered phone before changing password.');
+      return;
+    }
+    if (!otpForPass || otpForPass.length !== 6) {
+      setPassError('Please enter the 6-digit OTP sent to your phone.');
+      return;
+    }
 
     setIsChangingPass(true);
-    const res = await changePassword(currentPassword, newPassword);
-    setIsChangingPass(false);
+    try {
+      const res = await fetch('/api/otp/verify-change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: user?.phone || '',
+          otp: otpForPass,
+          user_id: user?.id || '',
+          email: user?.email || '',
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      const data = await res.json();
 
-    if (res.success) {
-      setPassSuccess('Password updated successfully! Your account is secured with PBKDF2 encryption.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setTimeout(() => setPassSuccess(null), 5000);
-    } else {
-      setPassError(res.error || 'Failed to update password. Please check your current password.');
+      if (data.success) {
+        setPassSuccess('Password updated successfully! Your account is secured.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setOtpForPass('');
+        setOtpSentForPass(false);
+        setTimeout(() => setPassSuccess(null), 5000);
+      } else {
+        setPassError(data.error || 'Failed to update password. Please check your current password.');
+      }
+    } catch {
+      setPassError('Network error. Please try again.');
+    } finally {
+      setIsChangingPass(false);
     }
   };
 
@@ -253,7 +328,7 @@ export default function PatientSettingsPage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-botanical-700/80">
-              {user?.email || 'patient@wellness.com'} • {user?.phone || '+91 98765 43210'}
+              {user?.email || 'patient@wellness.com'} â€¢ {user?.phone || '+91 98765 43210'}
             </p>
           </div>
         </div>
@@ -430,21 +505,78 @@ export default function PatientSettingsPage() {
                 </div>
                 {confirmPassword && newPassword && (
                   <span className={`text-[11px] font-semibold mt-1 block ${newPassword === confirmPassword ? 'text-emerald-700' : 'text-rose-600'}`}>
-                    {newPassword === confirmPassword ? '✓ Passwords match' : '✕ Passwords do not match'}
+                    {newPassword === confirmPassword ? 'âœ“ Passwords match' : 'âœ• Passwords do not match'}
                   </span>
                 )}
               </div>
 
               <div className="pt-2">
+                {/* OTP Verification for Password Change */}
+                {!otpSentForPass ? (
+                  <button
+                    type="button"
+                    onClick={handleSendOTPForPass}
+                    disabled={sendingOtpForPass || !currentPassword || !newPassword || newPassword !== confirmPassword || newPassword.length < 6}
+                    className="w-full px-6 py-2.5 rounded-xl bg-botanical-100 border border-botanical-300 text-botanical-800 font-bold text-xs sm:text-sm hover:bg-botanical-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mb-3"
+                  >
+                    {sendingOtpForPass ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /><span>Sending OTP...</span></>
+                    ) : (
+                      <><MessageSquare className="w-4 h-4" /><span>Send OTP to Verify Identity</span></>
+                    )}
+                  </button>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-botanical-50 border border-botanical-200 mb-3 space-y-3">
+                    <p className="text-xs text-botanical-800 font-semibold flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-botanical-600" />
+                      OTP sent to <span className="font-black">+91 ****{(user?.phone || '').replace(/\D/g, '').slice(-4)}</span>
+                      <span className="text-botanical-600 font-normal">(valid 5 mins)</span>
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        ref={otpInputRef}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={otpForPass}
+                        onChange={(e) => setOtpForPass(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Enter 6-digit OTP"
+                        className="flex-1 px-3 py-2 text-sm rounded-xl border border-botanical-300 focus:ring-2 focus:ring-botanical-500 bg-white text-center tracking-[0.3em] font-bold text-botanical-900"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-botanical-700/60">
+                        {otpCountdown > 0 ? (
+                          <>Resend in <span className="font-bold text-botanical-800">{otpCountdown}s</span></>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSendOTPForPass}
+                            disabled={sendingOtpForPass}
+                            className="text-botanical-600 font-semibold hover:underline flex items-center gap-1"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Resend OTP
+                          </button>
+                        )}
+                      </span>
+                      <span className="text-xs text-botanical-600/70 italic">
+                        {otpForPass.length}/6 digits
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={isChangingPass}
+                  disabled={isChangingPass || !otpSentForPass || otpForPass.length !== 6}
                   className="px-6 py-2.5 rounded-xl bg-botanical-500 text-white font-bold text-xs sm:text-sm hover:bg-botanical-600 transition-colors shadow-soft flex items-center gap-2 disabled:opacity-50"
                 >
                   {isChangingPass ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Hashing & Updating...</span>
+                      <span>Verifying &amp; Updating...</span>
                     </>
                   ) : (
                     <>
@@ -453,6 +585,11 @@ export default function PatientSettingsPage() {
                     </>
                   )}
                 </button>
+                {!otpSentForPass && (
+                  <p className="text-xs text-botanical-700/60 mt-2">
+                    Fill in all password fields above, then send OTP to verify your identity.
+                  </p>
+                )}
               </div>
             </form>
           </div>
@@ -548,7 +685,7 @@ export default function PatientSettingsPage() {
                     Current Web Browser Session (Active Now)
                   </p>
                   <p className="text-[11px] text-botanical-700/80">
-                    Cookie: <span className="font-mono text-botanical-900">wellness_auth_session (Lax)</span> • SSL Encrypted
+                    Cookie: <span className="font-mono text-botanical-900">wellness_auth_session (Lax)</span> â€¢ SSL Encrypted
                   </p>
                 </div>
               </div>
@@ -951,10 +1088,10 @@ export default function PatientSettingsPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-ivory-300 text-sm font-semibold text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-500 bg-white"
                 >
                   <option value="English">English (Default)</option>
-                  <option value="Hindi">हिंदी (Hindi)</option>
-                  <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
-                  <option value="Tamil">தமிழ் (Tamil)</option>
-                  <option value="Telugu">తెలుగు (Telugu)</option>
+                  <option value="Hindi">à¤¹à¤¿à¤‚à¤¦à¥€ (Hindi)</option>
+                  <option value="Kannada">à²•à²¨à³à²¨à²¡ (Kannada)</option>
+                  <option value="Tamil">à®¤à®®à®¿à®´à¯ (Tamil)</option>
+                  <option value="Telugu">à°¤à±†à°²à±à°—à± (Telugu)</option>
                 </select>
               </div>
             </div>
