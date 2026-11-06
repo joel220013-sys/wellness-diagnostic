@@ -54,6 +54,7 @@ export default function PatientSettingsPage() {
   // OTP State (for Password Change)
   const [otpSentForPass, setOtpSentForPass] = useState(false);
   const [otpForPass, setOtpForPass] = useState('');
+  const [testOtpHidePass, setTestOtpHidePass] = useState<string | null>(null);
   const [sendingOtpForPass, setSendingOtpForPass] = useState(false);
   const [otpResendKey, setOtpResendKey] = useState(0);
   const [otpCountdown, setOtpCountdown] = useState(0);
@@ -130,7 +131,8 @@ export default function PatientSettingsPage() {
       const data = await res.json();
       if (data.success) {
         setOtpSentForPass(true);
-        setOtpForPass('');
+        setOtpForPass(data.devOtp || '');
+        setTestOtpHidePass(data.devOtp || null);
         setOtpResendKey((k) => k + 1);
         setOtpCountdown(60);
         setTimeout(() => otpInputRef.current?.focus(), 100);
@@ -532,6 +534,21 @@ export default function PatientSettingsPage() {
                       OTP sent to <span className="font-black">+91 ****{(user?.phone || '').replace(/\D/g, '').slice(-4)}</span>
                       <span className="text-botanical-600 font-normal">(valid 5 mins)</span>
                     </p>
+
+                    {testOtpHidePass && (
+                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                        <div className="flex items-center justify-between font-bold">
+                          <span>Fast2SMS DLT Pending — Test Code:</span>
+                          <span className="font-mono bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded font-black tracking-widest text-sm">
+                            {testOtpHidePass}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800/80 mt-1">
+                          Carrier SMS delivery is held by Fast2SMS pending website/DLT approval. Your test code has been prefilled below.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex gap-2">
                       <input
                         ref={otpInputRef}

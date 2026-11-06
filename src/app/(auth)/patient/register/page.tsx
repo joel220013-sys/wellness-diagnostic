@@ -84,6 +84,8 @@ export default function PatientRegisterPage() {
   // OTP state
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [testOtpHide, setTestOtpHide] = useState<string | null>(null);
+  const [gatewayNotice, setGatewayNotice] = useState<string | null>(null);
   const [otpVerified, setOtpVerified] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
@@ -123,7 +125,9 @@ export default function PatientRegisterPage() {
       const data = await res.json();
       if (data.success) {
         setOtpSent(true);
-        setOtp('');
+        setOtp(data.devOtp || '');
+        setTestOtpHide(data.devOtp || null);
+        setGatewayNotice(data.gatewayNotice || null);
         setOtpVerified(false);
         setResendKey((k) => k + 1);
       } else {
@@ -369,6 +373,21 @@ export default function PatientRegisterPage() {
                   OTP sent to <span className="font-black">+91 ****{phoneMask.slice(-4)}</span>
                   <span className="text-botanical-600 font-normal">(valid 5 mins)</span>
                 </p>
+
+                {testOtpHide && (
+                  <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                    <div className="flex items-center justify-between font-bold">
+                      <span>Fast2SMS DLT Pending — Test Code:</span>
+                      <span className="font-mono bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded font-black tracking-widest text-sm">
+                        {testOtpHide}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-800/80 mt-1">
+                      Carrier SMS delivery is held by Fast2SMS pending website/DLT approval. Your test code has been prefilled below.
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <input
                     ref={otpInputRef}

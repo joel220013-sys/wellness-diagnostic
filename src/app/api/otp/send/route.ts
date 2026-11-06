@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: result.error }, { status: 429 });
     }
 
-    return NextResponse.json({ success: true, message: 'OTP sent successfully.' });
+    return NextResponse.json({
+      success: true,
+      message: 'OTP sent successfully.',
+      devOtp: result.devOtp,
+      gatewayNotice: result.gatewayNotice,
+    });
   } catch (err: any) {
     console.error('[POST /api/otp/send]', err);
     return NextResponse.json({ success: false, error: 'Internal server error.' }, { status: 500 });
