@@ -270,12 +270,18 @@ export default function BookCollectionPage() {
     return calculateOrderPricing(selectedTests, tests, coords);
   }, [selectedTests, tests, confirmedAddress.latitude, confirmedAddress.longitude]);
 
+  // Authoritative payable amount (ensuring at least ₹50 doorstep fee when tests selected)
+  const payableAmount = useMemo(() => {
+    return Math.max(pricing.total, selectedTests.length > 0 ? 50 : 0);
+  }, [pricing.total, selectedTests.length]);
+
   // Step 1: Validations
   const canProceedStep1 = selectedTests.length > 0;
   // Step 2: Validations
-  const canProceedStep2 = Boolean(selectedDate && selectedSlot);
+  const canProceedStep2 = Boolean(selectedDate && selectedSlot && selectedTests.length > 0);
   // Step 3: Validations
   const canProceedStep3 = Boolean(
+    selectedTests.length > 0 &&
     patientName.trim() && 
     patientPhone.trim() && 
     confirmedAddress.address_line_1 && 
@@ -978,6 +984,22 @@ export default function BookCollectionPage() {
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-ivory-300 shadow-soft-sm space-y-6">
             <h2 className="text-lg font-bold text-botanical-950">Order Summary & Price Breakdown</h2>
 
+            {selectedTests.length === 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>No tests selected in cart. Please return to Step 1 and select at least one test.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="px-3.5 py-1.5 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 transition-colors"
+                >
+                  Select Tests
+                </button>
+              </div>
+            )}
+
             {/* Test Items Table */}
             <div className="border border-ivory-200 rounded-2xl overflow-hidden">
               <table className="w-full text-left text-xs">
@@ -1155,9 +1177,9 @@ export default function BookCollectionPage() {
             </button>
 
             <button
-              disabled={isSubmitting || isProcessingPayment}
+              disabled={isSubmitting || isProcessingPayment || selectedTests.length === 0}
               onClick={handleSubmitBooking}
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 text-white font-bold text-sm shadow-soft transition-all hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-botanical-500 hover:bg-botanical-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-soft transition-all hover:-translate-y-0.5"
             >
               {isProcessingPayment ? (
                 <>
@@ -1169,15 +1191,20 @@ export default function BookCollectionPage() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>Confirming Appointment...</span>
                 </>
+              ) : selectedTests.length === 0 ? (
+                <>
+                  <AlertCircle className="w-5 h-5" />
+                  <span>Select Tests to Book</span>
+                </>
               ) : paymentMethodChoice === 'online' ? (
                 <>
                   <CreditCard className="w-5 h-5" />
-                  <span>Pay ₹{pricing.total} Online via Razorpay</span>
+                  <span>Pay ₹{payableAmount} Online via Razorpay</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>Confirm & Pay at Doorstep (₹{pricing.total})</span>
+                  <span>Confirm & Pay at Doorstep (₹{payableAmount})</span>
                 </>
               )}
             </button>
