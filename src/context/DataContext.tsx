@@ -45,7 +45,12 @@ interface DataContextType {
   syncPackages: () => void;
   syncReports: () => void;
   syncInvoices: () => void;
-  updateBookingStatus: (bookingId: string, status: BookingStatus, sampleDetails?: Booking['sample_details']) => void;
+  updateBookingStatus: (
+    bookingId: string, 
+    status: BookingStatus, 
+    sampleDetails?: Booking['sample_details'],
+    extraFields?: { payment_status?: string; payment_method?: string; [key: string]: any }
+  ) => void;
   addReportForBooking: (orderId: string, results: LabReportResultItem[], overallRemarks: string) => LabReport;
   addTestPackage: (test: Omit<DiagnosticTest, 'id'>) => Promise<DiagnosticTest | null> | void;
   updateTestPackage: (id: string, test: Partial<DiagnosticTest>) => Promise<DiagnosticTest | null> | void;
@@ -682,7 +687,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const updateBookingStatus = (
     bookingId: string,
     status: BookingStatus,
-    sampleDetails?: Booking['sample_details']
+    sampleDetails?: Booking['sample_details'],
+    extraFields?: { payment_status?: string; payment_method?: string; [key: string]: any }
   ) => {
     const cleanId = String(bookingId).replace(/^#/, '').trim();
     const updatedBookings = bookings.map((b) => {
@@ -698,6 +704,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           ...b,
           status,
           sample_details: mergedDetails,
+          ...(extraFields || {}),
           updated_at: new Date().toISOString(),
         };
       }
@@ -713,6 +720,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const payload = {
       status,
       sample_details: sampleDetails,
+      ...(extraFields || {}),
     };
 
     fetch(`/api/admin/orders/${encodeURIComponent(cleanId)}`, {
