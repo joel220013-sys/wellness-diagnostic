@@ -205,7 +205,7 @@ export async function cleanupExpiredOTPs(): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INTERNAL: Fast2SMS Smart OTP Delivery
+// INTERNAL: High-Priority OTP Delivery (2Factor.in Primary + Fast2SMS Fallback)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function sendOTPViaSMS(
@@ -213,78 +213,95 @@ async function sendOTPViaSMS(
   otp: string,
   purpose: OtpPurpose
 ): Promise<{ success: boolean; error?: string }> {
-  const apiKey = process.env.FAST2SMS_API_KEY;
+  const twoFactorKey = process.env.TWO_FACTOR_API_KEY;
+  const fast2SmsKey = process.env.FAST2SMS_API_KEY;
 
   const purposeLabel =
     purpose === 'register' ? 'account verification' : 'password change verification';
 
-  if (!apiKey) {
-    // Dev simulation — print to console
-    console.log('\n╔══════════════════════════════════╗');
-    console.log('║      OTP SIMULATION (Dev Mode)   ║');
-    console.log('╠══════════════════════════════════╣');
-    console.log(`║  TO    : +91 ${phone10}         ║`);
-    console.log(`║  OTP   : ${otp}                  ║`);
-    console.log(`║  FOR   : ${purposeLabel}`);
-    console.log('╚══════════════════════════════════╝\n');
-    return { success: true };
+  // ── 1. PRIMARY: 2Factor.in (Instant Carrier Delivery & Pre-Approved DLT) ──
+  if (twoFactorKey) {
+    try {
+      const url = `https://2factor.in/API/V1/${twoFactorKey}/SMS/${phone10}/${otp}`;
+      const response = await fetch(url, { method: 'GET' });
+      const data = await response.json();
+
+      if (data && data.Status === 'Success') {
+        console.log(`[OTP 2Factor Success] Dispatched to +91 ${phone10} [${purpose}] — Session: ${data.Details}`);
+        return { success: true };
+      }
+      console.warn('[OTP 2Factor Response]', data);
+    } catch (err: any) {
+      console.error('[OTP 2Factor Network Error]', err.message);
+    }
   }
 
-  try {
-    // 1. Try Quick SMS (route: 'q') first — bypasses TRAI DLT registration
-    const qResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-      method: 'POST',
-      headers: {
-        authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        route: 'q',
-        message: `Your Wellness Diagnostic verification code is ${otp}. Valid for 5 minutes. Do not share this code.`,
-        language: 'english',
-        flash: 0,
-        numbers: phone10,
-      }),
-    });
+  // ── 2. SECONDARY: Fast2SMS ───────────────────────────────────────────────
+  if (fast2SmsKey) {
+    try {
+      // Try Quick SMS (route: 'q')
+      const qResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          authorization: fast2SmsKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: `Your Wellness Diagnostic verification code is ${otp}. Valid for 5 minutes. Do not share this code.`,
+          language: 'english',
+          flash: 0,
+          numbers: phone10,
+        }),
+      });
 
-    const qData = await qResponse.json();
+      const qData = await qResponse.json();
+      if (qData.return === true) {
+        console.log(`[OTP Fast2SMS Quick Route] Sent to ${phone10} [${purpose}] — request_id: ${qData.request_id}`);
+        return { success: true };
+      }
 
-    if (qData.return === true) {
-      console.log(`[OTP Fast2SMS Quick Route] Sent to ${phone10} [${purpose}] — request_id: ${qData.request_id}`);
-      return { success: true };
+      // Try Smart OTP (route: 'otp')
+      const otpResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          authorization: fast2SmsKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          route: 'otp',
+          variables_values: otp,
+          numbers: phone10,
+          flash: 0,
+        }),
+      });
+
+      const otpData = await otpResponse.json();
+      if (otpData.return === true) {
+        console.log(`[OTP Fast2SMS OTP Route] Sent to ${phone10} [${purpose}] — request_id: ${otpData.request_id}`);
+        return { success: true };
+      }
+
+      const failureData = qData.message ? qData : otpData;
+      console.warn('[OTP Fast2SMS] API rejected:', failureData);
+      const errorMessage = Array.isArray(failureData.message)
+        ? failureData.message.join(', ')
+        : (failureData.message || 'Fast2SMS rejected the request.');
+      return { success: false, error: errorMessage };
+    } catch (err: any) {
+      console.error('[OTP Fast2SMS] Network error:', err.message);
+      return { success: false, error: err.message };
     }
-
-    // 2. If route: 'q' failed, fallback to route: 'otp'
-    const otpResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-      method: 'POST',
-      headers: {
-        authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        route: 'otp',
-        variables_values: otp,
-        numbers: phone10,
-        flash: 0,
-      }),
-    });
-
-    const otpData = await otpResponse.json();
-
-    if (otpData.return === true) {
-      console.log(`[OTP Fast2SMS OTP Route] Sent to ${phone10} [${purpose}] — request_id: ${otpData.request_id}`);
-      return { success: true };
-    }
-
-    const failureData = qData.message ? qData : otpData;
-    console.warn('[OTP Fast2SMS] API rejected:', failureData);
-    const errorMessage = Array.isArray(failureData.message)
-      ? failureData.message.join(', ')
-      : (failureData.message || 'Fast2SMS rejected the request.');
-    return { success: false, error: errorMessage };
-  } catch (err: any) {
-    console.error('[OTP Fast2SMS] Network error:', err.message);
-    return { success: false, error: err.message };
   }
+
+  // ── 3. Fallback: Dev Simulation ──────────────────────────────────────────
+  console.log('\n╔══════════════════════════════════╗');
+  console.log('║      OTP SIMULATION (Dev Mode)   ║');
+  console.log('╠══════════════════════════════════╣');
+  console.log(`║  TO    : +91 ${phone10}         ║`);
+  console.log(`║  OTP   : ${otp}                  ║`);
+  console.log(`║  FOR   : ${purposeLabel}`);
+  console.log('╚══════════════════════════════════╝\n');
+  return { success: true };
 }
 
