@@ -231,7 +231,31 @@ async function sendOTPViaSMS(
   }
 
   try {
-    const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+    // 1. Try Quick SMS (route: 'q') first — bypasses TRAI DLT registration
+    const qResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+      method: 'POST',
+      headers: {
+        authorization: apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        route: 'q',
+        message: `Your Wellness Diagnostic verification code is ${otp}. Valid for 5 minutes. Do not share this code.`,
+        language: 'english',
+        flash: 0,
+        numbers: phone10,
+      }),
+    });
+
+    const qData = await qResponse.json();
+
+    if (qData.return === true) {
+      console.log(`[OTP Fast2SMS Quick Route] Sent to ${phone10} [${purpose}] — request_id: ${qData.request_id}`);
+      return { success: true };
+    }
+
+    // 2. If route: 'q' failed, fallback to route: 'otp'
+    const otpResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
       method: 'POST',
       headers: {
         authorization: apiKey,
@@ -245,15 +269,18 @@ async function sendOTPViaSMS(
       }),
     });
 
-    const data = await response.json();
+    const otpData = await otpResponse.json();
 
-    if (data.return === true) {
-      console.log(`[OTP Fast2SMS] Sent to ${phone10} [${purpose}] — request_id: ${data.request_id}`);
+    if (otpData.return === true) {
+      console.log(`[OTP Fast2SMS OTP Route] Sent to ${phone10} [${purpose}] — request_id: ${otpData.request_id}`);
       return { success: true };
     }
 
-    console.warn('[OTP Fast2SMS] API rejected:', data);
-    const errorMessage = Array.isArray(data.message) ? data.message.join(', ') : (data.message || 'Fast2SMS rejected the request.');
+    const failureData = qData.message ? qData : otpData;
+    console.warn('[OTP Fast2SMS] API rejected:', failureData);
+    const errorMessage = Array.isArray(failureData.message)
+      ? failureData.message.join(', ')
+      : (failureData.message || 'Fast2SMS rejected the request.');
     return { success: false, error: errorMessage };
   } catch (err: any) {
     console.error('[OTP Fast2SMS] Network error:', err.message);
