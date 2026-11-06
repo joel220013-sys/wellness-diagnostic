@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Truck, 
@@ -13,24 +13,57 @@ import {
   ChevronRight, 
   Calendar,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  CalendarDays
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import DayFilterControl from '@/components/admin/DayFilterControl';
+import { 
+  DayFilterMode, 
+  getTodayDateStr, 
+  getYesterdayDateStr, 
+  getTomorrowDateStr,
+  isBookingMatchingDay, 
+  formatFriendlyDate 
+} from '@/lib/dateUtils';
 
 export default function DriverDashboardPage() {
   const { user } = useAuth();
-  const { bookings, updateBookingStatus } = useData();
+  const { bookings, updateBookingStatus, syncBookings } = useData();
+
+  // Day filter state: defaults strictly to TODAY, same as Admin Dashboard
+  const [dayFilterMode, setDayFilterMode] = useState<DayFilterMode>('TODAY');
+  const [customDate, setCustomDate] = useState<string>(getTodayDateStr());
+
+  // Live polling so newly assigned orders from admin appear in real-time
+  useEffect(() => {
+    if (syncBookings) {
+      syncBookings();
+      const interval = setInterval(() => {
+        syncBookings();
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [syncBookings]);
 
   // STRICT ISOLATION: Driver only sees jobs assigned to their account (or demo driver)
-  const assignedJobs = bookings.filter((b) => 
+  const allAssignedJobs = bookings.filter((b) => 
     b.driver_id === user?.id || 
     b.driver_name === user?.name ||
     user?.email === 'driver@wellness.com'
   );
 
+  // Day filter counts for driver badges (Today, Tomorrow, Yesterday)
+  const todayCount = allAssignedJobs.filter((b) => isBookingMatchingDay(b, 'TODAY')).length;
+  const tomorrowCount = allAssignedJobs.filter((b) => isBookingMatchingDay(b, 'TOMORROW')).length;
+  const yesterdayCount = allAssignedJobs.filter((b) => isBookingMatchingDay(b, 'YESTERDAY')).length;
+
+  // Active filtered jobs matching chosen Day Filter
+  const assignedJobs = allAssignedJobs.filter((b) => isBookingMatchingDay(b, dayFilterMode, customDate));
+
   const pendingPickups = assignedJobs.filter((b) =>
-    ['Assigned', 'Collection Scheduled'].includes(b.status)
+    ['Assigned', 'Collection Scheduled', 'Confirmed', 'Pending'].includes(b.status)
   );
 
   const completedToday = assignedJobs.filter((b) =>
@@ -57,15 +90,36 @@ export default function DriverDashboardPage() {
             Welcome, {user?.name || 'Phlebotomist'}
           </h1>
           <p className="text-xs sm:text-sm text-sky-100/80">
-            Badge ID: <strong className="font-mono text-white">{user?.badgeId || 'WD-PHLEB-104'}</strong> • Vehicle: Mobile Lab Van 04
+            Badge ID: <strong className="font-mono text-white">{user?.badgeId || '001'}</strong> • Vehicle: Mobile Lab Van 04
           </p>
         </div>
       </div>
 
-      {/* 3 Metric Touch Cards */}
+      {/* Date Filter Bar (Today, Tomorrow, Yesterday, Pick Date, All) - Same as Admin */}
+      <DayFilterControl
+        mode={dayFilterMode}
+        customDate={customDate}
+        onModeChange={setDayFilterMode}
+        onCustomDateChange={setCustomDate}
+        todayCount={todayCount}
+        tomorrowCount={tomorrowCount}
+        yesterdayCount={yesterdayCount}
+        filteredCount={assignedJobs.length}
+        totalCount={allAssignedJobs.length}
+      />
+
+      {/* 3 Metric Touch Cards for the selected day */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-ivory-300 shadow-soft-sm text-center">
-          <span className="text-[11px] font-semibold text-botanical-700">Total Assigned</span>
+          <span className="text-[11px] font-semibold text-botanical-700">
+            {dayFilterMode === 'TODAY'
+              ? 'Today Assigned'
+              : dayFilterMode === 'TOMORROW'
+              ? 'Tomorrow Assigned'
+              : dayFilterMode === 'YESTERDAY'
+              ? 'Yesterday Assigned'
+              : 'Assigned Pickups'}
+          </span>
           <p className="text-2xl font-extrabold text-botanical-950 mt-1">{assignedJobs.length}</p>
         </div>
 
@@ -75,17 +129,44 @@ export default function DriverDashboardPage() {
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-soft-sm text-center">
-          <span className="text-[11px] font-semibold text-emerald-800">Collected Today</span>
+          <span className="text-[11px] font-semibold text-emerald-800">
+            {dayFilterMode === 'YESTERDAY'
+              ? 'Collected Yesterday'
+              : dayFilterMode === 'TOMORROW'
+              ? 'Completed Ahead'
+              : 'Collected Today'}
+          </span>
           <p className="text-2xl font-extrabold text-emerald-950 mt-1">{completedToday.length}</p>
         </div>
       </div>
 
-      {/* Today's Urgent Collections List */}
+      {/* Phlebotomy Queue List filtered by Selected Day */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-botanical-950">Active Phlebotomy Queue</h2>
-            <p className="text-xs text-botanical-700/80">Your assigned patient visits for home sample collection</p>
+            <h2 className="text-base font-bold text-botanical-950 flex items-center gap-2">
+              <span>
+                {dayFilterMode === 'TODAY'
+                  ? "Today's Phlebotomy Queue"
+                  : dayFilterMode === 'TOMORROW'
+                  ? "Tomorrow's Scheduled Pickups"
+                  : dayFilterMode === 'YESTERDAY'
+                  ? "Yesterday's Completed & Past Pickups"
+                  : dayFilterMode === 'CUSTOM'
+                  ? `Pickups for ${formatFriendlyDate(customDate)}`
+                  : 'All Assigned Historical Pickups'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-botanical-100 text-botanical-900 border border-botanical-200">
+                {assignedJobs.length}
+              </span>
+            </h2>
+            <p className="text-xs text-botanical-700/80">
+              {dayFilterMode === 'TOMORROW'
+                ? "Advance patient bookings scheduled for tomorrow morning"
+                : dayFilterMode === 'YESTERDAY'
+                ? "Patient home sample visits completed or scheduled yesterday"
+                : "Your assigned patient visits for home sample collection"}
+            </p>
           </div>
           <Link
             href="/driver/assignments"
@@ -99,9 +180,21 @@ export default function DriverDashboardPage() {
         {assignedJobs.length === 0 ? (
           <div className="bg-white rounded-3xl p-10 border border-ivory-300 text-center space-y-3 shadow-soft-sm">
             <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-            <h3 className="text-base font-bold text-botanical-950">No Pending Pickups Assigned</h3>
+            <h3 className="text-base font-bold text-botanical-950">
+              {dayFilterMode === 'TODAY'
+                ? 'No Pending Pickups Assigned for Today'
+                : dayFilterMode === 'TOMORROW'
+                ? 'No Advance Pickups Scheduled for Tomorrow'
+                : dayFilterMode === 'YESTERDAY'
+                ? 'No Pickups Recorded for Yesterday'
+                : 'No Pickups Found for this Selection'}
+            </h3>
             <p className="text-xs text-botanical-700/70 max-w-sm mx-auto">
-              You are currently caught up with all assigned collections. New home sample collection jobs dispatched by the diagnostic hub will appear here immediately.
+              {dayFilterMode === 'TOMORROW'
+                ? 'Any patient bookings scheduled for tomorrow will appear here as soon as they are assigned to your badge.'
+                : dayFilterMode === 'YESTERDAY'
+                ? 'No past collections recorded under your badge for yesterday.'
+                : 'You are currently caught up with all assigned collections. New home sample collection jobs dispatched by the diagnostic hub will appear here immediately.'}
             </p>
           </div>
         ) : (
@@ -111,16 +204,21 @@ export default function DriverDashboardPage() {
                 key={job.id}
                 className="bg-white rounded-2xl p-5 border border-ivory-300 hover:border-botanical-300 transition-all shadow-soft-sm space-y-3"
               >
-                <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-ivory-200 gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-bold text-botanical-950">#{job.booking_reference}</span>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
                       {job.status}
                     </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-ivory-200 text-botanical-800 border border-ivory-300 flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-botanical-600" />
+                      <span>{formatFriendlyDate(String(job.scheduled_date || job.created_at || ''))}</span>
+                    </span>
                   </div>
 
-                  <span className="text-xs font-bold text-botanical-600">
-                    Slot: {job.scheduled_slot}
+                  <span className="text-xs font-bold text-botanical-600 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Slot: {job.scheduled_slot}</span>
                   </span>
                 </div>
 
